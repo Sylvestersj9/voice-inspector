@@ -14,13 +14,138 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      chunks: {
+        Row: {
+          chunk_text: string
+          created_at: string
+          document_id: string
+          embedding: string | null
+          id: string
+        }
+        Insert: {
+          chunk_text: string
+          created_at?: string
+          document_id: string
+          embedding?: string | null
+          id?: string
+        }
+        Update: {
+          chunk_text?: string
+          created_at?: string
+          document_id?: string
+          embedding?: string | null
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chunks_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      documents: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          source: string
+          title: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          source: string
+          title: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          source?: string
+          title?: string
+        }
+        Relationships: []
+      }
+      session_answers: {
+        Row: {
+          attempt_index: number
+          created_at: string
+          evaluation_json: Json
+          id: string
+          question_domain: string
+          question_id: number
+          session_id: string
+          transcript: string
+        }
+        Insert: {
+          attempt_index?: number
+          created_at?: string
+          evaluation_json: Json
+          id?: string
+          question_domain: string
+          question_id: number
+          session_id: string
+          transcript: string
+        }
+        Update: {
+          attempt_index?: number
+          created_at?: string
+          evaluation_json?: Json
+          id?: string
+          question_domain?: string
+          question_id?: number
+          session_id?: string
+          transcript?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_answers_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sessions: {
+        Row: {
+          created_at: string
+          id: string
+          overall_band: string | null
+          overall_score: number | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          overall_band?: string | null
+          overall_score?: number | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          overall_band?: string | null
+          overall_score?: number | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      match_chunks: {
+        Args: { match_count?: number; query_embedding: string }
+        Returns: {
+          chunk_text: string
+          document_id: string
+          id: string
+          similarity: number
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
