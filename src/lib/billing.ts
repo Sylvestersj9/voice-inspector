@@ -14,13 +14,11 @@ export async function startCheckout(promoCode?: string): Promise<CheckoutRespons
     throw new Error("Please sign in to continue.");
   }
 
-  const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-checkout-session`, {
+  const res = await fetch("/api/stripe/checkout", {
     method: "POST",
     headers: {
-      "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({ promoCode }),
   });
 
   const json = await res.json();
