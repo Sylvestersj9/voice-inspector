@@ -48,6 +48,9 @@ export interface EvaluationResult {
   riskFlags: string[];
   followUpQuestions: string[];
   recommendedActions: string[];
+  frameworkAlignment?: string[];
+  missingExpectations?: string[];
+  evidenceUsed?: string[];
 }
 
 export function getJudgementBand(score: number): JudgementBand {

@@ -1,7 +1,9 @@
-import { EvaluationResult, ofstedQuestions, getJudgementColor, getJudgementBand } from "@/lib/questions";
+import { EvaluationResult, ofstedQuestions, getJudgementBand } from "@/lib/questions";
 import { Button } from "@/components/ui/button";
-import { RotateCcw, Download } from "lucide-react";
+import { RotateCcw, Clock, Printer } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Link } from "react-router-dom";
+import { ExportSummary } from "./ExportSummary";
 
 interface SessionSummaryProps {
   results: Map<number, EvaluationResult>;
@@ -14,16 +16,11 @@ export function SessionSummary({ results, onStartOver }: SessionSummaryProps) {
   
   const getScoreColor = (band: string) => {
     switch (band) {
-      case "Outstanding":
-        return "bg-success text-success-foreground";
-      case "Good":
-        return "bg-primary text-primary-foreground";
-      case "Requires Improvement":
-        return "bg-warning text-warning-foreground";
-      case "Inadequate":
-        return "bg-destructive text-destructive-foreground";
-      default:
-        return "bg-muted text-muted-foreground";
+      case "Outstanding": return "bg-success text-success-foreground";
+      case "Good": return "bg-primary text-primary-foreground";
+      case "Requires Improvement": return "bg-warning text-warning-foreground";
+      case "Inadequate": return "bg-destructive text-destructive-foreground";
+      default: return "bg-muted text-muted-foreground";
     }
   };
 
@@ -42,10 +39,7 @@ export function SessionSummary({ results, onStartOver }: SessionSummaryProps) {
           )}>
             {averageScore.toFixed(1)}
           </div>
-          <div className={cn(
-            "px-6 py-2 rounded-full text-lg font-semibold",
-            getScoreColor(overallBand)
-          )}>
+          <div className={cn("px-6 py-2 rounded-full text-lg font-semibold", getScoreColor(overallBand))}>
             {overallBand}
           </div>
         </div>
@@ -56,11 +50,12 @@ export function SessionSummary({ results, onStartOver }: SessionSummaryProps) {
         </p>
       </div>
 
+      {/* Export Summary */}
+      <ExportSummary results={results} />
+
       {/* Individual Results */}
       <div className="space-y-4">
-        <h3 className="font-display text-xl font-semibold text-foreground">
-          Question-by-Question Results
-        </h3>
+        <h3 className="font-display text-xl font-semibold text-foreground">Question-by-Question Results</h3>
         
         {ofstedQuestions.map((question, index) => {
           const result = results.get(index);
@@ -77,13 +72,8 @@ export function SessionSummary({ results, onStartOver }: SessionSummaryProps) {
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="text-sm font-medium text-muted-foreground">
-                      Q{index + 1}
-                    </span>
-                    <span className={cn(
-                      "px-2 py-0.5 rounded-full text-xs font-medium",
-                      getScoreColor(result.judgementBand)
-                    )}>
+                    <span className="text-sm font-medium text-muted-foreground">Q{index + 1}</span>
+                    <span className={cn("px-2 py-0.5 rounded-full text-xs font-medium", getScoreColor(result.judgementBand))}>
                       {result.judgementBand}
                     </span>
                   </div>
@@ -107,11 +97,17 @@ export function SessionSummary({ results, onStartOver }: SessionSummaryProps) {
       </div>
 
       {/* Actions */}
-      <div className="flex justify-center gap-4 pt-6">
+      <div className="flex flex-wrap justify-center gap-4 pt-6">
         <Button onClick={onStartOver} variant="outline" size="lg" className="gap-2">
           <RotateCcw className="h-4 w-4" />
           Start New Session
         </Button>
+        <Link to="/history">
+          <Button variant="outline" size="lg" className="gap-2">
+            <Clock className="h-4 w-4" />
+            View History
+          </Button>
+        </Link>
       </div>
     </div>
   );
