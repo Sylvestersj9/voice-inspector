@@ -33,28 +33,23 @@ export default async function handler(req: any, res: any) {
     }
 
     const session = await stripe.checkout.sessions.create({
-      client_reference_id: user.id,
       mode: "subscription",
       payment_method_types: ["card"],
-      customer_email: user.email!,
       line_items: [
         {
           price: process.env.STRIPE_PRICE_ID!,
           quantity: 1,
         },
       ],
+      client_reference_id: user.id,
+      metadata: { user_id: user.id },
       subscription_data: {
         trial_period_days: 7,
-        metadata: {
-          user_id: user.id,
-        },
+        metadata: { user_id: user.id },
       },
-      success_url:
-        process.env.STRIPE_SUCCESS_URL ??
-        "https://ofsted.ziantra.co.uk/account?checkout=success",
-      cancel_url:
-        process.env.STRIPE_CANCEL_URL ??
-        "https://ofsted.ziantra.co.uk/account?checkout=cancel",
+      success_url: `${process.env.STRIPE_SUCCESS_URL}?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: process.env.STRIPE_CANCEL_URL,
+      customer_email: user.email || undefined,
     });
 
     return res.status(200).json({ url: session.url });

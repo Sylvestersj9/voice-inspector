@@ -40,23 +40,27 @@ export default async function handler(
 
     if (event.type === "checkout.session.completed") {
       const session = event.data.object as Stripe.Checkout.Session;
-
       const subscriptionId = session.subscription as string;
       const customerId = session.customer as string;
+
       const subscription = await stripe.subscriptions.retrieve(subscriptionId);
       const userId = subscription.metadata.user_id;
 
-      if (!subscriptionId || !userId) {
-        console.warn("Missing subscription or user_id");
+      if (!userId) {
+        console.error("Missing user_id in subscription metadata");
         return res.status(200).json({ received: true });
       }
 
-      await supabase.from("user_subscriptions").upsert({
+      const { error } = await supabase.from("user_subscriptions").upsert({
         user_id: userId,
         stripe_customer_id: customerId,
-        stripe_subscription_id: subscriptionId,
+        stripe_subscription_id: subscription.id,
         status: subscription.status,
       });
+
+      if (error) {
+        console.error("Error upserting subscription:", error);
+      }
     }
 
     return res.status(200).json({ received: true });
