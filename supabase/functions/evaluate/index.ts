@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { z } from "https://deno.land/x/zod@v3.23.8/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -56,6 +57,19 @@ async function getRelevantContext(supabase: any, question: string, transcript: s
   }
 }
 
+const evaluationSchema = z.object({
+  score_0_to_5: z.number().min(0).max(5),
+  judgement_band: z.enum(["Outstanding", "Good", "Requires Improvement", "Inadequate"]),
+  strengths: z.array(z.string()).default([]),
+  gaps: z.array(z.string()).default([]),
+  risk_flags: z.array(z.string()).default([]),
+  recommended_actions: z.array(z.string()).default([]),
+  follow_up_question: z.string().optional().default(""),
+  framework_alignment: z.array(z.string()).default([]),
+  missing_expectations: z.array(z.string()).default([]),
+  evidence_used: z.array(z.string()).default([]),
+});
+
 const buildSystemPrompt = (frameworkContext: string[]) => {
   const contextSection = frameworkContext.length > 0 
     ? `\n\nFRAMEWORK CONTEXT (use this to ground your evaluation):\n${frameworkContext.map((c, i) => `[${i+1}] ${c}`).join('\n\n')}`
@@ -66,26 +80,23 @@ ${contextSection}
 
 Respond ONLY with valid JSON matching this schema:
 {
-  "score": number (0-5),
-  "judgementBand": "Outstanding" | "Good" | "Requires Improvement" | "Inadequate",
+  "score_0_to_5": number between 0 and 5,
+  "judgement_band": "Outstanding" | "Good" | "Requires Improvement" | "Inadequate",
   "strengths": ["string"],
   "gaps": ["string"],
-  "riskFlags": ["string"],
-  "followUpQuestions": ["string"],
-  "recommendedActions": ["string"],
-  "frameworkAlignment": ["string"],
-  "missingExpectations": ["string"],
-  "evidenceUsed": ["string"]
+  "risk_flags": ["string"],
+  "recommended_actions": ["string"],
+  "follow_up_question": "string",
+  "framework_alignment": ["string"],
+  "missing_expectations": ["string"],
+  "evidence_used": ["string"]
 }
 
-Field guidance:
-- score: 5=Outstanding, 4=Good, 3=Requires Improvement, 2=Requires Improvement, 1-0=Inadequate
-- frameworkAlignment: bullet points explaining which framework expectations were demonstrated
-- missingExpectations: specific framework requirements not evidenced in the response
-- evidenceUsed: short quotes or paraphrases from the framework context that informed your evaluation
-- followUpQuestions: questions an inspector would ask to probe gaps (max 3)
-
-Be specific, professional, and constructive. Reference the framework context when available.`;
+Rules:
+- ALWAYS return valid JSON (no markdown, no commentary).
+- Keep arrays concise (max 5 items each).
+- If the response is weak or incomplete, set score_0_to_5 accordingly and use follow_up_question to probe the biggest gap.
+- Reference the framework context when available.`;
 };
 
 serve(async (req) => {
@@ -137,20 +148,43 @@ serve(async (req) => {
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content;
     const jsonMatch = content?.match(/\{[\s\S]*\}/);
-    const evaluation = JSON.parse(jsonMatch?.[0] || '{}');
+    const rawEvaluation = JSON.parse(jsonMatch?.[0] || '{}');
 
-    // Ensure all expected fields exist
+    const normalized = {
+      score_0_to_5: rawEvaluation.score_0_to_5 ?? rawEvaluation.score ?? 0,
+      judgement_band: rawEvaluation.judgement_band ?? rawEvaluation.judgementBand ?? 'Inadequate',
+      strengths: rawEvaluation.strengths ?? [],
+      gaps: rawEvaluation.gaps ?? [],
+      risk_flags: rawEvaluation.risk_flags ?? rawEvaluation.riskFlags ?? [],
+      recommended_actions: rawEvaluation.recommended_actions ?? rawEvaluation.recommendedActions ?? [],
+      follow_up_question: rawEvaluation.follow_up_question ?? rawEvaluation.followUpQuestion ?? rawEvaluation.followUpQuestions?.[0] ?? '',
+      framework_alignment: rawEvaluation.framework_alignment ?? rawEvaluation.frameworkAlignment ?? [],
+      missing_expectations: rawEvaluation.missing_expectations ?? rawEvaluation.missingExpectations ?? [],
+      evidence_used: rawEvaluation.evidence_used ?? rawEvaluation.evidenceUsed ?? [],
+    };
+
+    const parsed = evaluationSchema.safeParse(normalized);
+
+    if (!parsed.success) {
+      console.error('Evaluation schema validation failed', parsed.error);
+      return new Response(JSON.stringify({ error: 'Model returned invalid evaluation shape' }), { 
+        status: 422, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      });
+    }
+
     const result = {
-      score: evaluation.score ?? 0,
-      judgementBand: evaluation.judgementBand ?? 'Inadequate',
-      strengths: evaluation.strengths ?? [],
-      gaps: evaluation.gaps ?? [],
-      riskFlags: evaluation.riskFlags ?? [],
-      followUpQuestions: evaluation.followUpQuestions ?? [],
-      recommendedActions: evaluation.recommendedActions ?? [],
-      frameworkAlignment: evaluation.frameworkAlignment ?? [],
-      missingExpectations: evaluation.missingExpectations ?? [],
-      evidenceUsed: evaluation.evidenceUsed ?? [],
+      score: parsed.data.score_0_to_5,
+      judgementBand: parsed.data.judgement_band,
+      strengths: parsed.data.strengths,
+      gaps: parsed.data.gaps,
+      riskFlags: parsed.data.risk_flags,
+      followUpQuestions: parsed.data.follow_up_question ? [parsed.data.follow_up_question] : [],
+      recommendedActions: parsed.data.recommended_actions,
+      frameworkAlignment: parsed.data.framework_alignment,
+      missingExpectations: parsed.data.missing_expectations,
+      evidenceUsed: parsed.data.evidence_used,
+      schemaVersion: "phase2-v1",
     };
 
     console.log(`Evaluation complete: score=${result.score}, band=${result.judgementBand}`);

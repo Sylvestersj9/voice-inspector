@@ -70,6 +70,42 @@ export type Database = {
         }
         Relationships: []
       }
+      user_subscriptions: {
+        Row: {
+          user_id: string
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          status: string | null
+          price_id: string | null
+          current_period_end: string | null
+          cancel_at_period_end: boolean | null
+          updated_at: string | null
+          created_at: string
+        }
+        Insert: {
+          user_id: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          status?: string | null
+          price_id?: string | null
+          current_period_end?: string | null
+          cancel_at_period_end?: boolean | null
+          updated_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          user_id?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          status?: string | null
+          price_id?: string | null
+          current_period_end?: string | null
+          cancel_at_period_end?: boolean | null
+          updated_at?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
       session_answers: {
         Row: {
           attempt_index: number

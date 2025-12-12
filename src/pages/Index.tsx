@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
 import { useToast } from "@/hooks/use-toast";
@@ -12,7 +12,9 @@ import { SessionSummary } from "@/components/SessionSummary";
 import { InputMethodSelector } from "@/components/InputMethodSelector";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, ChevronLeft, ChevronRight, MessageCircleQuestion, Clock, Settings, RefreshCw, AlertTriangle } from "lucide-react";
+import { Loader2, ChevronLeft, ChevronRight, MessageCircleQuestion, Clock, Settings, RefreshCw, AlertTriangle, User } from "lucide-react";
+import { detectFollowUpNeed, FollowUpDecision, getFollowUpLabel } from "@/lib/followUpRules";
+import { evaluationResultSchema } from "@/lib/evaluationSchema";
 
 type Step = 
   | "ready" 
@@ -30,6 +32,7 @@ interface QuestionResult {
   followUpUsed: boolean;
   followUpTranscript?: string;
   followUpEvaluation?: EvaluationResult;
+  followUpDecision?: FollowUpDecision;
 }
 
 const Index = () => {
@@ -125,7 +128,16 @@ const Index = () => {
       const data = await response.json();
       if (data.error) throw new Error(data.error);
 
-      setEvaluation(data);
+      const parsedEvaluation = evaluationResultSchema.parse(data);
+      setEvaluation(parsedEvaluation);
+
+      const followUpDecision = detectFollowUpNeed({
+        score: parsedEvaluation.score,
+        transcript,
+        evaluation: parsedEvaluation,
+        domain: currentQuestion.domain,
+        attemptIndex: followUpCount,
+      });
       
       // Store result
       const existingResult = results.get(currentQuestionIndex);
@@ -134,13 +146,15 @@ const Index = () => {
           ...existingResult,
           followUpUsed: true,
           followUpTranscript: transcript,
-          followUpEvaluation: data,
+          followUpEvaluation: parsedEvaluation,
+          followUpDecision,
         }));
       } else {
         setResults(prev => new Map(prev).set(currentQuestionIndex, {
           transcript,
-          evaluation: data,
+          evaluation: parsedEvaluation,
           followUpUsed: false,
+          followUpDecision,
         }));
       }
       
@@ -149,9 +163,10 @@ const Index = () => {
       }
       
       setStep("evaluated");
+      setIsFollowUp(false);
       toast({ 
         title: "Evaluation complete", 
-        description: `Score: ${data.score}/5 - ${data.judgementBand}` 
+        description: `Score: ${parsedEvaluation.score}/5 - ${parsedEvaluation.judgementBand}` 
       });
     } catch (error) {
       console.error('Evaluation error:', error);
@@ -164,17 +179,26 @@ const Index = () => {
     }
   };
 
-  const needsFollowUp = (ev: EvaluationResult) => {
-    return followUpCount < 2 && (ev.score <= 3 || ev.followUpQuestions.length > 0);
+  const getFollowUpDecision = () => results.get(currentQuestionIndex)?.followUpDecision;
+
+  const needsFollowUp = () => {
+    const decision = getFollowUpDecision();
+    return Boolean(decision?.shouldFollowUp && followUpCount < 2);
   };
 
   const getFollowUpQuestion = () => {
+    const decision = getFollowUpDecision();
+    if (decision?.question) return decision.question;
     const result = results.get(currentQuestionIndex);
     if (!result) return "Can you give a specific recent example with outcomes?";
     return result.evaluation.followUpQuestions[0] || "Can you give a specific recent example with outcomes?";
   };
 
   const startFollowUp = () => {
+    if (followUpCount >= 2) {
+      toast({ title: "Follow-up limit reached", description: "Maximum of 2 follow-ups per question." });
+      return;
+    }
     setFollowUpCount(prev => prev + 1);
     setIsFollowUp(true);
     setEvaluation(null);
@@ -182,13 +206,16 @@ const Index = () => {
     setTranscriptionWarning(false);
     setStep("ready");
     toast({ 
-      title: `Follow-up Question (${followUpCount + 1} of 2)`, 
+      title: getFollowUpLabel(followUpCount + 1, 2), 
       description: "Record or type your response to the follow-up question." 
     });
   };
-  };
 
   const handleNextQuestion = async () => {
+    if (step !== "evaluated") {
+      toast({ title: "Finish this question first", description: "Please complete an evaluation before moving on." });
+      return;
+    }
     if (currentQuestionIndex < ofstedQuestions.length - 1) {
       setCurrentQuestionIndex(prev => prev + 1);
       resetForQuestion();
@@ -325,6 +352,12 @@ const Index = () => {
                 Admin
               </Button>
             </Link>
+            <Link to="/account">
+              <Button variant="ghost" size="sm" className="gap-1 text-muted-foreground">
+                <User className="h-4 w-4" />
+                Account
+              </Button>
+            </Link>
           </div>
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-accent text-accent-foreground text-sm font-medium mb-4">
             Children's Home Inspection Practice
@@ -334,6 +367,10 @@ const Index = () => {
           </h1>
           <p className="text-muted-foreground max-w-xl mx-auto">
             Practice your responses to key SCCIF inspection questions and receive AI-powered feedback
+          </p>
+          <p className="text-xs text-muted-foreground max-w-xl mx-auto flex items-center justify-center gap-2 mt-2">
+            <AlertTriangle className="h-3 w-3" />
+            Do not include names or identifying details about children, staff, or locations.
           </p>
         </header>
 
@@ -360,7 +397,7 @@ const Index = () => {
             variant="outline"
             size="sm"
             onClick={handleNextQuestion}
-            disabled={currentQuestionIndex === ofstedQuestions.length - 1 && step !== "evaluated"}
+            disabled={step !== "evaluated"}
             className="gap-1"
           >
             Next
@@ -381,7 +418,9 @@ const Index = () => {
             <div className="flex items-start gap-3">
               <MessageCircleQuestion className="h-5 w-5 text-primary mt-0.5" />
               <div>
-                <p className="font-medium text-foreground mb-1">Follow-up Question ({followUpCount} of 2)</p>
+                <p className="font-medium text-foreground mb-1">
+                  {getFollowUpLabel(followUpCount, 2)}
+                </p>
                 <p className="text-sm text-muted-foreground">
                   {getFollowUpQuestion()}
                 </p>
@@ -396,7 +435,7 @@ const Index = () => {
             <div className="flex items-center gap-3">
               <AlertTriangle className="h-5 w-5 text-warning" />
               <div className="flex-1">
-                <p className="text-sm text-foreground">Transcription may be incomplete – retry recommended</p>
+                <p className="text-sm text-foreground">Transcription may be incomplete; retry recommended.</p>
               </div>
               <Button variant="outline" size="sm" onClick={handleRecordAgain} className="gap-1">
                 <RefreshCw className="h-4 w-4" />
@@ -476,7 +515,7 @@ const Index = () => {
             />
             
             {/* Follow-up option */}
-            {needsFollowUp(evaluation) && (
+            {needsFollowUp() && (
               <div className="card-elevated p-6 border-l-4 border-l-warning">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
@@ -489,9 +528,9 @@ const Index = () => {
                     <p className="text-sm text-muted-foreground mb-3">
                       Your score was {evaluation.score}/5. You can answer one follow-up question to potentially improve your evaluation.
                     </p>
-                    {evaluation.followUpQuestions[0] && (
+                    {getFollowUpQuestion() && (
                       <p className="text-foreground font-medium">
-                        "{evaluation.followUpQuestions[0]}"
+                        "{getFollowUpQuestion()}"
                       </p>
                     )}
                   </div>

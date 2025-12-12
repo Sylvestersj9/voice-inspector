@@ -1,4 +1,4 @@
-import { EvaluationResult, getJudgementColor } from "@/lib/questions";
+import { EvaluationResult } from "@/lib/questions";
 import { Button } from "@/components/ui/button";
 import { 
   CheckCircle2, 
@@ -23,8 +23,6 @@ export function EvaluationResults({
   isLastQuestion,
   onViewSummary 
 }: EvaluationResultsProps) {
-  const bandColor = getJudgementColor(result.judgementBand);
-  
   const getScoreColor = () => {
     switch (result.judgementBand) {
       case "Outstanding":
@@ -73,7 +71,7 @@ export function EvaluationResults({
           <ul className="space-y-2 stagger-children">
             {result.strengths.map((strength, index) => (
               <li key={index} className="flex items-start gap-3 text-foreground">
-                <span className="text-success mt-1">•</span>
+                <span className="text-success mt-1">-</span>
                 <span>{strength}</span>
               </li>
             ))}
@@ -91,7 +89,7 @@ export function EvaluationResults({
           <ul className="space-y-2 stagger-children">
             {result.gaps.map((gap, index) => (
               <li key={index} className="flex items-start gap-3 text-foreground">
-                <span className="text-warning mt-1">•</span>
+                <span className="text-warning mt-1">-</span>
                 <span>{gap}</span>
               </li>
             ))}
@@ -109,7 +107,7 @@ export function EvaluationResults({
           <ul className="space-y-2 stagger-children">
             {result.riskFlags.map((flag, index) => (
               <li key={index} className="flex items-start gap-3 text-foreground">
-                <span className="text-destructive mt-1">•</span>
+                <span className="text-destructive mt-1">-</span>
                 <span>{flag}</span>
               </li>
             ))}
@@ -175,3 +173,5 @@ export function EvaluationResults({
     </div>
   );
 }
+
+

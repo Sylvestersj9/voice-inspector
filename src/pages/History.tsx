@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, Clock, TrendingDown, Calendar, ChevronRight } from "lucide-react";
+import { ChevronLeft, Clock, Calendar, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getJudgementBand, ofstedQuestions } from "@/lib/questions";
 
@@ -184,7 +184,7 @@ export default function History() {
                   <div key={q.id} className="card-elevated p-6 space-y-4">
                     <div className="flex items-start justify-between gap-4">
                       <div>
-                        <p className="text-sm text-muted-foreground">Q{idx + 1} • {q.domain}</p>
+                        <p className="text-sm text-muted-foreground">Q{idx + 1} - {q.domain}</p>
                         <p className="font-medium text-foreground mt-1">{q.shortTitle}</p>
                       </div>
                       <div className={cn(

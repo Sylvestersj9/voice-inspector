@@ -72,7 +72,7 @@ export function ExportSummary({ results, sessionDate = new Date() }: ExportSumma
             <ul className="space-y-2">
               {allStrengths.map((s, i) => (
                 <li key={i} className="flex items-start gap-2 text-sm text-foreground print:text-black">
-                  <span className="text-success print:text-green-700">✓</span>
+                  <span className="text-success print:text-green-700">-</span>
                   {s}
                 </li>
               ))}
@@ -89,7 +89,7 @@ export function ExportSummary({ results, sessionDate = new Date() }: ExportSumma
             <ul className="space-y-2">
               {allGaps.map((g, i) => (
                 <li key={i} className="flex items-start gap-2 text-sm text-foreground print:text-black">
-                  <span className="text-warning print:text-yellow-700">△</span>
+                  <span className="text-warning print:text-yellow-700">-</span>
                   {g}
                 </li>
               ))}
@@ -171,3 +171,5 @@ export function ExportSummary({ results, sessionDate = new Date() }: ExportSumma
     </div>
   );
 }
+
+

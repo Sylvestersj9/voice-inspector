@@ -182,7 +182,7 @@ export default function Admin() {
                 <div>
                   <p className="font-medium text-foreground">{doc.title}</p>
                   <p className="text-sm text-muted-foreground">
-                    {doc.source} • {new Date(doc.created_at).toLocaleDateString('en-GB')}
+                    {doc.source} - {new Date(doc.created_at).toLocaleDateString('en-GB')}
                   </p>
                 </div>
                 <Button
@@ -201,3 +201,6 @@ export default function Admin() {
     </div>
   );
 }
+
+
+
