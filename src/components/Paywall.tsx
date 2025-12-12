@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { AlertTriangle, CreditCard, Sparkles } from "lucide-react";
 import { startCheckout } from "@/lib/billing";
 import { useAuth } from "@/context/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 interface PaywallProps {
   onRefresh?: () => void;
@@ -15,6 +16,11 @@ export function Paywall({ onRefresh }: PaywallProps) {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    window.location.href = "/login";
+  };
 
   const handleSubscribe = async () => {
     setLoading(true);
@@ -60,7 +66,7 @@ export function Paywall({ onRefresh }: PaywallProps) {
               <p className="text-sm text-muted-foreground">Single-manager license</p>
             </div>
             <div className="text-right">
-              <p className="text-2xl font-display font-bold text-foreground">£29</p>
+              <p className="text-2xl font-display font-bold text-foreground">稖29</p>
               <p className="text-xs text-muted-foreground">per month</p>
             </div>
           </div>
@@ -91,7 +97,11 @@ export function Paywall({ onRefresh }: PaywallProps) {
 
         <Button onClick={handleSubscribe} disabled={loading} className="w-full gap-2">
           <CreditCard className="h-4 w-4" />
-          {loading ? "Starting checkout..." : "Subscribe for £29/month"}
+          {loading ? "Starting checkout..." : "Subscribe for 稖29/month"}
+        </Button>
+
+        <Button variant="outline" onClick={handleLogout} className="w-full">
+          Sign Out
         </Button>
       </div>
     </div>
