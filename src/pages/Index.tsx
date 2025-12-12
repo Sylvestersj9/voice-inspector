@@ -8,18 +8,18 @@ import { TranscriptEditor } from "@/components/TranscriptEditor";
 import { EvaluationResults } from "@/components/EvaluationResults";
 import { ProgressIndicator } from "@/components/ProgressIndicator";
 import { SessionSummary } from "@/components/SessionSummary";
+import { InputMethodSelector } from "@/components/InputMethodSelector";
 import { Button } from "@/components/ui/button";
 import { Loader2, ChevronLeft, ChevronRight, MessageCircleQuestion } from "lucide-react";
 
 type Step = 
   | "ready" 
-  | "recorded" 
+  | "recording"
   | "uploading" 
   | "transcribing" 
   | "editing" 
   | "evaluating" 
   | "evaluated" 
-  | "follow-up"
   | "summary";
 
 interface QuestionResult {
@@ -55,6 +55,16 @@ const Index = () => {
     setIsFollowUp(false);
   };
 
+  const handleVoiceSelected = () => {
+    setStep("recording");
+  };
+
+  const handleTextSubmit = (text: string) => {
+    setTranscript(text);
+    setStep("editing");
+    toast({ title: "Response received", description: "Review your response below." });
+  };
+
   const handleRecordingComplete = async (audioBlob: Blob) => {
     setStep("uploading");
     try {
@@ -81,14 +91,14 @@ const Index = () => {
           console.error('Transcription error:', error);
           toast({ 
             title: "Transcription failed", 
-            description: error instanceof Error ? error.message : "Please try recording again.", 
+            description: "You can try again or use text input instead.", 
             variant: "destructive" 
           });
           setStep("ready");
         }
       };
     } catch (error) {
-      toast({ title: "Upload failed", description: "Please try again.", variant: "destructive" });
+      toast({ title: "Upload failed", description: "Please try again or use text input.", variant: "destructive" });
       setStep("ready");
     }
   };
@@ -160,7 +170,7 @@ const Index = () => {
     setStep("ready");
     toast({ 
       title: "Follow-up Question", 
-      description: "Record your response to the follow-up question." 
+      description: "Record or type your response to the follow-up question." 
     });
   };
 
@@ -197,11 +207,11 @@ const Index = () => {
   // Get step status message
   const getStepMessage = () => {
     switch (step) {
-      case "ready": return isFollowUp ? "Record your follow-up response" : "Record your answer (voice note style)";
-      case "recorded": return "Recording captured";
+      case "ready": return isFollowUp ? "Choose how to respond to the follow-up" : "Choose how you'd like to respond";
+      case "recording": return "Recording your response...";
       case "uploading": return "Uploading audio...";
       case "transcribing": return "Transcribing your response...";
-      case "editing": return "Review and edit transcript before evaluation";
+      case "editing": return "Review and edit your response before evaluation";
       case "evaluating": return "Evaluating your answer against Ofsted criteria...";
       case "evaluated": return "Evaluation complete";
       default: return "";
@@ -300,14 +310,24 @@ const Index = () => {
         )}
 
         {/* Step Status */}
-        {step !== "ready" && step !== "evaluated" && (
+        {step !== "ready" && step !== "evaluated" && step !== "recording" && (
           <div className="text-center mb-4">
             <p className="text-sm text-muted-foreground">{getStepMessage()}</p>
           </div>
         )}
 
-        {/* Step: Recording */}
-        {(step === "ready" || step === "uploading" || step === "transcribing") && (
+        {/* Step: Choose Input Method */}
+        {step === "ready" && (
+          <div className="card-elevated animate-fade-in-up">
+            <InputMethodSelector
+              onVoiceSelected={handleVoiceSelected}
+              onTextSubmit={handleTextSubmit}
+            />
+          </div>
+        )}
+
+        {/* Step: Voice Recording */}
+        {(step === "recording" || step === "uploading" || step === "transcribing") && (
           <div className="card-elevated animate-fade-in-up">
             {step === "uploading" || step === "transcribing" ? (
               <div className="flex flex-col items-center gap-4 p-12">
@@ -320,7 +340,19 @@ const Index = () => {
                 </div>
               </div>
             ) : (
-              <VoiceRecorder onRecordingComplete={handleRecordingComplete} />
+              <div>
+                <div className="flex justify-end p-4 pb-0">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setStep("ready")}
+                    className="text-muted-foreground"
+                  >
+                    Back to options
+                  </Button>
+                </div>
+                <VoiceRecorder onRecordingComplete={handleRecordingComplete} />
+              </div>
             )}
           </div>
         )}
