@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import Stripe from "stripe";
 import { buffer } from "micro";
+import { createClient } from "@supabase/supabase-js";
 
 export const config = {
   api: {
@@ -12,6 +13,11 @@ export const config = {
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2025-11-17.clover",
 });
+
+const supabase = createClient(
+  process.env.VITE_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
 export default async function handler(
   req: VercelRequest,
@@ -32,7 +38,26 @@ export default async function handler(
       process.env.STRIPE_WEBHOOK_SECRET!
     );
 
-    console.log("✅ Stripe event received:", event.type);
+    if (event.type === "checkout.session.completed") {
+      const session = event.data.object as Stripe.Checkout.Session;
+
+      const subscriptionId = session.subscription as string;
+      const customerId = session.customer as string;
+      const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+      const userId = subscription.metadata.user_id;
+
+      if (!subscriptionId || !userId) {
+        console.warn("Missing subscription or user_id");
+        return res.status(200).json({ received: true });
+      }
+
+      await supabase.from("user_subscriptions").upsert({
+        user_id: userId,
+        stripe_customer_id: customerId,
+        stripe_subscription_id: subscriptionId,
+        status: subscription.status,
+      });
+    }
 
     return res.status(200).json({ received: true });
   } catch (err: any) {

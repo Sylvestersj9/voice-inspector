@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
 import { useToast } from "@/hooks/use-toast";
 import { ofstedQuestions, EvaluationResult, getJudgementBand } from "@/lib/questions";
@@ -12,9 +12,10 @@ import { SessionSummary } from "@/components/SessionSummary";
 import { InputMethodSelector } from "@/components/InputMethodSelector";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, ChevronLeft, ChevronRight, MessageCircleQuestion, Clock, Settings, RefreshCw, AlertTriangle, User } from "lucide-react";
+import { Loader2, ChevronLeft, ChevronRight, MessageCircleQuestion, Clock, Settings, RefreshCw, AlertTriangle, User, LogOut } from "lucide-react";
 import { detectFollowUpNeed, FollowUpDecision, getFollowUpLabel } from "@/lib/followUpRules";
 import { evaluationResultSchema } from "@/lib/evaluationSchema";
+import { useAuth } from "@/context/AuthContext";
 
 type Step = 
   | "ready" 
@@ -36,6 +37,8 @@ interface QuestionResult {
 }
 
 const Index = () => {
+  const navigate = useNavigate();
+  const { signOut } = useAuth();
   const { toast } = useToast();
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [step, setStep] = useState<Step>("ready");
@@ -299,6 +302,11 @@ const Index = () => {
     setTranscript("");
   };
 
+  const handleLogout = async () => {
+    await signOut();
+    navigate("/login", { replace: true });
+  };
+
   // Get step status message
   const getStepMessage = () => {
     switch (step) {
@@ -358,6 +366,10 @@ const Index = () => {
                 Account
               </Button>
             </Link>
+            <Button variant="ghost" size="sm" className="gap-1 text-muted-foreground" onClick={handleLogout}>
+              <LogOut className="h-4 w-4" />
+              Logout
+            </Button>
           </div>
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-accent text-accent-foreground text-sm font-medium mb-4">
             Children's Home Inspection Practice
