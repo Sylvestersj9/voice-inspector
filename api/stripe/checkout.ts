@@ -32,6 +32,14 @@ export default async function handler(req: any, res: any) {
       return res.status(401).json({ error: "Invalid user" });
     }
 
+    const appUrl =
+      process.env.STRIPE_SUCCESS_URL ||
+      process.env.APP_URL ||
+      process.env.NEXT_PUBLIC_APP_URL ||
+      process.env.VITE_APP_URL;
+
+    const baseUrl = appUrl?.replace(/\/$/, "") || "https://ofsted.ziantra.co.uk";
+
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       payment_method_types: ["card"],
@@ -47,7 +55,7 @@ export default async function handler(req: any, res: any) {
         trial_period_days: 7,
         metadata: { user_id: user.id },
       },
-      success_url: `${process.env.STRIPE_SUCCESS_URL}?session_id={CHECKOUT_SESSION_ID}`,
+      success_url: `${baseUrl}/?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: process.env.STRIPE_CANCEL_URL,
       customer_email: user.email || undefined,
     });
