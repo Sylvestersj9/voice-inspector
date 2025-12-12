@@ -22,26 +22,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const fetchSubscription = async (currentSession: Session | null) => {
-    if (!currentSession?.user) {
+    try {
+      if (!currentSession?.user) {
+        setSubscriptionStatus(null);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("user_subscriptions")
+        .select("status")
+        .eq("user_id", currentSession.user.id)
+        .maybeSingle();
+
+      if (error) {
+        console.error("Subscription fetch error", error);
+        setSubscriptionStatus(null);
+        return;
+      }
+
+      setSubscriptionStatus(data?.status || null);
+    } catch (e) {
+      console.error("fetchSubscription crashed:", e);
       setSubscriptionStatus(null);
-      return;
     }
-
-    const { data, error } = await supabase
-      .from("user_subscriptions")
-      .select("status")
-      .eq("user_id", currentSession.user.id)
-      .maybeSingle();
-
-    if (error) {
-      console.error("Subscription fetch error", error);
-    }
-
-    setSubscriptionStatus(data?.status || null);
   };
 
   useEffect(() => {
     const load = async () => {
+      setLoading(true);
+
       try {
         console.log("SUPABASE_URL:", import.meta.env.VITE_SUPABASE_URL);
         console.log("SUPABASE_KEY_PRESENT:", !!import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
@@ -52,7 +61,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(data.session);
         setUser(data.session?.user ?? null);
 
-        await fetchSubscription(data.session);
+        // IMPORTANT: do not await this; never block initial render
+        fetchSubscription(data.session).catch((e) => {
+          console.error("fetchSubscription error:", e);
+          setSubscriptionStatus(null);
+        });
       } catch (e) {
         console.error("Auth init failed:", e);
         setSession(null);
@@ -65,17 +78,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     load();
 
-    const { data: listener } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
-      try {
-        setSession(newSession);
-        setUser(newSession?.user ?? null);
-        await fetchSubscription(newSession);
-      } catch (e) {
-        console.error("Auth state change handler failed:", e);
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      setSession(newSession);
+      setUser(newSession?.user ?? null);
+
+      // Same: never await; never block
+      fetchSubscription(newSession).catch((e) => {
+        console.error("fetchSubscription error:", e);
         setSubscriptionStatus(null);
-      } finally {
-        setLoading(false);
-      }
+      });
+
+      setLoading(false);
     });
 
     return () => {
@@ -84,7 +97,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const refreshSubscription = async () => {
-    await fetchSubscription(session);
+    fetchSubscription(session).catch((e) => {
+      console.error("fetchSubscription error:", e);
+      setSubscriptionStatus(null);
+    });
   };
 
   const signOut = async () => {
