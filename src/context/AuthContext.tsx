@@ -48,6 +48,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
+    const failSafe = setTimeout(() => setLoading(false), 8000);
+
     const load = async () => {
       setLoading(true);
 
@@ -93,6 +95,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     return () => {
       listener.subscription.unsubscribe();
+      clearTimeout(failSafe);
     };
   }, []);
 
