@@ -43,6 +43,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const load = async () => {
       try {
+        console.log("SUPABASE_URL:", import.meta.env.VITE_SUPABASE_URL);
+        console.log("SUPABASE_KEY_PRESENT:", !!import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
+
         const { data, error } = await supabase.auth.getSession();
         if (error) console.error("getSession error:", error);
 
