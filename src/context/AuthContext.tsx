@@ -42,19 +42,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const load = async () => {
-      const { data } = await supabase.auth.getSession();
-      setSession(data.session);
-      setUser(data.session?.user ?? null);
-      await fetchSubscription(data.session);
-      setLoading(false);
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        if (error) console.error("getSession error:", error);
+
+        setSession(data.session);
+        setUser(data.session?.user ?? null);
+
+        await fetchSubscription(data.session);
+      } catch (e) {
+        console.error("Auth init failed:", e);
+        setSession(null);
+        setUser(null);
+        setSubscriptionStatus(null);
+      } finally {
+        setLoading(false);
+      }
     };
+
     load();
 
     const { data: listener } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
-      setSession(newSession);
-      setUser(newSession?.user ?? null);
-      await fetchSubscription(newSession);
-      setLoading(false);
+      try {
+        setSession(newSession);
+        setUser(newSession?.user ?? null);
+        await fetchSubscription(newSession);
+      } catch (e) {
+        console.error("Auth state change handler failed:", e);
+        setSubscriptionStatus(null);
+      } finally {
+        setLoading(false);
+      }
     });
 
     return () => {
