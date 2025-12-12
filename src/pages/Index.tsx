@@ -1,7 +1,8 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
 import { useToast } from "@/hooks/use-toast";
-import { ofstedQuestions, EvaluationResult } from "@/lib/questions";
+import { ofstedQuestions, EvaluationResult, getJudgementBand } from "@/lib/questions";
 import { QuestionCard } from "@/components/QuestionCard";
 import { VoiceRecorder } from "@/components/VoiceRecorder";
 import { TranscriptEditor } from "@/components/TranscriptEditor";
@@ -10,7 +11,8 @@ import { ProgressIndicator } from "@/components/ProgressIndicator";
 import { SessionSummary } from "@/components/SessionSummary";
 import { InputMethodSelector } from "@/components/InputMethodSelector";
 import { Button } from "@/components/ui/button";
-import { Loader2, ChevronLeft, ChevronRight, MessageCircleQuestion } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { Loader2, ChevronLeft, ChevronRight, MessageCircleQuestion, Clock, Settings, RefreshCw, AlertTriangle } from "lucide-react";
 
 type Step = 
   | "ready" 
@@ -38,8 +40,10 @@ const Index = () => {
   const [evaluation, setEvaluation] = useState<EvaluationResult | null>(null);
   const [results, setResults] = useState<Map<number, QuestionResult>>(new Map());
   const [completedQuestions, setCompletedQuestions] = useState<number[]>([]);
-  const [followUpUsed, setFollowUpUsed] = useState(false);
+  const [followUpCount, setFollowUpCount] = useState(0);
   const [isFollowUp, setIsFollowUp] = useState(false);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [transcriptionWarning, setTranscriptionWarning] = useState(false);
 
   const currentQuestion = ofstedQuestions[currentQuestionIndex];
 
@@ -51,8 +55,9 @@ const Index = () => {
     setStep("ready");
     setTranscript("");
     setEvaluation(null);
-    setFollowUpUsed(false);
+    setFollowUpCount(0);
     setIsFollowUp(false);
+    setTranscriptionWarning(false);
   };
 
   const handleVoiceSelected = () => {
@@ -85,6 +90,7 @@ const Index = () => {
           if (data.error) throw new Error(data.error);
           
           setTranscript(data.transcript);
+          setTranscriptionWarning(data.transcript.length < 50);
           setStep("editing");
           toast({ title: "Transcription complete", description: "Review your response below." });
         } catch (error) {
@@ -159,27 +165,89 @@ const Index = () => {
   };
 
   const needsFollowUp = (ev: EvaluationResult) => {
-    return !followUpUsed && (ev.score <= 3 || ev.followUpQuestions.length > 0);
+    return followUpCount < 2 && (ev.score <= 3 || ev.followUpQuestions.length > 0);
+  };
+
+  const getFollowUpQuestion = () => {
+    const result = results.get(currentQuestionIndex);
+    if (!result) return "Can you give a specific recent example with outcomes?";
+    return result.evaluation.followUpQuestions[0] || "Can you give a specific recent example with outcomes?";
   };
 
   const startFollowUp = () => {
-    setFollowUpUsed(true);
+    setFollowUpCount(prev => prev + 1);
     setIsFollowUp(true);
     setEvaluation(null);
     setTranscript("");
+    setTranscriptionWarning(false);
     setStep("ready");
     toast({ 
-      title: "Follow-up Question", 
+      title: `Follow-up Question (${followUpCount + 1} of 2)`, 
       description: "Record or type your response to the follow-up question." 
     });
   };
+  };
 
-  const handleNextQuestion = () => {
+  const handleNextQuestion = async () => {
     if (currentQuestionIndex < ofstedQuestions.length - 1) {
       setCurrentQuestionIndex(prev => prev + 1);
       resetForQuestion();
     } else {
+      // Save session before showing summary
+      await saveSession();
       setStep("summary");
+    }
+  };
+
+  const saveSession = async () => {
+    const evaluationResults = new Map<number, EvaluationResult>();
+    results.forEach((result, index) => {
+      const evalToUse = result.followUpEvaluation && result.followUpEvaluation.score > result.evaluation.score
+        ? result.followUpEvaluation
+        : result.evaluation;
+      evaluationResults.set(index, evalToUse);
+    });
+
+    const averageScore = Array.from(evaluationResults.values()).reduce((sum, r) => sum + r.score, 0) / evaluationResults.size;
+    const overallBand = getJudgementBand(averageScore);
+
+    try {
+      const { data: session, error: sessionError } = await supabase
+        .from('sessions')
+        .insert({ overall_score: averageScore, overall_band: overallBand })
+        .select()
+        .single();
+
+      if (sessionError) throw sessionError;
+
+      const answers = Array.from(results.entries()).flatMap(([qIndex, result]) => {
+        const question = ofstedQuestions[qIndex];
+        const entries = [{
+          session_id: session.id,
+          question_id: question.id,
+          question_domain: question.domain,
+          transcript: result.transcript,
+          evaluation_json: result.evaluation,
+          attempt_index: 0,
+        }];
+        
+        if (result.followUpTranscript && result.followUpEvaluation) {
+          entries.push({
+            session_id: session.id,
+            question_id: question.id,
+            question_domain: question.domain,
+            transcript: result.followUpTranscript,
+            evaluation_json: result.followUpEvaluation,
+            attempt_index: 1,
+          });
+        }
+        return entries;
+      });
+
+      await supabase.from('session_answers').insert(answers);
+      setSessionId(session.id);
+    } catch (error) {
+      console.error('Error saving session:', error);
     }
   };
 
@@ -244,6 +312,20 @@ const Index = () => {
       <div className="container max-w-4xl mx-auto">
         {/* Header */}
         <header className="text-center mb-8 animate-fade-in-up">
+          <div className="flex justify-end gap-2 mb-4">
+            <Link to="/history">
+              <Button variant="ghost" size="sm" className="gap-1 text-muted-foreground">
+                <Clock className="h-4 w-4" />
+                History
+              </Button>
+            </Link>
+            <Link to="/admin">
+              <Button variant="ghost" size="sm" className="gap-1 text-muted-foreground">
+                <Settings className="h-4 w-4" />
+                Admin
+              </Button>
+            </Link>
+          </div>
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-accent text-accent-foreground text-sm font-medium mb-4">
             Children's Home Inspection Practice
           </div>
@@ -299,12 +381,27 @@ const Index = () => {
             <div className="flex items-start gap-3">
               <MessageCircleQuestion className="h-5 w-5 text-primary mt-0.5" />
               <div>
-                <p className="font-medium text-foreground mb-1">Follow-up Question</p>
+                <p className="font-medium text-foreground mb-1">Follow-up Question ({followUpCount} of 2)</p>
                 <p className="text-sm text-muted-foreground">
-                  {results.get(currentQuestionIndex)?.evaluation.followUpQuestions[0] || 
-                   "Can you give a specific recent example with outcomes?"}
+                  {getFollowUpQuestion()}
                 </p>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Transcription Warning */}
+        {transcriptionWarning && step === "editing" && (
+          <div className="card-elevated mb-4 p-4 border-l-4 border-l-warning">
+            <div className="flex items-center gap-3">
+              <AlertTriangle className="h-5 w-5 text-warning" />
+              <div className="flex-1">
+                <p className="text-sm text-foreground">Transcription may be incomplete – retry recommended</p>
+              </div>
+              <Button variant="outline" size="sm" onClick={handleRecordAgain} className="gap-1">
+                <RefreshCw className="h-4 w-4" />
+                Retry
+              </Button>
             </div>
           </div>
         )}

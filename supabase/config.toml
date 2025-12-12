@@ -5,3 +5,9 @@ verify_jwt = false
 
 [functions.evaluate]
 verify_jwt = false
+
+[functions.embed-document]
+verify_jwt = false
+
+[functions.search-chunks]
+verify_jwt = false
