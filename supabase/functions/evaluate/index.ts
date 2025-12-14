@@ -188,6 +188,7 @@ HARD RULES (must follow):
 - If the answer indicates unsafe/illegal practice, minimise concerns, or shows weak safeguarding culture, the overall judgement must be "Inadequate".
 - Do not reward confident tone. Reward specific, credible practice and impact on children’s safety, experiences and progress.
 - If details are missing, explicitly state what is missing and lower the judgement accordingly.
+- You must return at least 3 strengths, 3 weaknesses, and 3 recommendations. If evidence is limited, state that explicitly in weaknesses.
 
 Return JSON ONLY in exactly this shape:
 {
