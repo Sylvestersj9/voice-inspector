@@ -298,6 +298,14 @@ ${transcript}
 
     parsed.overall_judgement = normalizeBand(parsed?.overall_judgement);
 
+    if (!parsed.weaknesses || !Array.isArray(parsed.weaknesses) || parsed.weaknesses.length === 0) {
+      parsed.weaknesses = [
+        "No specific examples were provided to demonstrate safeguarding practice in action.",
+        "There was no evidence of how safeguarding concerns are escalated or reviewed.",
+        "The response did not explain how the effectiveness of safeguarding practice is monitored or improved.",
+      ];
+    }
+
     const wordCount = transcript.split(/\s+/).filter(Boolean).length;
 
     const transcriptLower = transcript.toLowerCase();
