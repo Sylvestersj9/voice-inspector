@@ -23,6 +23,12 @@ export function EvaluationResults({
   isLastQuestion,
   onViewSummary 
 }: EvaluationResultsProps) {
+  const weaknesses = result.weaknesses?.length ? result.weaknesses : result.gaps;
+  const showWeaknesses =
+    result.judgementBand === "Inadequate" ||
+    result.judgementBand === "Requires improvement to be good" ||
+    result.judgementBand === "Good";
+
   const getScoreColor = () => {
     switch (result.judgementBand) {
       case "Outstanding":
@@ -76,21 +82,27 @@ export function EvaluationResults({
         </div>
       )}
 
-      {/* Gaps */}
-      {result.gaps.length > 0 && (
+      {/* Weaknesses */}
+      {showWeaknesses && (
         <div className="card-elevated p-6">
           <div className="flex items-center gap-2 mb-4">
             <AlertTriangle className="h-5 w-5 text-warning" />
-            <h3 className="font-display text-lg font-semibold text-foreground">Areas for Development</h3>
+            <h3 className="font-display text-lg font-semibold text-foreground">Weaknesses</h3>
           </div>
-          <ul className="space-y-2 stagger-children">
-            {result.gaps.map((gap, index) => (
-              <li key={index} className="flex items-start gap-3 text-foreground">
-                <span className="text-warning mt-1">-</span>
-                <span>{gap}</span>
-              </li>
-            ))}
-          </ul>
+          {weaknesses && weaknesses.length > 0 ? (
+            <ul className="space-y-2 stagger-children">
+              {weaknesses.map((gap, index) => (
+                <li key={index} className="flex items-start gap-3 text-foreground">
+                  <span className="text-warning mt-1">-</span>
+                  <span>{gap}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Weaknesses were not specified. Add clear gaps with evidence to improve the judgement.
+            </p>
+          )}
         </div>
       )}
 
@@ -112,6 +124,17 @@ export function EvaluationResults({
         </div>
       )}
 
+      {/* Ofsted concern text for lower bands */}
+      {(result.judgementBand === "Inadequate" || result.judgementBand === "Requires improvement to be good") && (
+        <div className="card-elevated p-6 border-destructive/30">
+          <h3 className="font-display text-lg font-semibold text-foreground mb-2">What Ofsted would be concerned about</h3>
+          <p className="text-sm text-muted-foreground">
+            Your response does not demonstrate that safeguarding practice is consistent, reviewed, or effective in protecting children from harm.
+            Inspectors would be concerned that risks may not be identified early, escalated appropriately, or reviewed to reduce recurrence.
+          </p>
+        </div>
+      )}
+
       {/* Follow-up Questions */}
       {result.followUpQuestions.length > 0 && (
         <div className="card-elevated p-6">
@@ -130,6 +153,15 @@ export function EvaluationResults({
               </li>
             ))}
           </ul>
+          <div className="mt-4">
+            <h4 className="font-display text-sm font-semibold text-foreground mb-1">What a stronger answer would include</h4>
+            <ul className="text-sm text-muted-foreground list-disc list-inside space-y-1">
+              <li>A recent safeguarding concern (e.g., missing episode, peer conflict, online risk).</li>
+              <li>How it was identified, recorded, and reviewed.</li>
+              <li>Who it was escalated to (and why) and the outcome.</li>
+              <li>What changed for the child as a result (impact, reduced recurrence).</li>
+            </ul>
+          </div>
         </div>
       )}
 
@@ -170,4 +202,3 @@ export function EvaluationResults({
     </div>
   );
 }
-
