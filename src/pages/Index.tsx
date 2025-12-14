@@ -730,9 +730,11 @@ const Index = () => {
           </div>
         )}
 
-        <div className="grid gap-6 md:grid-cols-2 mt-10">
+        <div className="mt-10 space-y-4">
+          {/* Full-width contact form */}
           {contactCard}
-          <div className="card-elevated p-6 space-y-3">
+          {/* Compact email preference card */}
+          <div className="card-elevated p-6 space-y-3 max-w-xl">
             <h3 className="font-display text-lg font-semibold text-foreground">Prefer email?</h3>
             <p className="text-sm text-muted-foreground">
               Reach us anytime at{" "}
