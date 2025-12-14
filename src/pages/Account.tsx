@@ -1,77 +1,76 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/context/AuthContext";
-import { startCheckout } from "@/lib/billing";
-import { CreditCard, LogOut, ShieldCheck } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Check, Copy, Mail, MessageSquare } from "lucide-react";
 
 export default function Account() {
-  const { user, subscriptionStatus, refreshSubscription, signOut } = useAuth();
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState("");
+  const [copied, setCopied] = useState(false);
 
-  const handleBilling = async () => {
-    setLoading(true);
-    setError(null);
-    setMessage(null);
+  const handleCopy = async () => {
     try {
-      const result = await startCheckout();
-      if (result.portalUrl) {
-        window.location.href = result.portalUrl;
-        return;
-      }
-      if (result.url) {
-        window.location.href = result.url;
-        return;
-      }
-      setError("Unable to open billing.");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Billing error");
-    } finally {
-      setLoading(false);
-      refreshSubscription();
+      await navigator.clipboard.writeText(feedback || "Voice Inspector feedback");
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (error) {
+      console.error("Copy failed", error);
     }
   };
 
-  const handleSignOut = async () => {
-    await signOut();
+  const handleEmail = () => {
+    const body = encodeURIComponent(
+      feedback || "I have feedback about Voice Inspector (no account needed, open beta).",
+    );
+    window.location.href = `mailto:?subject=Voice Inspector feedback&body=${body}`;
   };
-
-  const active = subscriptionStatus === "active" || subscriptionStatus === "trialing";
 
   return (
     <div className="min-h-screen gradient-hero py-8 px-4">
       <div className="container max-w-3xl mx-auto space-y-6">
-        <div className="card-elevated p-6 flex items-center justify-between">
-          <div>
-            <p className="text-sm text-muted-foreground">Signed in as</p>
-            <p className="text-lg font-semibold text-foreground">{user?.email}</p>
-            <p className="text-sm text-muted-foreground capitalize">
-              Subscription status: {subscriptionStatus || "none"}
-            </p>
+        <div className="card-elevated p-6 space-y-3">
+          <div className="flex items-center gap-3">
+            <MessageSquare className="h-5 w-5 text-primary" />
+            <div>
+              <p className="text-sm font-medium text-primary">Open beta</p>
+              <h1 className="font-display text-2xl font-bold text-foreground">Feedback & Access</h1>
+            </div>
           </div>
-          <Button variant="outline" onClick={handleSignOut} className="gap-2">
-            <LogOut className="h-4 w-4" />
-            Sign out
-          </Button>
+          <p className="text-sm text-muted-foreground">
+            Everything is unlocked and free while we gather feedback. No sign-in, no billing, and no limits on
+            trying questions or saving sessions locally.
+          </p>
         </div>
 
         <div className="card-elevated p-6 space-y-4">
-          <div className="flex items-center gap-2">
-            <ShieldCheck className="h-5 w-5 text-primary" />
-            <h2 className="font-display text-xl font-semibold text-foreground">Billing</h2>
+          <div>
+            <h2 className="font-display text-xl font-semibold text-foreground">Share your thoughts</h2>
+            <p className="text-sm text-muted-foreground">
+              Drop any notes about the prompts, scoring, or UX. We do not send this anywhere automatically—copy it
+              or start an email draft to share it with us however you prefer.
+            </p>
           </div>
-          <p className="text-sm text-muted-foreground">
-            One subscription per account (£29/month). Manage payment details or cancel anytime via Stripe.
+
+          <Textarea
+            value={feedback}
+            onChange={(e) => setFeedback(e.target.value)}
+            placeholder="What should we improve or change next?"
+            className="min-h-[140px]"
+          />
+
+          <div className="flex flex-wrap gap-3">
+            <Button onClick={handleCopy} className="gap-2">
+              {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+              {copied ? "Copied" : "Copy feedback"}
+            </Button>
+            <Button variant="outline" onClick={handleEmail} className="gap-2">
+              <Mail className="h-4 w-4" />
+              Start email draft
+            </Button>
+          </div>
+
+          <p className="text-xs text-muted-foreground">
+            Tip: include examples from your sessions (but never names or identifying details).
           </p>
-
-          {error && <p className="text-sm text-destructive">{error}</p>}
-          {message && <p className="text-sm text-success">{message}</p>}
-
-          <Button onClick={handleBilling} disabled={loading} className="gap-2">
-            <CreditCard className="h-4 w-4" />
-            {active ? "Open billing portal" : "Subscribe now"}
-          </Button>
         </div>
       </div>
     </div>

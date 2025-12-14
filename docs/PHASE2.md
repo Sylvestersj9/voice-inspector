@@ -69,11 +69,6 @@ Canonical JSON expected from the model (validated on the edge):
 - Seed knowledge base with SCCIF/Regs excerpts via Admin to strengthen grounding.
 - Rotate keys + restrict service role in production; avoid sensitive child data storage.
 
-## Subscriptions & Auth (single manager, £29/mo)
-- Tables: `user_subscriptions(user_id uuid pk, stripe_customer_id, stripe_subscription_id, status, price_id, current_period_end, cancel_at_period_end, created_at default now(), updated_at)`
-- RLS example: `policy read_own on user_subscriptions for select using (auth.uid() = user_id);` and `policy upsert_service on user_subscriptions for insert with check (false);` (updates only via service role/webhook).
-- Edge functions:
-  - `create-checkout-session`: Stripe Checkout (promo codes allowed) + billing portal when already active.
-  - `stripe-webhook`: handles checkout completion + subscription lifecycle; updates `user_subscriptions`.
-- Required Stripe env: `STRIPE_SECRET_KEY`, `STRIPE_PRICE_ID` (monthly £29 price), `STRIPE_WEBHOOK_SECRET`, `APP_URL` (front-end origin for redirects).
-- Front-end gating: Auth + subscription enforced via `ProtectedRoute`; paywall triggers Checkout; account page opens portal/manage subscription.
+## Access Model
+- Open beta: no authentication or billing; all routes are public.
+- Ensure Supabase RLS allows anon reads/writes needed for history during the feedback period, or relax policies temporarily for testing data collection.

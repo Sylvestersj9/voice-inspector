@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
 import { useToast } from "@/hooks/use-toast";
 import { ofstedQuestions, EvaluationResult, getJudgementBand } from "@/lib/questions";
@@ -12,10 +12,9 @@ import { SessionSummary } from "@/components/SessionSummary";
 import { InputMethodSelector } from "@/components/InputMethodSelector";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, ChevronLeft, ChevronRight, MessageCircleQuestion, Clock, Settings, RefreshCw, AlertTriangle, User, LogOut } from "lucide-react";
+import { Loader2, ChevronLeft, ChevronRight, MessageCircleQuestion, Clock, Settings, RefreshCw, AlertTriangle, MessageSquare } from "lucide-react";
 import { detectFollowUpNeed, FollowUpDecision, getFollowUpLabel } from "@/lib/followUpRules";
 import { evaluationResultSchema } from "@/lib/evaluationSchema";
-import { useAuth } from "@/context/AuthContext";
 
 type Step = 
   | "ready" 
@@ -37,8 +36,6 @@ interface QuestionResult {
 }
 
 const Index = () => {
-  const navigate = useNavigate();
-  const { signOut } = useAuth();
   const { toast } = useToast();
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [step, setStep] = useState<Step>("ready");
@@ -48,7 +45,6 @@ const Index = () => {
   const [completedQuestions, setCompletedQuestions] = useState<number[]>([]);
   const [followUpCount, setFollowUpCount] = useState(0);
   const [isFollowUp, setIsFollowUp] = useState(false);
-  const [sessionId, setSessionId] = useState<string | null>(null);
   const [transcriptionWarning, setTranscriptionWarning] = useState(false);
 
   const currentQuestion = ofstedQuestions[currentQuestionIndex];
@@ -275,7 +271,6 @@ const Index = () => {
       });
 
       await supabase.from('session_answers').insert(answers);
-      setSessionId(session.id);
     } catch (error) {
       console.error('Error saving session:', error);
     }
@@ -300,11 +295,6 @@ const Index = () => {
   const handleRecordAgain = () => {
     setStep("ready");
     setTranscript("");
-  };
-
-  const handleLogout = async () => {
-    await signOut();
-    navigate("/login", { replace: true });
   };
 
   // Get step status message
@@ -362,14 +352,10 @@ const Index = () => {
             </Link>
             <Link to="/account">
               <Button variant="ghost" size="sm" className="gap-1 text-muted-foreground">
-                <User className="h-4 w-4" />
-                Account
+                <MessageSquare className="h-4 w-4" />
+                Feedback
               </Button>
             </Link>
-            <Button variant="ghost" size="sm" className="gap-1 text-muted-foreground" onClick={handleLogout}>
-              <LogOut className="h-4 w-4" />
-              Logout
-            </Button>
           </div>
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-accent text-accent-foreground text-sm font-medium mb-4">
             Children's Home Inspection Practice
@@ -379,6 +365,9 @@ const Index = () => {
           </h1>
           <p className="text-muted-foreground max-w-xl mx-auto">
             Practice your responses to key SCCIF inspection questions and receive AI-powered feedback
+          </p>
+          <p className="text-xs text-primary font-medium max-w-xl mx-auto mt-1">
+            Open access beta — no account or billing required while we collect feedback.
           </p>
           <p className="text-xs text-muted-foreground max-w-xl mx-auto flex items-center justify-center gap-2 mt-2">
             <AlertTriangle className="h-3 w-3" />
