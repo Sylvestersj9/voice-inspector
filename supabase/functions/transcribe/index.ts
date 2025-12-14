@@ -5,6 +5,7 @@ const allowedOrigins = (Deno.env.get("ALLOWED_ORIGINS") || "")
   .split(",")
   .map((o) => o.trim())
   .filter(Boolean);
+
 const baseCors = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
@@ -30,11 +31,57 @@ serve(async (req) => {
     return new Response(null, { status: 204, headers: corsHeaders });
   }
 
-  // Stubbed transcription to avoid hangs while external service is unavailable.
-  // Always returns a short transcript so the UI can proceed.
   try {
+    const { audio, mimeType } = await req.json();
+
+    if (!audio || typeof audio !== "string") {
+      return new Response(
+        JSON.stringify({ error: "No audio data provided" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    const openaiKey = Deno.env.get("OPENAI_API_KEY");
+    if (!openaiKey) {
+      return new Response(
+        JSON.stringify({ error: "OPENAI_API_KEY is not configured" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    const binaryString = atob(audio);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+
+    const formData = new FormData();
+    const blob = new Blob([bytes.buffer], { type: mimeType || "audio/webm" });
+    formData.append("file", blob, "audio.webm");
+    formData.append("model", "whisper-1");
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 45000);
+
+    const response = await fetch("https://api.openai.com/v1/audio/transcriptions", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${openaiKey}` },
+      body: formData,
+      signal: controller.signal,
+    }).finally(() => clearTimeout(timeout));
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("OpenAI transcription error:", response.status, errorText);
+      return new Response(
+        JSON.stringify({ error: `OpenAI error ${response.status}` }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    const result = await response.json();
     return new Response(
-      JSON.stringify({ transcript: "Transcription placeholder — voice upload disabled for now. You can edit this text." }),
+      JSON.stringify({ transcript: result.text || "" }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (error) {
