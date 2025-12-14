@@ -181,6 +181,7 @@ const Index = () => {
   const handleSubmitForEvaluation = async () => {
     setStep("evaluating");
     try {
+      const plan = "free";
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/evaluate`, {
         method: 'POST',
         headers: { 
@@ -191,6 +192,8 @@ const Index = () => {
           transcript,
           question: currentQuestion.question,
           domain: currentQuestion.domain,
+          question_area: currentQuestion.domain,
+          plan,
         }),
       });
 
@@ -224,6 +227,8 @@ const Index = () => {
         evidenceToQuoteNextTime: parsedEvaluation.evidence_to_quote_next_time,
         actionPlan7Days: parsedEvaluation.action_plan_7_days,
         actionPlan30Days: parsedEvaluation.action_plan_30_days,
+        confidenceBand: parsedEvaluation.confidence_band as any,
+        note: parsedEvaluation.note,
         debug: parsedEvaluation.debug,
       };
 

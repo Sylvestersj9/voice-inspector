@@ -52,6 +52,8 @@ export const evaluationSchema = z.object({
   recommendations: z.array(z.string()).default([]),
   follow_up_questions: z.array(z.string()).default([]),
   next_actions: z.array(z.string()).default([]),
+  confidence_band: z.enum(["borderline", "secure", "strong"]).optional(),
+  note: z.string().optional(),
 
   debug: z
     .object({
@@ -60,6 +62,10 @@ export const evaluationSchema = z.object({
       escalationOk: z.boolean().optional(),
       effectivenessOk: z.boolean().optional(),
       impactOk: z.boolean().optional(),
+      evidenceHits: z.number().optional(),
+      areaKey: z.string().optional(),
+      hasEffectivenessText: z.boolean().optional(),
+      hasEscalationText: z.boolean().optional(),
     })
     .optional(),
 });

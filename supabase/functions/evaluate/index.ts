@@ -1,5 +1,37 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
+type StrictnessProfile = {
+  minWords: number;
+  requireEscalationForGood: boolean;
+  requireEscalationForOutstanding: boolean;
+  evidenceHitsGood: number;
+  evidenceHitsOutstanding: number;
+};
+
+const STRICTNESS: Record<string, StrictnessProfile> = {
+  safeguarding: {
+    minWords: 140,
+    requireEscalationForGood: true,
+    requireEscalationForOutstanding: true,
+    evidenceHitsGood: 4,
+    evidenceHitsOutstanding: 6,
+  },
+  leadership: {
+    minWords: 110,
+    requireEscalationForGood: false,
+    requireEscalationForOutstanding: false,
+    evidenceHitsGood: 3,
+    evidenceHitsOutstanding: 5,
+  },
+  care: {
+    minWords: 120,
+    requireEscalationForGood: false,
+    requireEscalationForOutstanding: false,
+    evidenceHitsGood: 3,
+    evidenceHitsOutstanding: 5,
+  },
+};
+
 serve(async (req: Request) => {
   // ---------- CORS ----------
   const ALLOWED = (Deno.env.get("ALLOWED_ORIGINS") || "")
@@ -67,7 +99,7 @@ serve(async (req: Request) => {
   const textish = (v: any) => (typeof v === "string" ? v : v ? JSON.stringify(v) : "");
 
   // checks: simplistic but effective “caps” enforcement
-  const hasMeaningfulEvidence = (obj: any) => {
+  const getEvidenceHits = (obj: any) => {
     const fields: string[] = [];
     try {
       const rubric = obj?.rubric || {};
@@ -107,7 +139,7 @@ serve(async (req: Request) => {
       "feedback",
     ];
     const hits = signals.filter((s) => combined.includes(s)).length;
-    return hits >= 4;
+    return hits;
   };
 
   const hasSafeguardingEscalation = (obj: any) => {
@@ -166,12 +198,20 @@ serve(async (req: Request) => {
   try {
     const body = await req.json().catch(() => ({}));
     const question = (body?.question || "").toString().trim();
+    const questionArea = (body?.question_area || question).toString().trim();
     const transcript = (body?.transcript || "").toString().trim();
     const contextExtracts = (body?.context_extracts || "").toString();
+    const plan = (body?.plan || "free").toString().toLowerCase();
 
     if (!question || !transcript) {
       return json(400, { error: "Missing question or transcript" });
     }
+
+    const areaKey =
+      questionArea.toLowerCase().includes("safeguard") ? "safeguarding" :
+      questionArea.toLowerCase().includes("leader") ? "leadership" :
+      "care";
+    const strictness = STRICTNESS[areaKey] || STRICTNESS.care;
 
     const system = `
 You are grading a manager’s spoken answer to an Ofsted SCCIF children's homes inspection question.
@@ -271,28 +311,64 @@ ${transcript}
         transcriptLower,
       );
 
-    const evidenceOk = hasMeaningfulEvidence(parsed);
+    const evidenceHits = getEvidenceHits(parsed);
+    const evidenceOk = evidenceHits >= strictness.evidenceHitsGood;
     const escalationOk = hasSafeguardingEscalation(parsed);
     const effectivenessOk = hasEffectivenessChecks(parsed);
     const impactOk = hasImpact(parsed);
+    const hasEscalation = hasEscalationText || escalationOk;
+    const hasEffectiveness = hasEffectivenessText || effectivenessOk;
 
+    // Strictness-based caps
+    if (wordCount < strictness.minWords) {
+      parsed.overall_judgement = downgrade(parsed.overall_judgement, "Requires improvement to be good");
+    }
+
+    // General word-count shaping
     if (wordCount < 120) {
       parsed.overall_judgement = downgrade(parsed.overall_judgement, "Requires improvement to be good");
     } else if (wordCount >= 120 && wordCount < 220) {
       parsed.overall_judgement = downgrade(parsed.overall_judgement, "Good");
     }
+
     if (!hasEffectivenessText) {
       parsed.overall_judgement = downgrade(parsed.overall_judgement, "Requires improvement to be good");
     }
+
+    if (strictness.requireEscalationForGood && !hasEscalation) {
+      parsed.overall_judgement = downgrade(parsed.overall_judgement, "Requires improvement to be good");
+    }
+
+    if (strictness.requireEscalationForOutstanding && !hasEscalation) {
+      parsed.overall_judgement = downgrade(parsed.overall_judgement, "Good");
+    }
+
     if (!hasEscalationText) {
       parsed.overall_judgement = downgrade(parsed.overall_judgement, "Good");
     }
+
     if (!evidenceOk) parsed.overall_judgement = downgrade(parsed.overall_judgement, "Requires improvement to be good");
     if (!escalationOk) parsed.overall_judgement = downgrade(parsed.overall_judgement, "Requires improvement to be good");
     if (!effectivenessOk) parsed.overall_judgement = downgrade(parsed.overall_judgement, "Requires improvement to be good");
     if (!impactOk) parsed.overall_judgement = downgrade(parsed.overall_judgement, "Requires improvement to be good");
 
-    const outstandingSignals = hasEscalation && hasEffectiveness && hasImpact && wordCount >= 220;
+    let confidence: "borderline" | "secure" | "strong" = "secure";
+    const scoreSignals = [
+      wordCount >= strictness.minWords,
+      hasEscalation,
+      hasEffectiveness,
+      impactOk,
+      evidenceHits >= strictness.evidenceHitsGood,
+    ].filter(Boolean).length;
+    if (scoreSignals <= 2) confidence = "borderline";
+    if (scoreSignals >= 4) confidence = "strong";
+
+    const outstandingSignals =
+      hasEscalation &&
+      hasEffectiveness &&
+      impactOk &&
+      wordCount >= 220 &&
+      evidenceHits >= strictness.evidenceHitsOutstanding;
     if (outstandingSignals) {
       parsed.overall_judgement = "Outstanding";
     }
@@ -306,11 +382,18 @@ ${transcript}
       parsed.overall_judgement = "Good";
     }
 
+    if (plan === "free" && parsed.overall_judgement === "Outstanding") {
+      parsed.overall_judgement = "Good";
+      confidence = "strong";
+      (parsed as any).note = "Upgrade to unlock Outstanding judgements and advanced coaching.";
+    }
+
     const score4 = bandToScore4(parsed.overall_judgement);
 
     return json(200, {
       ...parsed,
       score4,
+      confidence_band: confidence,
       debug: {
         evidenceOk,
         escalationOk,
@@ -319,6 +402,8 @@ ${transcript}
         wordCount,
         hasEffectivenessText,
         hasEscalationText,
+        evidenceHits,
+        areaKey,
       },
     });
   } catch (err) {

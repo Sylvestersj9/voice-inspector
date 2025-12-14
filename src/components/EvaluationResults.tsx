@@ -42,6 +42,17 @@ export function EvaluationResults({
     }
   };
 
+  const getConfidenceStyle = () => {
+    switch (result.confidenceBand) {
+      case "strong":
+        return "text-success";
+      case "borderline":
+        return "text-warning";
+      default:
+        return "text-muted-foreground";
+    }
+  };
+
   return (
     <div className="space-y-6 animate-fade-in-up">
       {/* Score Header */}
@@ -56,6 +67,11 @@ export function EvaluationResults({
           {typeof result.score4 === "number" && (
             <div className="text-sm text-muted-foreground">
               Inspection band score: {result.score4}/4
+            </div>
+          )}
+          {result.confidenceBand && (
+            <div className={cn("text-sm", getConfidenceStyle())}>
+              {result.confidenceBand === "borderline" ? "Borderline" : result.confidenceBand === "strong" ? "Strong" : "Secure"}
             </div>
           )}
           <p className="text-muted-foreground md:ml-auto">

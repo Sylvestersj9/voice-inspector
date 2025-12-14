@@ -44,6 +44,8 @@ export interface EvaluationResult {
   score?: number;
   score4?: number;
   judgementBand: JudgementBand;
+  confidenceBand?: "borderline" | "secure" | "strong";
+  note?: string;
   strengths: string[];
   gaps: string[];
   weaknesses?: string[];
