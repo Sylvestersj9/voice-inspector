@@ -305,9 +305,21 @@ ${transcript}
 
     if (!parsed.weaknesses || !Array.isArray(parsed.weaknesses) || parsed.weaknesses.length === 0) {
       parsed.weaknesses = [
-        "No specific examples were provided to demonstrate safeguarding practice in action.",
-        "There was no evidence of how safeguarding concerns are escalated or reviewed.",
-        "The response did not explain how the effectiveness of safeguarding practice is monitored or improved.",
+        "No specific examples were provided to demonstrate practice.",
+        "Key safeguarding or management processes were not clearly explained.",
+        "There was no evidence of review, learning, or impact on outcomes for children.",
+      ];
+    }
+
+    if (
+      !parsed.follow_up_questions ||
+      !Array.isArray(parsed.follow_up_questions) ||
+      parsed.follow_up_questions.length === 0
+    ) {
+      parsed.follow_up_questions = [
+        "Can you give a recent, specific example of this in practice?",
+        "Who would you escalate this to, and why?",
+        "How do you know this approach is effective?",
       ];
     }
 
