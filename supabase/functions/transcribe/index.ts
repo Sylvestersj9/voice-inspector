@@ -19,66 +19,29 @@ const buildCorsHeaders = (req: Request) => {
   return {
     ...baseCors,
     "Access-Control-Allow-Origin": allowOrigin,
-    "Vary": "Origin",
+    Vary: "Origin",
   };
 };
 
 serve(async (req) => {
   const corsHeaders = buildCorsHeaders(req);
 
-  if (req.method === 'OPTIONS') {
+  if (req.method === "OPTIONS") {
     return new Response(null, { status: 204, headers: corsHeaders });
   }
 
+  // Stubbed transcription to avoid hangs while external service is unavailable.
+  // Always returns a short transcript so the UI can proceed.
   try {
-    const { audio, mimeType } = await req.json();
-    
-    if (!audio) {
-      throw new Error('No audio data provided');
-    }
-
-    console.log('Received audio for transcription, mime type:', mimeType);
-
-    const binaryString = atob(audio);
-    const bytes = new Uint8Array(binaryString.length);
-    for (let i = 0; i < binaryString.length; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
-    }
-
-    const formData = new FormData();
-    const blob = new Blob([bytes.buffer], { type: mimeType || 'audio/webm' });
-    formData.append('file', blob, 'audio.webm');
-    formData.append('model', 'whisper-1');
-
-    const openaiKey = Deno.env.get('OPENAI_API_KEY');
-    if (!openaiKey) {
-      throw new Error('OPENAI_API_KEY is not configured');
-    }
-
-    const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${openaiKey}` },
-      body: formData,
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('OpenAI API error:', response.status, errorText);
-      throw new Error(`OpenAI API error: ${response.status}`);
-    }
-
-    const result = await response.json();
     return new Response(
-      JSON.stringify({ transcript: result.text }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ transcript: "Transcription placeholder — voice upload disabled for now. You can edit this text." }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
-
-  } catch (error: unknown) {
-    console.error('Transcription error:', error);
-    const message = error instanceof Error ? error.message : 'Unknown error';
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
     return new Response(
       JSON.stringify({ error: message }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }
 });
