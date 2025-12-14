@@ -150,7 +150,7 @@ const Index = () => {
               },
               body: JSON.stringify({ audio: base64, mimeType: audioBlob.type }),
             },
-            60000,
+            15000,
           );
 
           const data = await response.json();
@@ -165,17 +165,21 @@ const Index = () => {
           toast({ title: "Transcription complete", description: "Review your response below." });
         } catch (error) {
           console.error('Transcription error:', error);
+          setTranscript("Transcription unavailable; please type your response below.");
+          setTranscriptionWarning(false);
+          setStep("editing");
           toast({ 
-            title: "Transcription failed", 
-            description: "You can try again or use text input instead.", 
+            title: "Transcription unavailable", 
+            description: "We added a placeholder. Please edit or type your response.", 
             variant: "destructive" 
           });
-          setStep("ready");
         }
       };
     } catch (error) {
-      toast({ title: "Upload failed", description: "Please try again or use text input.", variant: "destructive" });
-      setStep("ready");
+      setTranscript("Transcription unavailable; please type your response below.");
+      setTranscriptionWarning(false);
+      setStep("editing");
+      toast({ title: "Upload failed", description: "We added a placeholder. Please type your response.", variant: "destructive" });
     }
   };
 
