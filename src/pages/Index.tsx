@@ -77,6 +77,17 @@ async function sendFeedback(payload: Record<string, string>, type: SubmitType): 
   }
 }
 
+const fetchWithTimeout = async (url: string, options: RequestInit, timeoutMs: number) => {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { ...options, signal: controller.signal });
+    return res;
+  } finally {
+    clearTimeout(id);
+  }
+};
+
 const Index = () => {
   const { toast } = useToast();
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -129,14 +140,18 @@ const Index = () => {
           setStep("transcribing");
           const base64 = (reader.result as string).split(',')[1];
           
-          const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/transcribe`, {
-            method: 'POST',
-            headers: { 
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          const response = await fetchWithTimeout(
+            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/transcribe`,
+            {
+              method: 'POST',
+              headers: { 
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+              },
+              body: JSON.stringify({ audio: base64, mimeType: audioBlob.type }),
             },
-            body: JSON.stringify({ audio: base64, mimeType: audioBlob.type }),
-          });
+            60000,
+          );
 
           const data = await response.json();
           if (data.error) throw new Error(data.error);
