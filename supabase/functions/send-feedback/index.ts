@@ -5,10 +5,6 @@ const allowedOrigins = (Deno.env.get("ALLOWED_ORIGINS") || "")
   .split(",")
   .map((o) => o.trim())
   .filter(Boolean);
-const baseCors = {
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
 
 const buildCorsHeaders = (req: Request) => {
   const origin = req.headers.get("origin") || "";
@@ -17,8 +13,9 @@ const buildCorsHeaders = (req: Request) => {
   const allowOrigin = originAllowed ? (origin || "*") : origin || allowedOrigins[0] || "*";
 
   return {
-    ...baseCors,
     "Access-Control-Allow-Origin": allowOrigin,
+    "Access-Control-Allow-Methods": "POST,OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization, apikey",
     "Vary": "Origin",
   };
 };
