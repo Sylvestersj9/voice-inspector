@@ -11,8 +11,10 @@ import { ProgressIndicator } from "@/components/ProgressIndicator";
 import { SessionSummary } from "@/components/SessionSummary";
 import { InputMethodSelector } from "@/components/InputMethodSelector";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, ChevronLeft, ChevronRight, MessageCircleQuestion, Clock, Settings, RefreshCw, AlertTriangle, MessageSquare } from "lucide-react";
+import { Loader2, ChevronLeft, ChevronRight, MessageCircleQuestion, Clock, Settings, RefreshCw, AlertTriangle, MessageSquare, Mail, Check } from "lucide-react";
 import { detectFollowUpNeed, FollowUpDecision, getFollowUpLabel } from "@/lib/followUpRules";
 import { evaluationResultSchema } from "@/lib/evaluationSchema";
 
@@ -35,6 +37,43 @@ interface QuestionResult {
   followUpDecision?: FollowUpDecision;
 }
 
+type SubmitType = "feedback" | "contact";
+interface SendResult {
+  ok: boolean;
+  message: string;
+}
+
+const emailAddress = "reports@ziantra.co.uk";
+
+async function sendFeedback(payload: Record<string, string>, type: SubmitType): Promise<SendResult> {
+  try {
+    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-feedback`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type, ...payload }),
+    });
+
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({}));
+      throw new Error(error.error || "Unable to send");
+    }
+
+    return { ok: true, message: "Thanks! We've received your message." };
+  } catch (error) {
+    const subject = type === "feedback" ? "Voice Inspector feedback" : "Voice Inspector contact";
+    const body = Object.entries(payload)
+      .filter(([, value]) => value)
+      .map(([key, value]) => `${key}: ${value}`)
+      .join("\n");
+    window.location.href = `mailto:${emailAddress}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+
+    return {
+      ok: false,
+      message: error instanceof Error ? error.message : "Unable to send via the service; opened your email client instead.",
+    };
+  }
+}
+
 const Index = () => {
   const { toast } = useToast();
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -46,6 +85,11 @@ const Index = () => {
   const [followUpCount, setFollowUpCount] = useState(0);
   const [isFollowUp, setIsFollowUp] = useState(false);
   const [transcriptionWarning, setTranscriptionWarning] = useState(false);
+  const [contactName, setContactName] = useState("");
+  const [contactDetails, setContactDetails] = useState("");
+  const [contactMessage, setContactMessage] = useState("");
+  const [contactStatus, setContactStatus] = useState<string | null>(null);
+  const [contactSubmitting, setContactSubmitting] = useState(false);
 
   const currentQuestion = ofstedQuestions[currentQuestionIndex];
 
@@ -311,6 +355,59 @@ const Index = () => {
     }
   };
 
+  const handleContactSubmit = async () => {
+    if (!contactMessage.trim()) {
+      setContactStatus("Please add a message so we can respond.");
+      return;
+    }
+    setContactSubmitting(true);
+    setContactStatus(null);
+    const result = await sendFeedback(
+      {
+        name: contactName.trim(),
+        details: contactDetails.trim(),
+        message: contactMessage.trim(),
+      },
+      "contact",
+    );
+    setContactStatus(result.message);
+    if (result.ok) {
+      setContactMessage("");
+    }
+    setContactSubmitting(false);
+  };
+
+  const contactCard = (
+    <div className="card-elevated p-6 space-y-4">
+      <div className="flex items-center gap-2">
+        <Mail className="h-5 w-5 text-primary" />
+        <h2 className="font-display text-xl font-semibold text-foreground">Contact us</h2>
+      </div>
+      <p className="text-sm text-muted-foreground">
+        Quick questions or demo requests? Use this form and we'll reply from {emailAddress}.
+      </p>
+      <div className="space-y-3">
+        <Input placeholder="Name (optional)" value={contactName} onChange={(e) => setContactName(e.target.value)} />
+        <Input
+          placeholder="How can we reach you? (optional email/phone)"
+          value={contactDetails}
+          onChange={(e) => setContactDetails(e.target.value)}
+        />
+        <Textarea
+          value={contactMessage}
+          onChange={(e) => setContactMessage(e.target.value)}
+          placeholder="Your message"
+          className="min-h-[120px]"
+        />
+        <Button onClick={handleContactSubmit} disabled={contactSubmitting} className="w-full gap-2">
+          {contactSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+          Send message
+        </Button>
+        {contactStatus && <p className="text-sm text-muted-foreground">{contactStatus}</p>}
+      </div>
+    </div>
+  );
+
   if (step === "summary") {
     // Convert results to the format expected by SessionSummary
     const evaluationResults = new Map<number, EvaluationResult>();
@@ -326,6 +423,9 @@ const Index = () => {
       <div className="min-h-screen gradient-hero py-12 px-4">
         <div className="container max-w-4xl mx-auto">
           <SessionSummary results={evaluationResults} onStartOver={handleStartOver} />
+          <div className="mt-8">
+            {contactCard}
+          </div>
         </div>
         <Toaster />
       </div>
@@ -546,6 +646,20 @@ const Index = () => {
             )}
           </div>
         )}
+
+        <div className="grid gap-6 md:grid-cols-2 mt-10">
+          {contactCard}
+          <div className="card-elevated p-6 space-y-3">
+            <h3 className="font-display text-lg font-semibold text-foreground">Prefer email?</h3>
+            <p className="text-sm text-muted-foreground">
+              Reach us anytime at{" "}
+              <a className="text-primary underline" href={`mailto:${emailAddress}`}>
+                {emailAddress}
+              </a>
+              . Include context from your session if helpful (no names or identifying details).
+            </p>
+          </div>
+        </div>
 
         {/* Footer */}
         <footer className="mt-12 text-center text-sm text-muted-foreground">

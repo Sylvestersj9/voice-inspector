@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { Check, Home, Loader2, Mail, MessageCircle, MessageSquare } from "lucide-react";
+import { Check, Home, Loader2, MessageCircle, MessageSquare } from "lucide-react";
 
 type SubmitType = "feedback" | "contact";
 
@@ -52,12 +52,6 @@ export default function Account() {
   const [feedbackStatus, setFeedbackStatus] = useState<string | null>(null);
   const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
 
-  const [contactName, setContactName] = useState("");
-  const [contactDetails, setContactDetails] = useState("");
-  const [contactMessage, setContactMessage] = useState("");
-  const [contactStatus, setContactStatus] = useState<string | null>(null);
-  const [contactSubmitting, setContactSubmitting] = useState(false);
-
   const handleFeedbackSubmit = async () => {
     if (!feedbackMessage.trim()) {
       setFeedbackStatus("Please add a message so we know what to improve.");
@@ -79,28 +73,6 @@ export default function Account() {
       setFeedbackMessage("");
     }
     setFeedbackSubmitting(false);
-  };
-
-  const handleContactSubmit = async () => {
-    if (!contactMessage.trim()) {
-      setContactStatus("Please add a message so we can respond.");
-      return;
-    }
-    setContactSubmitting(true);
-    setContactStatus(null);
-    const result = await sendFeedback(
-      {
-        name: contactName.trim(),
-        details: contactDetails.trim(),
-        message: contactMessage.trim(),
-      },
-      "contact",
-    );
-    setContactStatus(result.message);
-    if (result.ok) {
-      setContactMessage("");
-    }
-    setContactSubmitting(false);
   };
 
   return (
@@ -169,37 +141,6 @@ export default function Account() {
               </Button>
               {feedbackStatus && (
                 <p className="text-sm text-muted-foreground">{feedbackStatus}</p>
-              )}
-            </div>
-          </div>
-
-          <div className="card-elevated p-6 space-y-4">
-            <div className="flex items-center gap-2">
-              <Mail className="h-5 w-5 text-primary" />
-              <h2 className="font-display text-xl font-semibold text-foreground">Contact</h2>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Use this for quick questions or to ask for a demo. We reply from {emailAddress}.
-            </p>
-            <div className="space-y-3">
-              <Input placeholder="Name (optional)" value={contactName} onChange={(e) => setContactName(e.target.value)} />
-              <Input
-                placeholder="How can we reach you? (optional)"
-                value={contactDetails}
-                onChange={(e) => setContactDetails(e.target.value)}
-              />
-              <Textarea
-                value={contactMessage}
-                onChange={(e) => setContactMessage(e.target.value)}
-                placeholder="Your message"
-                className="min-h-[140px]"
-              />
-              <Button onClick={handleContactSubmit} disabled={contactSubmitting} className="w-full gap-2">
-                {contactSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-                Send message
-              </Button>
-              {contactStatus && (
-                <p className="text-sm text-muted-foreground">{contactStatus}</p>
               )}
             </div>
           </div>
