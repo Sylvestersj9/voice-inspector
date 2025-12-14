@@ -32,15 +32,19 @@ serve(async (req) => {
   }
 
   try {
-    const { audio, mimeType } = await req.json();
+    console.log("content-type:", req.headers.get("content-type"));
+    const form = await req.formData();
+    console.log("form keys:", Array.from(form.keys()));
 
-    if (!audio || typeof audio !== "string") {
+    const file = form.get("file");
+    if (!file || !(file instanceof Blob)) {
       return new Response(
-        JSON.stringify({ error: "No audio data provided" }),
+        JSON.stringify({ error: "No audio file provided (expected form field 'file')." }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
+    const mimeType = file.type || "audio/webm";
     const openaiKey = Deno.env.get("OPENAI_API_KEY");
     if (!openaiKey) {
       return new Response(
@@ -49,14 +53,11 @@ serve(async (req) => {
       );
     }
 
-    const binaryString = atob(audio);
-    const bytes = new Uint8Array(binaryString.length);
-    for (let i = 0; i < binaryString.length; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
-    }
+    const buffer = new Uint8Array(await file.arrayBuffer());
+    console.log("file size bytes:", buffer.byteLength);
 
     const formData = new FormData();
-    const blob = new Blob([bytes.buffer], { type: mimeType || "audio/webm" });
+    const blob = new Blob([buffer], { type: mimeType });
     formData.append("file", blob, "audio.webm");
     formData.append("model", "whisper-1");
 

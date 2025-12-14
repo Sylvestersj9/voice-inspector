@@ -99,6 +99,8 @@ const Index = () => {
   const [followUpCount, setFollowUpCount] = useState(0);
   const [isFollowUp, setIsFollowUp] = useState(false);
   const [transcriptionWarning, setTranscriptionWarning] = useState(false);
+  const [transcriptionError, setTranscriptionError] = useState<string | null>(null);
+  const [allowPlaceholder, setAllowPlaceholder] = useState(false);
   const [contactName, setContactName] = useState("");
   const [contactDetails, setContactDetails] = useState("");
   const [contactMessage, setContactMessage] = useState("");
@@ -134,6 +136,8 @@ const Index = () => {
     setStep("uploading");
     try {
       setStep("transcribing");
+      setTranscriptionError(null);
+      setAllowPlaceholder(false);
 
       const fd = new FormData();
       fd.append("file", audioBlob, "recording.webm");
@@ -152,25 +156,25 @@ const Index = () => {
       );
 
       const data = await response.json();
-      if (!response.ok) throw new Error(data?.error || "Transcription failed");
-      if (!data.transcript || typeof data.transcript !== "string") {
-        throw new Error("No transcript returned from transcribe service.");
+      if (!response.ok) {
+        throw new Error(data?.error || "Transcription failed");
       }
 
-      setTranscript(data.transcript);
-      setTranscriptionWarning(data.transcript.length < 50);
+      const text = (data?.transcript || data?.text || "").trim();
+      if (!text) {
+        throw new Error("No speech detected. Try speaking closer to the mic for 3–5 seconds.");
+      }
+
+      setTranscript(text);
+      setTranscriptionWarning(text.length < 50);
       setStep("editing");
       toast({ title: "Transcription complete", description: "Review your response below." });
     } catch (error) {
       console.error("Transcription error:", error);
-      setTranscript("Transcription unavailable; please type your response below.");
-      setTranscriptionWarning(false);
-      setStep("editing");
-      toast({
-        title: "Transcription unavailable",
-        description: "We added a placeholder. Please edit or type your response.",
-        variant: "destructive",
-      });
+      setTranscriptionError(error instanceof Error ? error.message : "Transcription failed");
+      setAllowPlaceholder(true);
+      setStep("ready");
+      toast({ title: "Transcription unavailable", description: "You can retry or use text input.", variant: "destructive" });
     }
   };
 
@@ -580,11 +584,33 @@ const Index = () => {
 
         {/* Step: Choose Input Method */}
         {step === "ready" && (
-          <div className="card-elevated animate-fade-in-up">
-            <InputMethodSelector
-              onVoiceSelected={handleVoiceSelected}
-              onTextSubmit={handleTextSubmit}
-            />
+          <div className="space-y-4">
+            {transcriptionError && (
+              <div className="card-elevated border border-destructive/50 p-4">
+                <p className="text-sm text-destructive mb-2">Transcription failed: {transcriptionError}</p>
+                {allowPlaceholder && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setTranscript("Transcription unavailable; please type your response below.");
+                      setTranscriptionWarning(false);
+                      setStep("editing");
+                      setAllowPlaceholder(false);
+                      setTranscriptionError(null);
+                    }}
+                  >
+                    Use placeholder and continue
+                  </Button>
+                )}
+              </div>
+            )}
+            <div className="card-elevated animate-fade-in-up">
+              <InputMethodSelector
+                onVoiceSelected={handleVoiceSelected}
+                onTextSubmit={handleTextSubmit}
+              />
+            </div>
           </div>
         )}
 
