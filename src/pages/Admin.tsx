@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -21,7 +21,7 @@ export default function Admin() {
   const [uploading, setUploading] = useState(false);
   
   const [title, setTitle] = useState("");
-  const [source, setSource] = useState<"SCCIF" | "Regulations" | "Internal Guidance">("SCCIF");
+  const [source, setSource] = useState<string>("Ofsted report");
   const [content, setContent] = useState("");
 
   useEffect(() => {
@@ -104,8 +104,10 @@ export default function Admin() {
             </Button>
           </Link>
           <div>
-            <h1 className="font-display text-2xl font-bold text-foreground">Knowledge Base Admin</h1>
-            <p className="text-sm text-muted-foreground">Upload framework documents for grounded evaluation</p>
+            <h1 className="font-display text-2xl font-bold text-foreground">Knowledge Base</h1>
+            <p className="text-sm text-muted-foreground">
+              Upload your organisation’s Ofsted reports, action plans, policies, and evidence so the AI can reference them.
+            </p>
           </div>
           <div className="text-xs text-muted-foreground">
             Questions? <a className="text-primary underline" href="mailto:reports@ziantra.co.uk">reports@ziantra.co.uk</a>
@@ -114,7 +116,10 @@ export default function Admin() {
 
         {/* Upload Form */}
         <div className="card-elevated p-6 mb-8 space-y-4">
-          <h2 className="font-display text-lg font-semibold text-foreground">Add New Document</h2>
+          <h2 className="font-display text-lg font-semibold text-foreground">Add reference document</h2>
+          <p className="text-sm text-muted-foreground">
+            Paste the text from your document (e.g., latest Ofsted report, action plan, policies, evidence logs). The content will be chunked and embedded for retrieval in evaluations.
+          </p>
           
           <div className="grid gap-4 md:grid-cols-2">
             <div>
@@ -122,19 +127,23 @@ export default function Admin() {
               <Input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="e.g., SCCIF Children's Homes Guide"
+                placeholder="e.g., 2024 Ofsted Full Inspection Report"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-foreground mb-2">Source</label>
+              <label className="block text-sm font-medium text-foreground mb-2">Document type</label>
               <select
                 value={source}
                 onChange={(e) => setSource(e.target.value as typeof source)}
                 className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
               >
-                <option value="SCCIF">SCCIF</option>
-                <option value="Regulations">Regulations</option>
+                <option value="Ofsted report">Ofsted report</option>
+                <option value="Inspection action plan">Inspection action plan</option>
+                <option value="Policy/Procedure">Policy/Procedure</option>
+                <option value="Evidence/Logs">Evidence/Logs</option>
                 <option value="Internal Guidance">Internal Guidance</option>
+                <option value="SCCIF/Regulations">SCCIF/Regulations</option>
+                <option value="Other">Other</option>
               </select>
             </div>
           </div>
@@ -144,11 +153,11 @@ export default function Admin() {
             <Textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              placeholder="Paste the framework document content here..."
+              placeholder="Paste the full text from your report/policy/evidence. Remove names or personal identifiers."
               className="min-h-[200px]"
             />
             <p className="text-xs text-muted-foreground mt-1">
-              Content will be automatically chunked and embedded for semantic search
+              Content is automatically chunked and embedded for semantic search. Do not include personal identifiers.
             </p>
           </div>
 
@@ -170,7 +179,7 @@ export default function Admin() {
         {/* Documents List */}
         <div className="space-y-4">
           <h2 className="font-display text-lg font-semibold text-foreground">
-            Uploaded Documents ({documents.length})
+            Knowledge base documents ({documents.length})
           </h2>
 
           {loading ? (
@@ -207,4 +216,3 @@ export default function Admin() {
     </div>
   );
 }
-

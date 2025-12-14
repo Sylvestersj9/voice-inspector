@@ -13,7 +13,7 @@ import { InputMethodSelector } from "@/components/InputMethodSelector";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase";
 import { Loader2, ChevronLeft, ChevronRight, MessageCircleQuestion, Clock, Settings, RefreshCw, AlertTriangle, MessageSquare, Mail, Check } from "lucide-react";
 import { detectFollowUpNeed, FollowUpDecision, getFollowUpLabel } from "@/lib/followUpRules";
 import { evaluationSchema } from "@/lib/evaluationSchema";
@@ -339,8 +339,49 @@ const Index = () => {
       evaluationResults.set(index, evalToUse);
     });
 
-    const averageScore = Array.from(evaluationResults.values()).reduce((sum, r) => sum + (r.score4 ?? r.score ?? 0), 0) / evaluationResults.size;
-    const overallBand = getJudgementBand(averageScore);
+    const averageScore = evaluationResults.size
+      ? Array.from(evaluationResults.values()).reduce((sum, r) => sum + (r.score4 ?? r.score ?? 0), 0) / evaluationResults.size
+      : 0;
+    const overallBand = getJudgementBand(averageScore || 0);
+
+    const saveSessionLocally = () => {
+      const local = JSON.parse(localStorage.getItem("localSessions") || "[]");
+      const sessionId = `local-${Date.now()}`;
+      const answers = Array.from(results.entries()).flatMap(([qIndex, result]) => {
+        const question = ofstedQuestions[qIndex];
+        const entries = [{
+          session_id: sessionId,
+          question_id: question.id,
+          question_domain: question.domain,
+          transcript: result.transcript,
+          evaluation_json: result.evaluation,
+          attempt_index: 0,
+        }];
+
+        if (result.followUpTranscript && result.followUpEvaluation) {
+          entries.push({
+            session_id: sessionId,
+            question_id: question.id,
+            question_domain: question.domain,
+            transcript: result.followUpTranscript,
+            evaluation_json: result.followUpEvaluation,
+            attempt_index: 1,
+          });
+        }
+        return entries;
+      });
+
+      const record = {
+        id: sessionId,
+        created_at: new Date().toISOString(),
+        overall_score: averageScore,
+        overall_band: overallBand,
+        answers,
+      };
+
+      const updated = [record, ...local].slice(0, 20); // keep last 20
+      localStorage.setItem("localSessions", JSON.stringify(updated));
+    };
 
     try {
       const { data: session, error: sessionError } = await supabase
@@ -375,9 +416,12 @@ const Index = () => {
         return entries;
       });
 
-      await supabase.from('session_answers').insert(answers);
+      const answersResult = await supabase.from('session_answers').insert(answers);
+      if (answersResult.error) throw answersResult.error;
     } catch (error) {
       console.error('Error saving session:', error);
+      // Fallback to local storage so history still works without auth/DB
+      saveSessionLocally();
     }
   };
 
@@ -533,6 +577,13 @@ const Index = () => {
           <p className="text-xs text-muted-foreground max-w-xl mx-auto">
             Questions? Email <a className="text-primary underline" href="mailto:reports@ziantra.co.uk">reports@ziantra.co.uk</a>
           </p>
+          <div className="mt-4 flex justify-center">
+            <Link to="/login">
+              <Button size="sm" className="gap-2">
+                Get started
+              </Button>
+            </Link>
+          </div>
           <p className="text-xs text-muted-foreground max-w-xl mx-auto flex items-center justify-center gap-2 mt-2">
             <AlertTriangle className="h-3 w-3" />
             Do not include names or identifying details about children, staff, or locations.
@@ -734,7 +785,7 @@ const Index = () => {
           {/* Full-width contact form */}
           {contactCard}
           {/* Compact email preference card */}
-          <div className="card-elevated p-6 space-y-3 max-w-xl text-center">
+          <div className="card-elevated p-6 space-y-3 max-w-xl mx-auto text-center">
             <h3 className="font-display text-lg font-semibold text-foreground">Prefer email?</h3>
             <p className="text-sm text-muted-foreground">
               Reach us anytime at{" "}

@@ -1,29 +1,20 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
-const allowedOrigins = (Deno.env.get("ALLOWED_ORIGINS") || "")
-  .split(",")
-  .map((o) => o.trim())
-  .filter(Boolean);
-
-function buildCorsHeaders(req: Request): HeadersInit | null {
-  const origin = req.headers.get("origin") || "";
-  if (allowedOrigins.length === 0) return null;
-
-  const allowAny = allowedOrigins.includes("*");
-  const originAllowed = allowAny || (origin && allowedOrigins.includes(origin));
-  if (!originAllowed) return null;
-
-  return {
-    "Access-Control-Allow-Origin": origin,
-    "Access-Control-Allow-Methods": "POST,OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization, apikey",
-    "Access-Control-Max-Age": "86400",
-    "Vary": "Origin",
-  };
-}
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Max-Age": "86400",
+};
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY") || "";
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
+const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+const supabaseAdmin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
+  auth: { autoRefreshToken: false, persistSession: false },
+});
 
 // TEMP: Resend testing mode only allows sending to your own email
 const TO_EMAIL = "janvesylvester@gmail.com";
@@ -43,11 +34,16 @@ function safeJson(text: string) {
 }
 
 serve(async (req) => {
-  const corsHeaders = buildCorsHeaders(req);
-  if (!corsHeaders) return new Response("Forbidden", { status: 403 });
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
+  }
 
-  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
-  if (req.method !== "POST") return new Response("Method not allowed", { status: 405, headers: corsHeaders });
+  if (req.method !== "POST") {
+    return new Response(JSON.stringify({ error: "Method not allowed" }), {
+      status: 405,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
 
   try {
     let payload: any = {};
@@ -60,9 +56,52 @@ serve(async (req) => {
     const organization = typeof payload?.organization === "string" ? payload.organization.trim() : "";
     const details = typeof payload?.details === "string" ? payload.details.trim() : "";
     const message = typeof payload?.message === "string" ? payload.message.trim() : "";
+    const website = typeof payload?.website === "string" ? payload.website.trim() : "";
 
-    if (!message) return json({ error: "Message is required." }, 400, corsHeaders);
+    // Honeypot: if filled, silently accept
+    if (website) {
+      return json({ ok: true }, 200, corsHeaders);
+    }
+
+    if (!message || message.length < 5) return json({ error: "Message is required." }, 400, corsHeaders);
     if (!RESEND_API_KEY) return json({ error: "RESEND_API_KEY is missing in Supabase secrets." }, 500, corsHeaders);
+    if (!SUPABASE_URL || !SERVICE_ROLE_KEY) return json({ error: "Server config missing SUPABASE_URL or SERVICE_ROLE_KEY" }, 500, corsHeaders);
+
+    // Basic rate limiting by email or IP (1 request per minute)
+    const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0].trim() || req.headers.get("cf-connecting-ip") || "unknown";
+    const rateKey = email || clientIp;
+    if (rateKey && rateKey !== "unknown") {
+      const { data: recent, error: recentErr } = await supabaseAdmin
+        .from("feedback")
+        .select("id, created_at")
+        .or(`email.eq.${email || ""},user_agent.eq.${clientIp}`)
+        .order("created_at", { ascending: false })
+        .limit(1);
+
+      if (!recentErr && recent && recent.length > 0) {
+        const last = new Date(recent[0].created_at).getTime();
+        if (Date.now() - last < 60_000) {
+          return json({ error: "Too many requests, please wait a moment." }, 429, corsHeaders);
+        }
+      }
+    }
+
+    // Record feedback before sending
+    const { data: row, error: insErr } = await supabaseAdmin
+      .from("feedback")
+      .insert({
+        name,
+        email,
+        message,
+        user_agent: req.headers.get("user-agent"),
+        status: "received",
+      })
+      .select()
+      .single();
+
+    if (insErr) {
+      console.error("feedback insert error:", insErr);
+    }
 
     const subject = type === "contact" ? "Voice Inspector contact" : "Voice Inspector feedback";
 
@@ -94,7 +133,14 @@ serve(async (req) => {
     const resendText = await resendResp.text().catch(() => "");
     if (!resendResp.ok) {
       console.error("Resend failed:", resendResp.status, resendText);
+      if (row?.id) {
+        await supabaseAdmin.from("feedback").update({ status: "failed" }).eq("id", row.id);
+      }
       return json({ error: "Resend rejected the request", status: resendResp.status, details: resendText }, 502, corsHeaders);
+    }
+
+    if (row?.id) {
+      await supabaseAdmin.from("feedback").update({ status: "sent" }).eq("id", row.id);
     }
 
     return json({ status: "sent", resend: resendText ? safeJson(resendText) : null }, 200, corsHeaders);

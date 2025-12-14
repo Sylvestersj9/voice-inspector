@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, Clock, Calendar, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -33,19 +33,31 @@ export default function History() {
   }, []);
 
   const loadSessions = async () => {
+    const local = JSON.parse(localStorage.getItem("localSessions") || "[]");
+
     const { data, error } = await supabase
       .from('sessions')
       .select('*')
       .order('created_at', { ascending: false });
 
-    if (!error && data) {
-      setSessions(data);
-    }
+    const remoteSessions = !error && data ? data : [];
+    const combined = [...local, ...remoteSessions].sort(
+      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
+
+    setSessions(combined);
     setLoading(false);
   };
 
   const loadSessionDetails = async (sessionId: string) => {
     setSelectedSession(sessionId);
+    if (sessionId.startsWith("local-")) {
+      const local = JSON.parse(localStorage.getItem("localSessions") || "[]");
+      const found = local.find((s: any) => s.id === sessionId);
+      setSessionAnswers(found?.answers || []);
+      return;
+    }
+
     const { data, error } = await supabase
       .from('session_answers')
       .select('*')

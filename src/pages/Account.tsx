@@ -111,7 +111,7 @@ export default function Account() {
           </p>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="space-y-6">
           <div className="card-elevated p-6 space-y-4">
             <div className="flex items-center gap-2">
               <MessageCircle className="h-5 w-5 text-primary" />
