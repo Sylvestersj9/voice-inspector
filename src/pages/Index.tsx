@@ -155,6 +155,9 @@ const Index = () => {
 
           const data = await response.json();
           if (data.error) throw new Error(data.error);
+          if (!data.transcript || typeof data.transcript !== "string") {
+            throw new Error("No transcript returned from transcribe service.");
+          }
           
           setTranscript(data.transcript);
           setTranscriptionWarning(data.transcript.length < 50);
