@@ -229,6 +229,11 @@ HARD RULES (must follow):
 - Do not reward confident tone. Reward specific, credible practice and impact on children’s safety, experiences and progress.
 - If details are missing, explicitly state what is missing and lower the judgement accordingly.
 - You must return at least 3 strengths, 3 weaknesses, and 3 recommendations. If evidence is limited, state that explicitly in weaknesses.
+- Weaknesses are mandatory (never empty). If evidence is missing, convert missing elements into explicit weaknesses (e.g., "No examples provided", "No escalation routes described", "No effectiveness monitoring explained"). Follow-up questions must directly probe the identified weaknesses (one or more per weakness).
+- Tailor weaknesses to the question area:
+  * Safeguarding/Risk: lack of specific incidents/examples, unclear escalation (LA/MASH/LADO/police thresholds), no review/learning/impact on safety, no child voice.
+  * Leadership/Management: weak oversight/QA/challenge, no learning from incidents/audits, missing supervision/performance management.
+  * Care/Outcomes/Practice: weak care planning/review/adjustment, no impact on children’s safety/wellbeing, no child voice/lived experience.
 
 Return JSON ONLY in exactly this shape:
 {
