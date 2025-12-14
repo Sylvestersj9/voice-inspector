@@ -12,6 +12,7 @@ import {
   buildOfstedConclusionTemplate,
 } from "@/lib/inspectionSession";
 import { getPlan } from "@/lib/plan";
+import { safeArray } from "@/lib/safeArray";
 
 interface SessionSummaryProps {
   results: Map<number, EvaluationResult>;
@@ -20,7 +21,6 @@ interface SessionSummaryProps {
 
 export function SessionSummary({ results, onStartOver }: SessionSummaryProps) {
   const plan: "free" | "pro" = getPlan();
-  const safeArr = <T,>(v: T[] | undefined | null): T[] => (Array.isArray(v) ? v : []);
 
   const entries = Array.from(results?.entries?.() || []);
   if (!entries.length) {
@@ -138,8 +138,8 @@ export function SessionSummary({ results, onStartOver }: SessionSummaryProps) {
         {ofstedQuestions.map((question, index) => {
           const result = results.get(index);
           if (!result) return null;
-          const strengths = safeArr(result.strengths);
-          const gaps = safeArr((result as any).gaps);
+          const strengths = safeArray(result.strengths);
+          const gaps = safeArray((result as any).gaps);
           
           return (
             <div key={question.id} className="card-elevated p-6">
