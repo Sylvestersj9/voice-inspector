@@ -29,7 +29,7 @@ export function EvaluationResults({
         return "bg-success text-success-foreground";
       case "Good":
         return "bg-primary text-primary-foreground";
-      case "Requires Improvement":
+      case "Requires improvement to be good":
         return "bg-warning text-warning-foreground";
       case "Inadequate":
         return "bg-destructive text-destructive-foreground";
@@ -40,24 +40,21 @@ export function EvaluationResults({
     <div className="space-y-6 animate-fade-in-up">
       {/* Score Header */}
       <div className="card-elevated p-6">
-        <div className="flex flex-col md:flex-row md:items-center gap-6">
+        <div className="flex flex-col md:flex-row md:items-center gap-4">
           <div className={cn(
-            "flex items-center justify-center h-24 w-24 rounded-2xl text-3xl font-display font-bold",
+            "inline-block px-4 py-1.5 rounded-full text-sm font-semibold",
             getScoreColor()
           )}>
-            {result.score.toFixed(1)}
+            {result.judgementBand}
           </div>
-          <div>
-            <div className={cn(
-              "inline-block px-4 py-1.5 rounded-full text-sm font-semibold mb-2",
-              getScoreColor()
-            )}>
-              {result.judgementBand}
+          {typeof result.score4 === "number" && (
+            <div className="text-sm text-muted-foreground">
+              Inspection band score: {result.score4}/4
             </div>
-            <p className="text-muted-foreground">
-              Your response has been evaluated against Ofsted's SCCIF inspection criteria
-            </p>
-          </div>
+          )}
+          <p className="text-muted-foreground md:ml-auto">
+            Evaluated against SCCIF inspection criteria
+          </p>
         </div>
       </div>
 
@@ -173,5 +170,4 @@ export function EvaluationResults({
     </div>
   );
 }
-
 

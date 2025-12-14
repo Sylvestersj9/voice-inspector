@@ -198,12 +198,33 @@ const Index = () => {
       if (data.error) throw new Error(data.error);
 
       const parsedEvaluation = evaluationResultSchema.parse(data);
-      setEvaluation(parsedEvaluation);
+      const judgementBand = parsedEvaluation.overall_judgement as EvaluationResult["judgementBand"];
+      const score4 = parsedEvaluation.score4;
+
+      const mappedEvaluation: EvaluationResult = {
+        judgementBand,
+        score: score4,
+        score4,
+        strengths: parsedEvaluation.strengths,
+        gaps: parsedEvaluation.gaps.length ? parsedEvaluation.gaps : parsedEvaluation.weaknesses || [],
+        weaknesses: parsedEvaluation.weaknesses || [],
+        recommendations: parsedEvaluation.recommendations || [],
+        recommendedActions: parsedEvaluation.recommendations || [],
+        riskFlags: parsedEvaluation.riskFlags || [],
+        followUpQuestions: parsedEvaluation.follow_up_questions || [],
+        whatInspectorWantsToHear: parsedEvaluation.what_inspector_wants_to_hear,
+        evidenceToQuoteNextTime: parsedEvaluation.evidence_to_quote_next_time,
+        actionPlan7Days: parsedEvaluation.action_plan_7_days,
+        actionPlan30Days: parsedEvaluation.action_plan_30_days,
+        debug: parsedEvaluation.debug,
+      };
+
+      setEvaluation(mappedEvaluation);
 
       const followUpDecision = detectFollowUpNeed({
-        score: parsedEvaluation.score,
+        score: mappedEvaluation.score || 0,
         transcript,
-        evaluation: parsedEvaluation,
+        evaluation: mappedEvaluation,
         domain: currentQuestion.domain,
         attemptIndex: followUpCount,
       });
@@ -235,7 +256,7 @@ const Index = () => {
       setIsFollowUp(false);
       toast({ 
         title: "Evaluation complete", 
-        description: `Score: ${parsedEvaluation.score}/5 - ${parsedEvaluation.judgementBand}` 
+        description: judgementBand 
       });
     } catch (error) {
       console.error('Evaluation error:', error);
@@ -304,7 +325,7 @@ const Index = () => {
       evaluationResults.set(index, evalToUse);
     });
 
-    const averageScore = Array.from(evaluationResults.values()).reduce((sum, r) => sum + r.score, 0) / evaluationResults.size;
+    const averageScore = Array.from(evaluationResults.values()).reduce((sum, r) => sum + (r.score4 ?? r.score ?? 0), 0) / evaluationResults.size;
     const overallBand = getJudgementBand(averageScore);
 
     try {

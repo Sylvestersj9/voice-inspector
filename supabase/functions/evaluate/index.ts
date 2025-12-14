@@ -257,11 +257,33 @@ ${transcript}
 
     parsed.overall_judgement = normalizeBand(parsed?.overall_judgement);
 
+    const wordCount = transcript.split(/\s+/).filter(Boolean).length;
+
+    const transcriptLower = transcript.toLowerCase();
+    const hasEffectivenessText =
+      /audit|dip sample|quality assurance|qa|monitor|trend|analysis|supervision|review|learning|outcome|impact|children feel/.test(
+        transcriptLower,
+      );
+
+    const hasEscalationText =
+      /mash|lado|referral|local authority|strategy meeting|threshold|section 47|multi-agency|escalat/.test(
+        transcriptLower,
+      );
+
     const evidenceOk = hasMeaningfulEvidence(parsed);
     const escalationOk = hasSafeguardingEscalation(parsed);
     const effectivenessOk = hasEffectivenessChecks(parsed);
     const impactOk = hasImpact(parsed);
 
+    if (wordCount < 180) {
+      parsed.overall_judgement = downgrade(parsed.overall_judgement, "Requires improvement to be good");
+    }
+    if (!hasEffectivenessText) {
+      parsed.overall_judgement = downgrade(parsed.overall_judgement, "Requires improvement to be good");
+    }
+    if (!hasEscalationText) {
+      parsed.overall_judgement = downgrade(parsed.overall_judgement, "Requires improvement to be good");
+    }
     if (!evidenceOk) parsed.overall_judgement = downgrade(parsed.overall_judgement, "Requires improvement to be good");
     if (!escalationOk) parsed.overall_judgement = downgrade(parsed.overall_judgement, "Requires improvement to be good");
     if (!effectivenessOk) parsed.overall_judgement = downgrade(parsed.overall_judgement, "Requires improvement to be good");
@@ -277,6 +299,9 @@ ${transcript}
         escalationOk,
         effectivenessOk,
         impactOk,
+        wordCount,
+        hasEffectivenessText,
+        hasEscalationText,
       },
     });
   } catch (err) {

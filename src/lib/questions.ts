@@ -38,25 +38,33 @@ export const ofstedQuestions: OfstedQuestion[] = [
   },
 ];
 
-export type JudgementBand = "Outstanding" | "Good" | "Requires Improvement" | "Inadequate";
+export type JudgementBand = "Outstanding" | "Good" | "Requires improvement to be good" | "Inadequate";
 
 export interface EvaluationResult {
-  score: number;
+  score?: number;
+  score4?: number;
   judgementBand: JudgementBand;
   strengths: string[];
   gaps: string[];
+  weaknesses?: string[];
+  recommendations?: string[];
   riskFlags: string[];
   followUpQuestions: string[];
   recommendedActions: string[];
+  whatInspectorWantsToHear?: string;
+  evidenceToQuoteNextTime?: string[];
+  actionPlan7Days?: string[];
+  actionPlan30Days?: string[];
+  debug?: Record<string, unknown>;
   frameworkAlignment?: string[];
   missingExpectations?: string[];
   evidenceUsed?: string[];
 }
 
 export function getJudgementBand(score: number): JudgementBand {
-  if (score >= 4.5) return "Outstanding";
-  if (score >= 3.5) return "Good";
-  if (score >= 2) return "Requires Improvement";
+  if (score >= 3.75) return "Outstanding";
+  if (score >= 2.75) return "Good";
+  if (score >= 1.5) return "Requires improvement to be good";
   return "Inadequate";
 }
 

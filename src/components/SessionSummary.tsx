@@ -18,7 +18,7 @@ export function SessionSummary({ results, onStartOver }: SessionSummaryProps) {
     switch (band) {
       case "Outstanding": return "bg-success text-success-foreground";
       case "Good": return "bg-primary text-primary-foreground";
-      case "Requires Improvement": return "bg-warning text-warning-foreground";
+      case "Requires improvement to be good": return "bg-warning text-warning-foreground";
       case "Inadequate": return "bg-destructive text-destructive-foreground";
       default: return "bg-muted text-muted-foreground";
     }
