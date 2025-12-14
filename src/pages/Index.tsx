@@ -369,6 +369,9 @@ const Index = () => {
           <p className="text-xs text-primary font-medium max-w-xl mx-auto mt-1">
             Open access beta — no account or billing required while we collect feedback.
           </p>
+          <p className="text-xs text-muted-foreground max-w-xl mx-auto">
+            Questions? Email <a className="text-primary underline" href="mailto:reports@ziantra.co.uk">reports@ziantra.co.uk</a>
+          </p>
           <p className="text-xs text-muted-foreground max-w-xl mx-auto flex items-center justify-center gap-2 mt-2">
             <AlertTriangle className="h-3 w-3" />
             Do not include names or identifying details about children, staff, or locations.

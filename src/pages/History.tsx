@@ -117,7 +117,7 @@ export default function History() {
     <div className="min-h-screen gradient-hero py-8 px-4">
       <div className="container max-w-4xl mx-auto">
         {/* Header */}
-        <div className="flex items-center gap-4 mb-8">
+        <div className="flex items-center justify-between gap-4 mb-8">
           <Link to="/">
             <Button variant="outline" size="sm" className="gap-1">
               <ChevronLeft className="h-4 w-4" />
@@ -127,6 +127,9 @@ export default function History() {
           <div>
             <h1 className="font-display text-2xl font-bold text-foreground">Session History</h1>
             <p className="text-sm text-muted-foreground">Review your past inspection simulations</p>
+          </div>
+          <div className="text-xs text-muted-foreground">
+            Questions? <a className="text-primary underline" href="mailto:reports@ziantra.co.uk">reports@ziantra.co.uk</a>
           </div>
         </div>
 
