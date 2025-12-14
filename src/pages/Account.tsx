@@ -18,7 +18,10 @@ async function sendFeedback(payload: Record<string, string>, type: SubmitType): 
   try {
     const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-feedback`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+      },
       body: JSON.stringify({ type, ...payload }),
     });
 

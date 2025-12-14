@@ -49,7 +49,10 @@ async function sendFeedback(payload: Record<string, string>, type: SubmitType): 
   try {
     const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-feedback`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+      },
       body: JSON.stringify({ type, ...payload }),
     });
 
@@ -128,7 +131,10 @@ const Index = () => {
           
           const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/transcribe`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            },
             body: JSON.stringify({ audio: base64, mimeType: audioBlob.type }),
           });
 
@@ -160,7 +166,10 @@ const Index = () => {
     try {
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/evaluate`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
         body: JSON.stringify({
           transcript,
           question: currentQuestion.question,
