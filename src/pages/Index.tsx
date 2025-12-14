@@ -133,53 +133,44 @@ const Index = () => {
   const handleRecordingComplete = async (audioBlob: Blob) => {
     setStep("uploading");
     try {
-      const reader = new FileReader();
-      reader.readAsDataURL(audioBlob);
-      reader.onloadend = async () => {
-        try {
-          setStep("transcribing");
-          const base64 = (reader.result as string).split(',')[1];
-          
-          const response = await fetchWithTimeout(
-            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/transcribe`,
-            {
-              method: 'POST',
-              headers: { 
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-              },
-              body: JSON.stringify({ audio: base64, mimeType: audioBlob.type }),
-            },
-            15000,
-          );
+      setStep("transcribing");
 
-          const data = await response.json();
-          if (data.error) throw new Error(data.error);
-          if (!data.transcript || typeof data.transcript !== "string") {
-            throw new Error("No transcript returned from transcribe service.");
-          }
-          
-          setTranscript(data.transcript);
-          setTranscriptionWarning(data.transcript.length < 50);
-          setStep("editing");
-          toast({ title: "Transcription complete", description: "Review your response below." });
-        } catch (error) {
-          console.error('Transcription error:', error);
-          setTranscript("Transcription unavailable; please type your response below.");
-          setTranscriptionWarning(false);
-          setStep("editing");
-          toast({ 
-            title: "Transcription unavailable", 
-            description: "We added a placeholder. Please edit or type your response.", 
-            variant: "destructive" 
-          });
-        }
-      };
+      const fd = new FormData();
+      fd.append("file", audioBlob, "recording.webm");
+
+      const response = await fetchWithTimeout(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/transcribe`,
+        {
+          method: "POST",
+          headers: {
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: fd,
+        },
+        15000,
+      );
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data?.error || "Transcription failed");
+      if (!data.transcript || typeof data.transcript !== "string") {
+        throw new Error("No transcript returned from transcribe service.");
+      }
+
+      setTranscript(data.transcript);
+      setTranscriptionWarning(data.transcript.length < 50);
+      setStep("editing");
+      toast({ title: "Transcription complete", description: "Review your response below." });
     } catch (error) {
+      console.error("Transcription error:", error);
       setTranscript("Transcription unavailable; please type your response below.");
       setTranscriptionWarning(false);
       setStep("editing");
-      toast({ title: "Upload failed", description: "We added a placeholder. Please type your response.", variant: "destructive" });
+      toast({
+        title: "Transcription unavailable",
+        description: "We added a placeholder. Please edit or type your response.",
+        variant: "destructive",
+      });
     }
   };
 
