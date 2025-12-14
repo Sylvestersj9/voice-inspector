@@ -8,14 +8,19 @@ const allowedOrigins = (Deno.env.get("ALLOWED_ORIGINS") || "")
 
 const buildCorsHeaders = (req: Request) => {
   const origin = req.headers.get("origin") || "";
-  const allowAny = allowedOrigins.length === 0 || allowedOrigins.includes("*");
+
+  // Fail closed: if no allowed origins configured, block browser requests
+  if (allowedOrigins.length === 0) return null;
+
+  const allowAny = allowedOrigins.includes("*");
   const originAllowed = allowAny || (origin && allowedOrigins.includes(origin));
-  const allowOrigin = originAllowed ? (origin || "*") : origin || allowedOrigins[0] || "*";
+  if (!originAllowed) return null;
 
   return {
-    "Access-Control-Allow-Origin": allowOrigin,
+    "Access-Control-Allow-Origin": origin,
     "Access-Control-Allow-Methods": "POST,OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization, apikey",
+    "Access-Control-Max-Age": "86400",
     "Vary": "Origin",
   };
 };
@@ -26,6 +31,10 @@ const FROM_EMAIL = "Voice Inspector <onboarding@resend.dev>";
 
 serve(async (req) => {
   const corsHeaders = buildCorsHeaders(req);
+
+  if (!corsHeaders) {
+    return new Response("Forbidden", { status: 403 });
+  }
 
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 204, headers: corsHeaders });
