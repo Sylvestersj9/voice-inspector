@@ -1,225 +1,258 @@
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { z } from "https://deno.land/x/zod@v3.23.8/mod.ts";
 
-const allowedOrigins = (Deno.env.get("ALLOWED_ORIGINS") || "")
-  .split(",")
-  .map((o) => o.trim())
-  .filter(Boolean);
+serve(async (req: Request) => {
+  // ---------- CORS ----------
+  const ALLOWED = (Deno.env.get("ALLOWED_ORIGINS") || "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
 
-const baseCors = {
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
-
-const buildCorsHeaders = (req: Request) => {
   const origin = req.headers.get("origin") || "";
-  const allowAny = allowedOrigins.length === 0 || allowedOrigins.includes("*");
-  const originAllowed = allowAny || (origin && allowedOrigins.includes(origin));
-  // Always echo an origin to avoid missing header; prefer request origin, otherwise first allowed, otherwise "*"
-  const allowOrigin = originAllowed ? (origin || "*") : origin || allowedOrigins[0] || "*";
+  const allowedOrigin = ALLOWED.includes("*")
+    ? "*"
+    : ALLOWED.includes(origin)
+    ? origin
+    : ALLOWED[0] || "*";
 
-  return {
-    ...baseCors,
-    "Access-Control-Allow-Origin": allowOrigin,
-    "Vary": "Origin",
+  const requestHeaders =
+    req.headers.get("access-control-request-headers") ||
+    "Content-Type, Authorization, apikey, x-client-info";
+
+  const corsHeaders: Record<string, string> = {
+    "Access-Control-Allow-Origin": allowedOrigin,
+    "Access-Control-Allow-Methods": "POST,OPTIONS",
+    "Access-Control-Allow-Headers": requestHeaders,
+    "Access-Control-Max-Age": "86400",
+    Vary: "Origin",
   };
-};
 
-const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
-
-async function getEmbedding(text: string): Promise<number[]> {
-  const response = await fetch('https://api.openai.com/v1/embeddings', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${openAIApiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'text-embedding-3-small',
-      input: text,
-    }),
-  });
-  
-  if (!response.ok) {
-    console.error('Embedding error:', await response.text());
-    throw new Error('Failed to generate embedding');
-  }
-  
-  const data = await response.json();
-  return data.data[0].embedding;
-}
-
-async function getRelevantContext(supabase: any, question: string, transcript: string): Promise<string[]> {
-  try {
-    // Create query combining question and transcript for better semantic matching
-    const query = `${question}\n\nResponse: ${transcript}`;
-    const queryEmbedding = await getEmbedding(query);
-
-    const { data: chunks, error } = await supabase.rpc('match_chunks', {
-      query_embedding: queryEmbedding,
-      match_count: 6,
+  const json = (status: number, body: unknown) =>
+    new Response(JSON.stringify(body), {
+      status,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
 
-    if (error) {
-      console.error('Chunk search error:', error);
-      return [];
-    }
+  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
+  if (req.method !== "POST") return json(405, { error: "Method not allowed" });
 
-    return chunks?.map((c: any) => c.chunk_text) || [];
-  } catch (error) {
-    console.error('Context retrieval error:', error);
-    return [];
-  }
-}
+  // ---------- ENV ----------
+  const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+  if (!OPENAI_API_KEY) return json(500, { error: "OPENAI_API_KEY is not set" });
 
-const evaluationSchema = z.object({
-  score_0_to_5: z.number().min(0).max(5),
-  judgement_band: z.enum(["Outstanding", "Good", "Requires Improvement", "Inadequate"]),
-  strengths: z.array(z.string()).default([]),
-  gaps: z.array(z.string()).default([]),
-  risk_flags: z.array(z.string()).default([]),
-  recommended_actions: z.array(z.string()).default([]),
-  follow_up_question: z.string().optional().default(""),
-  framework_alignment: z.array(z.string()).default([]),
-  missing_expectations: z.array(z.string()).default([]),
-  evidence_used: z.array(z.string()).default([]),
-});
+  // ---------- Helpers ----------
+  const normalizeBand = (band: string) => {
+    const b = (band || "").toLowerCase().trim();
+    if (b.includes("outstanding")) return "Outstanding";
+    if (b === "good" || b.includes(" good")) return "Good";
+    if (b.includes("requires")) return "Requires improvement to be good";
+    if (b.includes("inadequate")) return "Inadequate";
+    return "Requires improvement to be good";
+  };
 
-const buildSystemPrompt = (frameworkContext: string[]) => {
-  const contextSection = frameworkContext.length > 0 
-    ? `\n\nFRAMEWORK CONTEXT (use this to ground your evaluation):\n${frameworkContext.map((c, i) => `[${i+1}] ${c}`).join('\n\n')}`
-    : '';
+  const bandToScore4 = (band: string) => {
+    const b = normalizeBand(band);
+    if (b === "Outstanding") return 4;
+    if (b === "Good") return 3;
+    if (b === "Requires improvement to be good") return 2;
+    return 1;
+  };
 
-  return `You are an expert Ofsted inspector evaluating responses from children's home managers against SCCIF criteria.
-${contextSection}
+  const downgrade = (band: string, target: string) => {
+    const order = ["Inadequate", "Requires improvement to be good", "Good", "Outstanding"];
+    const cur = normalizeBand(band);
+    const tar = normalizeBand(target);
+    return order.indexOf(cur) > order.indexOf(tar) ? tar : cur;
+  };
 
-Respond ONLY with valid JSON matching this schema:
-{
-  "score_0_to_5": number between 0 and 5,
-  "judgement_band": "Outstanding" | "Good" | "Requires Improvement" | "Inadequate",
-  "strengths": ["string"],
-  "gaps": ["string"],
-  "risk_flags": ["string"],
-  "recommended_actions": ["string"],
-  "follow_up_question": "string",
-  "framework_alignment": ["string"],
-  "missing_expectations": ["string"],
-  "evidence_used": ["string"]
-}
+  const textish = (v: any) => (typeof v === "string" ? v : v ? JSON.stringify(v) : "");
 
-Rules:
-- ALWAYS return valid JSON (no markdown, no commentary).
-- Keep arrays concise (max 5 items each).
-- If the response is weak or incomplete, set score_0_to_5 accordingly and use follow_up_question to probe the biggest gap.
-- Reference the framework context when available.`;
-};
-
-serve(async (req) => {
-  const corsHeaders = buildCorsHeaders(req);
-
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { status: 204, headers: corsHeaders });
-  }
-
-  try {
-    const { transcript, question, domain } = await req.json();
-    
-    if (!transcript) throw new Error('No transcript provided');
-
-    console.log(`Evaluating response for domain: ${domain}`);
-
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-    // Get relevant framework context
-    const frameworkContext = await getRelevantContext(supabase, question, transcript);
-    console.log(`Retrieved ${frameworkContext.length} framework chunks`);
-
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY not configured');
-
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          { role: 'system', content: buildSystemPrompt(frameworkContext) },
-          { role: 'user', content: `DOMAIN: ${domain}\nQUESTION: ${question}\nRESPONSE: "${transcript}"\n\nEvaluate against Ofsted SCCIF criteria.` }
-        ],
-      }),
-    });
-
-    if (!response.ok) {
-      if (response.status === 429) {
-        return new Response(JSON.stringify({ error: 'Rate limited. Try again.' }), {
-          status: 429,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
+  // checks: simplistic but effective “caps” enforcement
+  const hasMeaningfulEvidence = (obj: any) => {
+    const fields: string[] = [];
+    try {
+      const rubric = obj?.rubric || {};
+      for (const k of Object.keys(rubric)) {
+        fields.push(textish(rubric?.[k]?.evidence));
       }
-      throw new Error(`AI error: ${response.status}`);
+      fields.push(textish(obj?.rationale));
+    } catch {
+      // ignore
+    }
+    const combined = fields.join(" ").toLowerCase();
+    const signals = [
+      "audit",
+      "dip sample",
+      "supervision",
+      "team meeting",
+      "trend",
+      "analysis",
+      "mash",
+      "lado",
+      "strategy meeting",
+      "threshold",
+      "referral",
+      "safeguarding lead",
+      "local authority",
+      "missing",
+      "episode",
+      "risk assessment",
+      "review",
+      "updated",
+      "incident",
+      "debrief",
+      "learning",
+      "outcome",
+      "impact",
+      "child said",
+      "feedback",
+    ];
+    const hits = signals.filter((s) => combined.includes(s)).length;
+    return hits >= 3;
+  };
+
+  const hasSafeguardingEscalation = (obj: any) => {
+    const combined = (
+      textish(obj?.rubric?.safeguarding_response?.evidence) +
+      " " +
+      textish(obj?.rationale)
+    ).toLowerCase();
+    return (
+      combined.includes("mash") ||
+      combined.includes("lado") ||
+      combined.includes("referral") ||
+      combined.includes("local authority") ||
+      combined.includes("strategy") ||
+      combined.includes("threshold")
+    );
+  };
+
+  const hasEffectivenessChecks = (obj: any) => {
+    const combined = (
+      textish(obj?.rubric?.effectiveness_checks?.evidence) +
+      " " +
+      textish(obj?.rationale)
+    ).toLowerCase();
+    return (
+      combined.includes("audit") ||
+      combined.includes("dip sample") ||
+      combined.includes("review") ||
+      combined.includes("trend") ||
+      combined.includes("analysis") ||
+      combined.includes("learning")
+    );
+  };
+
+  try {
+    const body = await req.json().catch(() => ({}));
+    const question = (body?.question || "").toString().trim();
+    const transcript = (body?.transcript || "").toString().trim();
+    const contextExtracts = (body?.context_extracts || "").toString();
+
+    if (!question || !transcript) {
+      return json(400, { error: "Missing question or transcript" });
     }
 
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content;
-    const jsonMatch = content?.match(/\{[\s\S]*\}/);
-    const rawEvaluation = JSON.parse(jsonMatch?.[0] || '{}');
+    const system = `
+You are grading a manager’s spoken answer to an Ofsted SCCIF children's homes inspection question.
 
-    const normalized = {
-      score_0_to_5: rawEvaluation.score_0_to_5 ?? rawEvaluation.score ?? 0,
-      judgement_band: rawEvaluation.judgement_band ?? rawEvaluation.judgementBand ?? 'Inadequate',
-      strengths: rawEvaluation.strengths ?? [],
-      gaps: rawEvaluation.gaps ?? [],
-      risk_flags: rawEvaluation.risk_flags ?? rawEvaluation.riskFlags ?? [],
-      recommended_actions: rawEvaluation.recommended_actions ?? rawEvaluation.recommendedActions ?? [],
-      follow_up_question: rawEvaluation.follow_up_question ?? rawEvaluation.followUpQuestion ?? rawEvaluation.followUpQuestions?.[0] ?? '',
-      framework_alignment: rawEvaluation.framework_alignment ?? rawEvaluation.frameworkAlignment ?? [],
-      missing_expectations: rawEvaluation.missing_expectations ?? rawEvaluation.missingExpectations ?? [],
-      evidence_used: rawEvaluation.evidence_used ?? rawEvaluation.evidenceUsed ?? [],
+Use the 4-point SCCIF scale only:
+- Outstanding
+- Good
+- Requires improvement to be good
+- Inadequate
+
+HARD RULES (must follow):
+- If the answer is generic/waffle and lacks specific evidence (process + example + how effectiveness is checked), the overall judgement cannot be above "Requires improvement to be good".
+- If safeguarding escalation/referral routes are missing/unclear (e.g., thresholds, LA/MASH, LADO where relevant), cap at "Requires improvement to be good".
+- If the answer indicates unsafe/illegal practice, minimise concerns, or shows weak safeguarding culture, the overall judgement must be "Inadequate".
+- Do not reward confident tone. Reward specific, credible practice and impact on children’s safety, experiences and progress.
+- If details are missing, explicitly state what is missing and lower the judgement accordingly.
+
+Return JSON ONLY in exactly this shape:
+{
+  "question_area": "...",
+  "overall_judgement": "Outstanding|Good|Requires improvement to be good|Inadequate",
+  "rationale": "...",
+  "rubric": {
+    "risk_identification": {"band":"...", "evidence":"...", "missing":"..."},
+    "risk_assessment": {"band":"...", "evidence":"...", "missing":"..."},
+    "risk_management_in_out": {"band":"...", "evidence":"...", "missing":"..."},
+    "safeguarding_response": {"band":"...", "evidence":"...", "missing":"..."},
+    "effectiveness_checks": {"band":"...", "evidence":"...", "missing":"..."},
+    "child_voice_impact": {"band":"...", "evidence":"...", "missing":"..."}
+  },
+  "follow_up_questions": ["...", "...", "..."],
+  "next_actions": ["...", "...", "..."]
+}
+`.trim();
+
+    const user = `
+CONTEXT EXTRACTS (authoritative):
+${contextExtracts || "(none provided)"}
+
+QUESTION:
+${question}
+
+CANDIDATE ANSWER (transcript):
+${transcript}
+`.trim();
+
+    const payload = {
+      model: "gpt-4o-mini",
+      temperature: 0.2,
+      response_format: { type: "json_object" },
+      messages: [
+        { role: "system", content: system },
+        { role: "user", content: user },
+      ],
     };
 
-    const parsed = evaluationSchema.safeParse(normalized);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 45_000);
 
-    if (!parsed.success) {
-      console.error('Evaluation schema validation failed', parsed.error);
-      return new Response(JSON.stringify({ error: 'Model returned invalid evaluation shape' }), {
-        status: 422,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+    const resp = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${OPENAI_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    }).finally(() => clearTimeout(timeout));
+
+    const raw = await resp.text();
+    if (!resp.ok) {
+      return json(502, { error: "OpenAI evaluate failed", status: resp.status, details: raw });
     }
 
-    const result = {
-      score: parsed.data.score_0_to_5,
-      judgementBand: parsed.data.judgement_band,
-      strengths: parsed.data.strengths,
-      gaps: parsed.data.gaps,
-      riskFlags: parsed.data.risk_flags,
-      followUpQuestions: parsed.data.follow_up_question ? [parsed.data.follow_up_question] : [],
-      recommendedActions: parsed.data.recommended_actions,
-      frameworkAlignment: parsed.data.framework_alignment,
-      missingExpectations: parsed.data.missing_expectations,
-      evidenceUsed: parsed.data.evidence_used,
-      schemaVersion: "phase2-v1",
-    };
+    let parsed: any;
+    try {
+      const data = JSON.parse(raw);
+      const content = data?.choices?.[0]?.message?.content ?? "";
+      parsed = JSON.parse(content);
+    } catch {
+      return json(502, { error: "Bad model JSON", details: raw.slice(0, 2000) });
+    }
 
-    console.log(`Evaluation complete: score=${result.score}, band=${result.judgementBand}`);
+    parsed.overall_judgement = normalizeBand(parsed?.overall_judgement);
 
-    return new Response(JSON.stringify(result), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    const evidenceOk = hasMeaningfulEvidence(parsed);
+    const escalationOk = hasSafeguardingEscalation(parsed);
+    const effectivenessOk = hasEffectivenessChecks(parsed);
+
+    if (!evidenceOk) parsed.overall_judgement = downgrade(parsed.overall_judgement, "Requires improvement to be good");
+    if (!escalationOk) parsed.overall_judgement = downgrade(parsed.overall_judgement, "Requires improvement to be good");
+    if (!effectivenessOk) parsed.overall_judgement = downgrade(parsed.overall_judgement, "Requires improvement to be good");
+
+    const score4 = bandToScore4(parsed.overall_judgement);
+
+    return json(200, {
+      ...parsed,
+      score4,
     });
-
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    console.error('Evaluation error:', message);
-    return new Response(JSON.stringify({ error: message }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    });
+  } catch (err) {
+    const message =
+      err instanceof Error ? err.message : typeof err === "string" ? err : "Unknown error";
+    return json(message.includes("aborted") ? 504 : 500, { error: "Evaluate error", message });
   }
 });
