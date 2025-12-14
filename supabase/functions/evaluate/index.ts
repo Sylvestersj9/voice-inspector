@@ -3,7 +3,10 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { z } from "https://deno.land/x/zod@v3.23.8/mod.ts";
 
-const allowedOrigins = (Deno.env.get("ALLOWED_ORIGINS") || "").split(",").map(o => o.trim()).filter(Boolean);
+const allowedOrigins = (Deno.env.get("ALLOWED_ORIGINS") || "")
+  .split(",")
+  .map((o) => o.trim())
+  .filter(Boolean);
 const baseCors = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
@@ -11,13 +14,21 @@ const baseCors = {
 
 const buildCorsHeaders = (req: Request) => {
   const origin = req.headers.get("origin") || "";
-  if (allowedOrigins.length === 0) {
-    return { ...baseCors, "Access-Control-Allow-Origin": "*" };
+
+  const allowAny = allowedOrigins.length === 0 || allowedOrigins.includes("*");
+  if (allowAny) {
+    return { ...baseCors, "Access-Control-Allow-Origin": origin || "*" };
   }
+
   if (origin && allowedOrigins.includes(origin)) {
     return { ...baseCors, "Access-Control-Allow-Origin": origin };
   }
-  // Fallback to the first allowed origin so preflight succeeds
+
+  // If we don't recognize the origin, still echo it back to avoid blocking beta traffic.
+  if (origin) {
+    return { ...baseCors, "Access-Control-Allow-Origin": origin };
+  }
+
   return { ...baseCors, "Access-Control-Allow-Origin": allowedOrigins[0] };
 };
 

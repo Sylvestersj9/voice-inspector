@@ -1,7 +1,10 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const allowedOrigins = (Deno.env.get("ALLOWED_ORIGINS") || "").split(",").map(o => o.trim()).filter(Boolean);
+const allowedOrigins = (Deno.env.get("ALLOWED_ORIGINS") || "")
+  .split(",")
+  .map((o) => o.trim())
+  .filter(Boolean);
 const baseCors = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
@@ -9,8 +12,20 @@ const baseCors = {
 
 const buildCorsHeaders = (req: Request) => {
   const origin = req.headers.get("origin") || "";
-  if (allowedOrigins.length === 0) return { ...baseCors, "Access-Control-Allow-Origin": "*" };
-  if (origin && allowedOrigins.includes(origin)) return { ...baseCors, "Access-Control-Allow-Origin": origin };
+
+  const allowAny = allowedOrigins.length === 0 || allowedOrigins.includes("*");
+  if (allowAny) {
+    return { ...baseCors, "Access-Control-Allow-Origin": origin || "*" };
+  }
+
+  if (origin && allowedOrigins.includes(origin)) {
+    return { ...baseCors, "Access-Control-Allow-Origin": origin };
+  }
+
+  if (origin) {
+    return { ...baseCors, "Access-Control-Allow-Origin": origin };
+  }
+
   return { ...baseCors, "Access-Control-Allow-Origin": allowedOrigins[0] };
 };
 
