@@ -11,6 +11,7 @@ import {
   calcPriorityAreas,
   buildOfstedConclusionTemplate,
 } from "@/lib/inspectionSession";
+import { getPlan } from "@/lib/plan";
 
 interface SessionSummaryProps {
   results: Map<number, EvaluationResult>;
@@ -18,9 +19,18 @@ interface SessionSummaryProps {
 }
 
 export function SessionSummary({ results, onStartOver }: SessionSummaryProps) {
-  const plan: "free" | "pro" = "free";
+  const plan: "free" | "pro" = getPlan();
 
-  const scores = Array.from(results.values()).map((r) => r.score4 ?? r.score ?? 0);
+  const entries = Array.from(results?.entries?.() || []);
+  if (!entries.length) {
+    return (
+      <div className="card-elevated p-6 text-sm text-muted-foreground">
+        No session results available yet.
+      </div>
+    );
+  }
+
+  const scores = entries.map(([, r]) => r.score4 ?? r.score ?? 0);
   const averageScore = scores.length ? scores.reduce((sum, v) => sum + v, 0) / scores.length : 0;
   const overallBand = getJudgementBand(averageScore || 0);
 

@@ -9,6 +9,7 @@ import {
   calcPriorityAreas,
   buildOfstedConclusionTemplate,
 } from "@/lib/inspectionSession";
+import { getPlan } from "@/lib/plan";
 
 interface ExportSummaryProps {
   results: Map<number, EvaluationResult>;
@@ -16,8 +17,17 @@ interface ExportSummaryProps {
 }
 
 export function ExportSummary({ results, sessionDate = new Date() }: ExportSummaryProps) {
-  const plan: "free" | "pro" = "free";
-  const scores = Array.from(results.values()).map((r) => r.score4 ?? r.score ?? 0);
+  const plan: "free" | "pro" = getPlan();
+  const entries = Array.from(results?.entries?.() || []);
+  if (!entries.length) {
+    return (
+      <div className="text-sm text-muted-foreground">
+        No session results available yet.
+      </div>
+    );
+  }
+
+  const scores = entries.map(([, r]) => r.score4 ?? r.score ?? 0);
   const averageScore = scores.length ? scores.reduce((sum, v) => sum + v, 0) / scores.length : 0;
   const overallBand = getJudgementBand(averageScore || 0);
 

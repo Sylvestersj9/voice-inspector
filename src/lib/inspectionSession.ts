@@ -16,7 +16,7 @@ export interface SessionAreaResult {
   confidence?: ConfidenceBand;
 }
 
-export function calcSessionBand(scores: number[]) {
+export function calcSessionBand(scores: number[] = []) {
   if (!scores.length) return { session_band: "Requires improvement to be good" as JudgementBand, session_score4: 0 };
   const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
   const session_band =
@@ -27,7 +27,7 @@ export function calcSessionBand(scores: number[]) {
   return { session_band: session_band as JudgementBand, session_score4: Math.round(avg * 10) / 10 };
 }
 
-export function calcTrajectory(scores: number[]) {
+export function calcTrajectory(scores: number[] = []) {
   if (scores.length < 3) return "insufficient data";
   const diff = scores[scores.length - 1] - scores[0];
   if (diff >= 1) return "improving";
@@ -35,7 +35,7 @@ export function calcTrajectory(scores: number[]) {
   return "stable";
 }
 
-export function calcReadinessScore(areas: SessionAreaResult[]) {
+export function calcReadinessScore(areas: SessionAreaResult[] = []) {
   if (!areas.length) return 0;
   let total = 0;
   let weight = 0;
@@ -58,7 +58,7 @@ export function calcReadinessScore(areas: SessionAreaResult[]) {
   return Math.min(100, Math.max(0, score));
 }
 
-export function calcPriorityAreas(areas: SessionAreaResult[], topN = 2) {
+export function calcPriorityAreas(areas: SessionAreaResult[] = [], topN = 2) {
   const grouped = new Map<string, number[]>();
   areas.forEach((a) => {
     const key = a.area;
