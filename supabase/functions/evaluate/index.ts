@@ -107,7 +107,7 @@ serve(async (req: Request) => {
       "feedback",
     ];
     const hits = signals.filter((s) => combined.includes(s)).length;
-    return hits >= 3;
+    return hits >= 5;
   };
 
   const hasSafeguardingEscalation = (obj: any) => {
@@ -122,7 +122,12 @@ serve(async (req: Request) => {
       combined.includes("referral") ||
       combined.includes("local authority") ||
       combined.includes("strategy") ||
-      combined.includes("threshold")
+      combined.includes("threshold") ||
+      combined.includes("section 47") ||
+      combined.includes("safeguarding referral") ||
+      combined.includes("multi-agency") ||
+      combined.includes("escalation") ||
+      combined.includes("professional disagreement")
     );
   };
 
@@ -139,6 +144,22 @@ serve(async (req: Request) => {
       combined.includes("trend") ||
       combined.includes("analysis") ||
       combined.includes("learning")
+    );
+  };
+
+  const hasImpact = (obj: any) => {
+    const combined = (
+      textish(obj?.rubric?.child_voice_impact?.evidence) +
+      " " +
+      textish(obj?.rationale)
+    ).toLowerCase();
+    return (
+      combined.includes("impact") ||
+      combined.includes("outcome") ||
+      combined.includes("reduced") ||
+      combined.includes("improved") ||
+      combined.includes("children feel") ||
+      combined.includes("child said")
     );
   };
 
@@ -239,16 +260,24 @@ ${transcript}
     const evidenceOk = hasMeaningfulEvidence(parsed);
     const escalationOk = hasSafeguardingEscalation(parsed);
     const effectivenessOk = hasEffectivenessChecks(parsed);
+    const impactOk = hasImpact(parsed);
 
     if (!evidenceOk) parsed.overall_judgement = downgrade(parsed.overall_judgement, "Requires improvement to be good");
     if (!escalationOk) parsed.overall_judgement = downgrade(parsed.overall_judgement, "Requires improvement to be good");
     if (!effectivenessOk) parsed.overall_judgement = downgrade(parsed.overall_judgement, "Requires improvement to be good");
+    if (!impactOk) parsed.overall_judgement = downgrade(parsed.overall_judgement, "Requires improvement to be good");
 
     const score4 = bandToScore4(parsed.overall_judgement);
 
     return json(200, {
       ...parsed,
       score4,
+      debug: {
+        evidenceOk,
+        escalationOk,
+        effectivenessOk,
+        impactOk,
+      },
     });
   } catch (err) {
     const message =
