@@ -107,7 +107,7 @@ serve(async (req: Request) => {
       "feedback",
     ];
     const hits = signals.filter((s) => combined.includes(s)).length;
-    return hits >= 5;
+    return hits >= 4;
   };
 
   const hasSafeguardingEscalation = (obj: any) => {
@@ -276,19 +276,35 @@ ${transcript}
     const effectivenessOk = hasEffectivenessChecks(parsed);
     const impactOk = hasImpact(parsed);
 
-    if (wordCount < 180) {
+    if (wordCount < 120) {
       parsed.overall_judgement = downgrade(parsed.overall_judgement, "Requires improvement to be good");
+    } else if (wordCount >= 120 && wordCount < 220) {
+      parsed.overall_judgement = downgrade(parsed.overall_judgement, "Good");
     }
     if (!hasEffectivenessText) {
       parsed.overall_judgement = downgrade(parsed.overall_judgement, "Requires improvement to be good");
     }
     if (!hasEscalationText) {
-      parsed.overall_judgement = downgrade(parsed.overall_judgement, "Requires improvement to be good");
+      parsed.overall_judgement = downgrade(parsed.overall_judgement, "Good");
     }
     if (!evidenceOk) parsed.overall_judgement = downgrade(parsed.overall_judgement, "Requires improvement to be good");
     if (!escalationOk) parsed.overall_judgement = downgrade(parsed.overall_judgement, "Requires improvement to be good");
     if (!effectivenessOk) parsed.overall_judgement = downgrade(parsed.overall_judgement, "Requires improvement to be good");
     if (!impactOk) parsed.overall_judgement = downgrade(parsed.overall_judgement, "Requires improvement to be good");
+
+    const outstandingSignals = hasEscalation && hasEffectiveness && hasImpact && wordCount >= 220;
+    if (outstandingSignals) {
+      parsed.overall_judgement = "Outstanding";
+    }
+
+    if (
+      parsed.overall_judgement === "Good" &&
+      evidenceOk &&
+      effectivenessOk &&
+      wordCount >= 200
+    ) {
+      parsed.overall_judgement = "Good";
+    }
 
     const score4 = bandToScore4(parsed.overall_judgement);
 
