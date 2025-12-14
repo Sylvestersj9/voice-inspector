@@ -7,6 +7,7 @@ const allowedOrigins = (Deno.env.get("ALLOWED_ORIGINS") || "")
   .split(",")
   .map((o) => o.trim())
   .filter(Boolean);
+
 const baseCors = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
@@ -14,22 +15,16 @@ const baseCors = {
 
 const buildCorsHeaders = (req: Request) => {
   const origin = req.headers.get("origin") || "";
-
   const allowAny = allowedOrigins.length === 0 || allowedOrigins.includes("*");
-  if (allowAny) {
-    return { ...baseCors, "Access-Control-Allow-Origin": origin || "*" };
-  }
+  const originAllowed = allowAny || (origin && allowedOrigins.includes(origin));
+  // Always echo an origin to avoid missing header; prefer request origin, otherwise first allowed, otherwise "*"
+  const allowOrigin = originAllowed ? (origin || "*") : origin || allowedOrigins[0] || "*";
 
-  if (origin && allowedOrigins.includes(origin)) {
-    return { ...baseCors, "Access-Control-Allow-Origin": origin };
-  }
-
-  // If we don't recognize the origin, still echo it back to avoid blocking beta traffic.
-  if (origin) {
-    return { ...baseCors, "Access-Control-Allow-Origin": origin };
-  }
-
-  return { ...baseCors, "Access-Control-Allow-Origin": allowedOrigins[0] };
+  return {
+    ...baseCors,
+    "Access-Control-Allow-Origin": allowOrigin,
+    "Vary": "Origin",
+  };
 };
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -127,7 +122,7 @@ serve(async (req) => {
   const corsHeaders = buildCorsHeaders(req);
 
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { status: 204, headers: corsHeaders });
   }
 
   try {
