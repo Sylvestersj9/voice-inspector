@@ -4,6 +4,13 @@ import { RotateCcw, Clock, Printer } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Link } from "react-router-dom";
 import { ExportSummary } from "./ExportSummary";
+import {
+  calcSessionBand,
+  calcTrajectory,
+  calcReadinessScore,
+  calcPriorityAreas,
+  buildOfstedConclusionTemplate,
+} from "@/lib/inspectionSession";
 
 interface SessionSummaryProps {
   results: Map<number, EvaluationResult>;
@@ -11,9 +18,27 @@ interface SessionSummaryProps {
 }
 
 export function SessionSummary({ results, onStartOver }: SessionSummaryProps) {
+  const plan: "free" | "pro" = "free";
+
   const scores = Array.from(results.values()).map((r) => r.score4 ?? r.score ?? 0);
   const averageScore = scores.length ? scores.reduce((sum, v) => sum + v, 0) / scores.length : 0;
   const overallBand = getJudgementBand(averageScore || 0);
+
+  const sessionAreas = ofstedQuestions.map((q, idx) => {
+    const r = results.get(idx);
+    return {
+      area: q.domain,
+      band: r?.judgementBand ?? "Requires improvement to be good",
+      score4: r?.score4 ?? r?.score ?? 0,
+      confidence: r?.confidenceBand,
+    };
+  }).filter((r) => r.score4 > 0);
+
+  const { session_band, session_score4 } = calcSessionBand(sessionAreas.map((a) => a.score4));
+  const trajectory = calcTrajectory(sessionAreas.map((a) => a.score4));
+  const readiness = calcReadinessScore(sessionAreas);
+  const priorityAreas = calcPriorityAreas(sessionAreas);
+  const ofstedConclusion = buildOfstedConclusionTemplate(session_band, priorityAreas, trajectory);
   
   const getScoreColor = (band: string) => {
     switch (band) {
@@ -34,20 +59,62 @@ export function SessionSummary({ results, onStartOver }: SessionSummaryProps) {
         </h2>
         
         <div className="flex flex-col items-center gap-4 mb-6">
-          <div className={cn("px-6 py-2 rounded-full text-lg font-semibold", getScoreColor(overallBand))}>
-            {overallBand}
+          <div className={cn("px-6 py-2 rounded-full text-lg font-semibold", getScoreColor(session_band))}>
+            {session_band}
           </div>
-          {averageScore > 0 && (
+          {session_score4 > 0 && (
             <div className="text-sm text-muted-foreground">
-              Band score: {averageScore.toFixed(2)}/4
+              Session score: {session_score4.toFixed(2)}/4
             </div>
           )}
         </div>
         
         <p className="text-muted-foreground max-w-lg mx-auto">
           Based on your responses across all {results.size} questions, your overall performance 
-          indicates a <span className="font-semibold text-foreground">{overallBand}</span> rating.
+          indicates a <span className="font-semibold text-foreground">{session_band}</span> inspection readiness band.
         </p>
+      </div>
+
+      <div className="card-elevated p-6 space-y-3">
+        <h3 className="font-display text-lg font-semibold text-foreground">Inspection Readiness</h3>
+        <div className="grid gap-3 md:grid-cols-3 items-center">
+          <div>
+            <p className="text-xs text-muted-foreground uppercase">Trajectory</p>
+            <p className="text-sm text-foreground">
+              {trajectory === "improving" && "↑ Improving"}
+              {trajectory === "declining" && "↓ Declining"}
+              {trajectory === "stable" && "→ Stable"}
+              {trajectory === "insufficient data" && "Not enough data"}
+            </p>
+          </div>
+          {plan === "pro" ? (
+            <>
+              <div>
+                <p className="text-xs text-muted-foreground uppercase">Readiness score</p>
+                <p className="text-sm text-foreground">{readiness}/100</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground uppercase">Priority areas</p>
+                <p className="text-sm text-foreground">{priorityAreas.join(", ") || "None identified"}</p>
+              </div>
+            </>
+          ) : (
+            <div className="md:col-span-2">
+              <div className="card-elevated border border-primary/30 p-4">
+                <p className="text-sm font-semibold text-foreground">Unlock full inspection rehearsal</p>
+                <p className="text-xs text-muted-foreground">
+                  Upgrade to see readiness score, trajectory detail, and inspector-style conclusion.
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+        {plan === "pro" && (
+          <div className="pt-2">
+            <p className="text-xs text-muted-foreground uppercase mb-1">What Ofsted would likely conclude</p>
+            <p className="text-sm text-foreground">{ofstedConclusion}</p>
+          </div>
+        )}
       </div>
 
       {/* Export Summary */}

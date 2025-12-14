@@ -2,6 +2,13 @@ import { EvaluationResult, ofstedQuestions, getJudgementBand } from "@/lib/quest
 import { Button } from "@/components/ui/button";
 import { Printer } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  calcSessionBand,
+  calcReadinessScore,
+  calcTrajectory,
+  calcPriorityAreas,
+  buildOfstedConclusionTemplate,
+} from "@/lib/inspectionSession";
 
 interface ExportSummaryProps {
   results: Map<number, EvaluationResult>;
@@ -9,9 +16,26 @@ interface ExportSummaryProps {
 }
 
 export function ExportSummary({ results, sessionDate = new Date() }: ExportSummaryProps) {
+  const plan: "free" | "pro" = "free";
   const scores = Array.from(results.values()).map((r) => r.score4 ?? r.score ?? 0);
   const averageScore = scores.length ? scores.reduce((sum, v) => sum + v, 0) / scores.length : 0;
   const overallBand = getJudgementBand(averageScore || 0);
+
+  const sessionAreas = ofstedQuestions.map((q, idx) => {
+    const r = results.get(idx);
+    return {
+      area: q.domain,
+      band: r?.judgementBand ?? "Requires improvement to be good",
+      score4: r?.score4 ?? r?.score ?? 0,
+      confidence: r?.confidenceBand,
+    };
+  }).filter((r) => r.score4 > 0);
+
+  const { session_band, session_score4 } = calcSessionBand(sessionAreas.map((a) => a.score4));
+  const trajectory = calcTrajectory(sessionAreas.map((a) => a.score4));
+  const readiness = calcReadinessScore(sessionAreas);
+  const priorityAreas = calcPriorityAreas(sessionAreas);
+  const ofstedConclusion = buildOfstedConclusionTemplate(session_band, priorityAreas, trajectory);
 
   // Collect all strengths, gaps, and actions
   const allStrengths = Array.from(results.values()).flatMap(r => r.strengths).slice(0, 5);
@@ -51,15 +75,25 @@ export function ExportSummary({ results, sessionDate = new Date() }: ExportSumma
         {/* Overall Score */}
         <div className="flex items-center gap-6 p-4 bg-muted/50 rounded-lg print:bg-gray-100">
           <div>
-            <div className="text-xl font-semibold text-foreground print:text-black">{overallBand}</div>
-            {averageScore > 0 && (
+            <div className="text-xl font-semibold text-foreground print:text-black">{session_band}</div>
+            {session_score4 > 0 && (
               <p className="text-sm text-muted-foreground print:text-gray-600">
-                Band score: {averageScore.toFixed(2)}/4
+                Session score: {session_score4.toFixed(2)}/4
               </p>
             )}
             <p className="text-sm text-muted-foreground print:text-gray-600">
               Overall judgement across {results.size} questions
             </p>
+            <p className="text-sm text-muted-foreground print:text-gray-600">
+              Priority areas: {priorityAreas.join(", ") || "None identified"}
+            </p>
+            {plan === "pro" && (
+              <>
+                <p className="text-sm text-muted-foreground print:text-gray-600">Readiness: {readiness}/100</p>
+                <p className="text-sm text-muted-foreground print:text-gray-600">Trajectory: {trajectory}</p>
+                <p className="text-sm text-foreground print:text-black mt-1">{ofstedConclusion}</p>
+              </>
+            )}
           </div>
         </div>
 
@@ -171,4 +205,3 @@ export function ExportSummary({ results, sessionDate = new Date() }: ExportSumma
     </div>
   );
 }
-
