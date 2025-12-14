@@ -3,10 +3,22 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { z } from "https://deno.land/x/zod@v3.23.8/mod.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+const allowedOrigins = (Deno.env.get("ALLOWED_ORIGINS") || "").split(",").map(o => o.trim()).filter(Boolean);
+const baseCors = {
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
+
+const buildCorsHeaders = (req: Request) => {
+  const origin = req.headers.get("origin") || "";
+  if (allowedOrigins.length === 0) {
+    return { ...baseCors, "Access-Control-Allow-Origin": "*" };
+  }
+  if (origin && allowedOrigins.includes(origin)) {
+    return { ...baseCors, "Access-Control-Allow-Origin": origin };
+  }
+  // Fallback to the first allowed origin so preflight succeeds
+  return { ...baseCors, "Access-Control-Allow-Origin": allowedOrigins[0] };
 };
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -101,6 +113,8 @@ Rules:
 };
 
 serve(async (req) => {
+  const corsHeaders = buildCorsHeaders(req);
+
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -138,9 +152,9 @@ serve(async (req) => {
 
     if (!response.ok) {
       if (response.status === 429) {
-        return new Response(JSON.stringify({ error: 'Rate limited. Try again.' }), { 
-          status: 429, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        return new Response(JSON.stringify({ error: 'Rate limited. Try again.' }), {
+          status: 429,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       }
       throw new Error(`AI error: ${response.status}`);
@@ -168,9 +182,9 @@ serve(async (req) => {
 
     if (!parsed.success) {
       console.error('Evaluation schema validation failed', parsed.error);
-      return new Response(JSON.stringify({ error: 'Model returned invalid evaluation shape' }), { 
-        status: 422, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      return new Response(JSON.stringify({ error: 'Model returned invalid evaluation shape' }), {
+        status: 422,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
@@ -190,16 +204,16 @@ serve(async (req) => {
 
     console.log(`Evaluation complete: score=${result.score}, band=${result.judgementBand}`);
 
-    return new Response(JSON.stringify(result), { 
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+    return new Response(JSON.stringify(result), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('Evaluation error:', message);
-    return new Response(JSON.stringify({ error: message }), { 
-      status: 500, 
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+    return new Response(JSON.stringify({ error: message }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
   }
 });
