@@ -1,36 +1,25 @@
 import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "../lib/supabase";
+import LoadingOverlay from "@/components/LoadingOverlay";
 
 export default function AuthCallback() {
-  const navigate = useNavigate();
-
   useEffect(() => {
-    const target = new URL(window.location.href).searchParams.get("from") || "/app";
+    (async () => {
+      const { data, error } = await supabase.auth.getSession();
 
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) navigate(target);
-    });
-
-    supabase.auth.getSession().then(async ({ data }) => {
-      if (!data.session) {
-        navigate("/login?error=1");
+      if (error) {
+        console.error("Auth callback error:", error);
+        window.location.href = "/login";
         return;
       }
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("onboarding_complete")
-        .eq("id", data.session.user.id)
-        .maybeSingle();
-      if (profile && profile.onboarding_complete === false) {
-        navigate("/onboarding");
+
+      if (data.session) {
+        window.location.href = "/app";
       } else {
-        navigate(target);
+        window.location.href = "/login";
       }
-    });
+    })();
+  }, []);
 
-    return () => sub.subscription.unsubscribe();
-  }, [navigate]);
-
-  return <div style={{ padding: 16 }}>Signing you in…</div>;
+  return <LoadingOverlay message="Signing you in..." />;
 }

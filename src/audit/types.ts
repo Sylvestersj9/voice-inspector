@@ -3,6 +3,14 @@ export type AuditAction =
   | "inspection_answered"
   | "inspection_submitted"
   | "inspection_reviewed"
+  | "inspection_framework_snapshotted"
+  | "inspection_evaluated"
+  | "inspection_report_generated"
+  | "inspection_report_exported"
+  | "subscription_created"
+  | "subscription_updated"
+  | "subscription_canceled"
+  | "billing_action_blocked"
   | "login"
   | "logout";
 

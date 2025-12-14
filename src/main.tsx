@@ -1,13 +1,16 @@
-import { createRoot } from "react-dom/client";
-import App from "./App.tsx";
+import React from "react";
+import ReactDOM from "react-dom/client";
+import App from "./App";
 import "./index.css";
-import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { AuthProvider } from "@/auth/AuthProvider";
+import { AuthProvider } from "./auth/AuthProvider";
+import { LoadingProvider } from "./providers/LoadingProvider";
 
-createRoot(document.getElementById("root")!).render(
-  <ErrorBoundary>
-    <AuthProvider>
-      <App />
-    </AuthProvider>
-  </ErrorBoundary>
+ReactDOM.createRoot(document.getElementById("root")!).render(
+  <React.StrictMode>
+    <LoadingProvider>
+      <AuthProvider>
+        <App />
+      </AuthProvider>
+    </LoadingProvider>
+  </React.StrictMode>,
 );

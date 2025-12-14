@@ -1,5 +1,11 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
+
 type StrictnessProfile = {
   minWords: number;
   requireEscalationForGood: boolean;
@@ -34,37 +40,15 @@ const STRICTNESS: Record<string, StrictnessProfile> = {
 
 serve(async (req: Request) => {
   // ---------- CORS ----------
-  const ALLOWED = (Deno.env.get("ALLOWED_ORIGINS") || "")
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
-
-  const origin = req.headers.get("origin") || "";
-  const allowedOrigin = ALLOWED.includes("*")
-    ? "*"
-    : ALLOWED.includes(origin)
-    ? origin
-    : ALLOWED[0] || "*";
-
-  const requestHeaders =
-    req.headers.get("access-control-request-headers") ||
-    "Content-Type, Authorization, apikey, x-client-info";
-
-  const corsHeaders: Record<string, string> = {
-    "Access-Control-Allow-Origin": allowedOrigin,
-    "Access-Control-Allow-Methods": "POST,OPTIONS",
-    "Access-Control-Allow-Headers": requestHeaders,
-    "Access-Control-Max-Age": "86400",
-    Vary: "Origin",
-  };
-
   const json = (status: number, body: unknown) =>
     new Response(JSON.stringify(body), {
       status,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
 
-  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
+  }
   if (req.method !== "POST") return json(405, { error: "Method not allowed" });
 
   // ---------- ENV ----------

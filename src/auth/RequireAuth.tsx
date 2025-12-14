@@ -1,33 +1,17 @@
-import { Navigate, useLocation } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import { useAuth } from "./AuthProvider";
-import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
-import type { Role } from "./permissions";
+import LoadingOverlay from "@/components/LoadingOverlay";
 
-interface RequireAuthProps {
-  children: JSX.Element;
-  allowedRoles?: Role[];
-}
+export default function RequireAuth({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth();
 
-export function RequireAuth({ children, allowedRoles }: RequireAuthProps) {
-  const { user, loading, role, onboardingComplete, ready } = useAuth();
-  const location = useLocation();
-  const isOnboardingRoute = location.pathname === "/onboarding";
-
-  // Wait until auth + profile are ready
-  if (loading || !ready) return <div style={{ padding: 16 }}>Loading…</div>;
+  if (loading) {
+    return <LoadingOverlay message="Signing you in..." />;
+  }
 
   if (!user) {
-    return <Navigate to="/login" replace state={{ from: location.pathname }} />;
+    return <Navigate to="/login" replace />;
   }
 
-  if (onboardingComplete === false && !isOnboardingRoute) {
-    return <Navigate to="/onboarding" replace state={{ from: location.pathname }} />;
-  }
-
-  if (allowedRoles && !allowedRoles.includes(role)) {
-    return <Navigate to="/app" replace />;
-  }
-
-  return children;
+  return <>{children}</>;
 }

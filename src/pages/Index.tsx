@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
 import { useToast } from "@/hooks/use-toast";
 import { ofstedQuestions, EvaluationResult, getJudgementBand } from "@/lib/questions";
@@ -8,15 +8,18 @@ import { VoiceRecorder } from "@/components/VoiceRecorder";
 import { TranscriptEditor } from "@/components/TranscriptEditor";
 import { EvaluationResults } from "@/components/EvaluationResults";
 import { ProgressIndicator } from "@/components/ProgressIndicator";
-import { SessionSummary } from "@/components/SessionSummary";
 import { InputMethodSelector } from "@/components/InputMethodSelector";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import LoadingOverlay from "@/components/LoadingOverlay";
 import { supabase } from "@/lib/supabase";
+import { bandUi } from "@/lib/evalUi";
+import { useLoading } from "@/providers/LoadingProvider";
 import { Loader2, ChevronLeft, ChevronRight, MessageCircleQuestion, Clock, Settings, RefreshCw, AlertTriangle, MessageSquare, Mail, Check } from "lucide-react";
 import { detectFollowUpNeed, FollowUpDecision, getFollowUpLabel } from "@/lib/followUpRules";
 import { evaluationSchema } from "@/lib/evaluationSchema";
+import FinalSummaryReport from "@/components/report/FinalSummaryReport";
 
 type Step = 
   | "ready" 
@@ -90,7 +93,9 @@ const fetchWithTimeout = async (url: string, options: RequestInit, timeoutMs: nu
 };
 
 const Index = () => {
+  const navigate = useNavigate();
   const { toast } = useToast();
+  const loading = useLoading();
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [step, setStep] = useState<Step>("ready");
   const [transcript, setTranscript] = useState("");
@@ -128,9 +133,14 @@ const Index = () => {
   };
 
   const handleTextSubmit = (text: string) => {
-    setTranscript(text);
-    setStep("editing");
-    toast({ title: "Response received", description: "Review your response below." });
+    const trimmed = text.trim();
+    if (!trimmed) {
+      toast({ title: "Please enter a response", variant: "destructive" });
+      return;
+    }
+    setTranscript(trimmed);
+    setTranscriptionWarning(false);
+    handleSubmitForEvaluation(trimmed);
   };
 
   const handleRecordingComplete = async (audioBlob: Blob) => {
@@ -163,7 +173,7 @@ const Index = () => {
 
       const text = (data?.transcript || data?.text || "").trim();
       if (!text) {
-        throw new Error("No speech detected. Try speaking closer to the mic for 3–5 seconds.");
+        throw new Error("No speech detected. Try speaking closer to the mic for 3-5 seconds.");
       }
 
       setTranscript(text);
@@ -179,8 +189,15 @@ const Index = () => {
     }
   };
 
-  const handleSubmitForEvaluation = async () => {
+  const handleSubmitForEvaluation = async (overrideTranscript?: string) => {
+    const transcriptToUse = (overrideTranscript ?? transcript).trim();
+    if (!transcriptToUse) {
+      toast({ title: "No response to evaluate", variant: "destructive" });
+      return;
+    }
+    setTranscript(transcriptToUse);
     setStep("evaluating");
+    loading.show("Evaluating your response…");
     try {
       const plan = "free";
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/evaluate`, {
@@ -190,7 +207,7 @@ const Index = () => {
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
         body: JSON.stringify({
-          transcript,
+          transcript: transcriptToUse,
           question: currentQuestion.question,
           domain: currentQuestion.domain,
           question_area: currentQuestion.domain,
@@ -237,7 +254,7 @@ const Index = () => {
 
       const followUpDecision = detectFollowUpNeed({
         score: mappedEvaluation.score || 0,
-        transcript,
+        transcript: transcriptToUse,
         evaluation: mappedEvaluation,
         domain: currentQuestion.domain,
         attemptIndex: followUpCount,
@@ -255,7 +272,7 @@ const Index = () => {
         }));
       } else {
         setResults(prev => new Map(prev).set(currentQuestionIndex, {
-          transcript,
+          transcript: transcriptToUse,
           evaluation: parsedEvaluation,
           followUpUsed: false,
           followUpDecision,
@@ -268,9 +285,10 @@ const Index = () => {
       
       setStep("evaluated");
       setIsFollowUp(false);
+      const ui = bandUi(judgementBand);
       toast({ 
         title: "Evaluation complete", 
-        description: judgementBand 
+        description: `${ui.icon} ${ui.label}` 
       });
     } catch (error) {
       console.error('Evaluation error:', error);
@@ -280,6 +298,8 @@ const Index = () => {
         variant: "destructive" 
       });
       setStep("editing");
+    } finally {
+      loading.hide();
     }
   };
 
@@ -513,55 +533,111 @@ const Index = () => {
     </div>
   );
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate("/login?loggedOut=true", { replace: true });
+  };
+
+  const handlePracticeAgain = () => {
+    setCurrentQuestionIndex(0);
+    setResults(new Map());
+    setCompletedQuestions([]);
+    setEvaluation(null);
+    setTranscript("");
+    setFollowUpCount(0);
+    setIsFollowUp(false);
+    setStep("ready");
+    setTranscriptionWarning(false);
+    setTranscriptionError(null);
+  };
+
   if (step === "summary") {
-    // Convert results to the format expected by SessionSummary
     const evaluationResults = new Map<number, EvaluationResult>();
+    const questions = ofstedQuestions.map((q) => ({
+      id: String(q.id),
+      domain: q.domain,
+      title: q.shortTitle,
+      question: q.question,
+    }));
+
+    const answers: { question_id: string; text?: string }[] = [];
+    const evaluationsForReport: {
+      question_id?: string;
+      score?: number | null;
+      band?: string | null;
+      strengths?: string[] | null;
+      gaps?: string[] | null;
+      recommendations?: string[] | null;
+      follow_up_questions?: string[] | null;
+    }[] = [];
+
     results.forEach((result, index) => {
-      // Use follow-up evaluation if available and better, otherwise use original
       const evalToUse = result.followUpEvaluation && result.followUpEvaluation.score > result.evaluation.score
         ? result.followUpEvaluation
         : result.evaluation;
       evaluationResults.set(index, evalToUse);
+
+      const question = ofstedQuestions[index];
+      const chosenTranscript = result.followUpTranscript ?? result.transcript;
+
+      answers.push({
+        question_id: String(question.id),
+        text: chosenTranscript,
+      });
+
+      const scoreValue = (evalToUse.score4 ?? evalToUse.score ?? 0) * 25;
+
+      evaluationsForReport.push({
+        question_id: String(question.id),
+        score: scoreValue,
+        band: evalToUse.judgementBand,
+        strengths: evalToUse.strengths ?? [],
+        gaps: (evalToUse.gaps ?? evalToUse.weaknesses) ?? [],
+        recommendations: evalToUse.recommendations ?? evalToUse.recommendedActions ?? [],
+        follow_up_questions: evalToUse.followUpQuestions ?? [],
+      });
     });
 
     return (
       <div className="min-h-screen gradient-hero py-12 px-4">
-        <div className="container max-w-4xl mx-auto">
-          <SessionSummary results={evaluationResults} onStartOver={handleStartOver} />
-          <div className="mt-8">
-            {contactCard}
-          </div>
+        <div className="container max-w-4xl mx-auto space-y-8">
+          <FinalSummaryReport
+            questions={questions}
+            answers={answers}
+            evaluations={evaluationsForReport}
+            onPracticeAgain={handlePracticeAgain}
+          />
+          <div className="mt-8">{contactCard}</div>
         </div>
         <Toaster />
       </div>
     );
   }
 
+  const showGlobalLoading =
+      step === "uploading" || step === "transcribing";
+
   return (
     <div className="min-h-screen gradient-hero py-8 px-4">
+      {showGlobalLoading && <LoadingOverlay message="Processing..." />}
+      <div className="max-w-4xl mx-auto flex items-center justify-between px-4 pb-2">
+        <div className="flex items-center gap-2">
+          <div className="h-10 w-10 rounded-full bg-white/20 ring-1 ring-white/40 overflow-hidden flex items-center justify-center">
+            <img src="/logo.svg" alt="Voice Inspector" className="h-9 w-9 object-contain" />
+          </div>
+          <div className="text-base font-bold text-black font-display">Voice Inspector</div>
+        </div>
+        <button
+          onClick={handleLogout}
+          className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-teal-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-700"
+        >
+          Logout
+        </button>
+      </div>
       <div className="container max-w-4xl mx-auto">
+
         {/* Header */}
         <header className="text-center mb-8 animate-fade-in-up">
-          <div className="flex justify-end gap-2 mb-4">
-            <Link to="/history">
-              <Button variant="ghost" size="sm" className="gap-1 text-muted-foreground">
-                <Clock className="h-4 w-4" />
-                History
-              </Button>
-            </Link>
-            <Link to="/admin">
-              <Button variant="ghost" size="sm" className="gap-1 text-muted-foreground">
-                <Settings className="h-4 w-4" />
-                Admin
-              </Button>
-            </Link>
-            <Link to="/account">
-              <Button variant="ghost" size="sm" className="gap-1 text-muted-foreground">
-                <MessageSquare className="h-4 w-4" />
-                Feedback
-              </Button>
-            </Link>
-          </div>
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-accent text-accent-foreground text-sm font-medium mb-4">
             Children's Home Inspection Practice
           </div>
@@ -574,16 +650,6 @@ const Index = () => {
           <p className="text-xs text-primary font-medium max-w-xl mx-auto mt-1">
             Open access beta — no account or billing required while we collect feedback.
           </p>
-          <p className="text-xs text-muted-foreground max-w-xl mx-auto">
-            Questions? Email <a className="text-primary underline" href="mailto:reports@ziantra.co.uk">reports@ziantra.co.uk</a>
-          </p>
-          <div className="mt-4 flex justify-center">
-            <Link to="/login">
-              <Button size="sm" className="gap-2">
-                Get started
-              </Button>
-            </Link>
-          </div>
           <p className="text-xs text-muted-foreground max-w-xl mx-auto flex items-center justify-center gap-2 mt-2">
             <AlertTriangle className="h-3 w-3" />
             Do not include names or identifying details about children, staff, or locations.
@@ -697,6 +763,12 @@ const Index = () => {
                 onTextSubmit={handleTextSubmit}
               />
             </div>
+            <p className="text-xs text-muted-foreground text-center">
+              Questions? Email{" "}
+              <a className="text-primary underline" href="mailto:reports@ziantra.co.uk">
+                reports@ziantra.co.uk
+              </a>
+            </p>
           </div>
         )}
 

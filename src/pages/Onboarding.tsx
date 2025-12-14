@@ -2,6 +2,7 @@ import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/auth/AuthProvider";
+import { bootstrapOrganisation } from "@/org/bootstrapOrganisation";
 
 export default function Onboarding() {
   const { user } = useAuth();
@@ -13,17 +14,35 @@ export default function Onboarding() {
     if (!user) return;
     setSubmitting(true);
     setError(null);
-    const { error: updErr } = await supabase
-      .from("profiles")
-      .update({ onboarding_complete: true })
-      .eq("id", user.id);
-    if (updErr) {
-      setError(updErr.message);
+    try {
+      const { data: existing } = await supabase
+        .from("memberships")
+        .select("organisation_id")
+        .eq("profile_id", user.id)
+        .limit(1)
+        .maybeSingle();
+
+      if (!existing) {
+        await bootstrapOrganisation({
+          id: user.id,
+          email: user.email,
+          role: "manager",
+          full_name: (user.user_metadata as any)?.full_name ?? null,
+        });
+      }
+
+      const { error: updErr } = await supabase
+        .from("profiles")
+        .update({ onboarding_complete: true })
+        .eq("id", user.id);
+      if (updErr) throw updErr;
+
       setSubmitting(false);
-      return;
+      navigate("/app");
+    } catch (err: any) {
+      setSubmitting(false);
+      setError(err?.message || "Onboarding failed");
     }
-    setSubmitting(false);
-    navigate("/app");
   };
 
   return (
