@@ -734,7 +734,7 @@ const Index = () => {
           {/* Full-width contact form */}
           {contactCard}
           {/* Compact email preference card */}
-          <div className="card-elevated p-6 space-y-3 max-w-xl">
+          <div className="card-elevated p-6 space-y-3 max-w-xl text-center">
             <h3 className="font-display text-lg font-semibold text-foreground">Prefer email?</h3>
             <p className="text-sm text-muted-foreground">
               Reach us anytime at{" "}
