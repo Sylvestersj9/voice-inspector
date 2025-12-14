@@ -74,7 +74,7 @@ export default function History() {
     // Get best score per question (considering follow-ups)
     const questionScores = new Map<number, { domain: string; score: number }>();
     answers.forEach(a => {
-      const score = a.evaluation_json?.score || 0;
+      const score = a.evaluation_json?.score4 ?? a.evaluation_json?.score ?? 0;
       const existing = questionScores.get(a.question_id);
       if (!existing || score > existing.score) {
         questionScores.set(a.question_id, { domain: a.question_domain, score });
@@ -178,7 +178,9 @@ export default function History() {
                 const answers = sessionAnswers.filter(a => a.question_id === q.id);
                 const bestAnswer = answers.reduce<SessionAnswer | null>((best, curr) => {
                   if (!best) return curr;
-                  return (curr.evaluation_json?.score || 0) > (best.evaluation_json?.score || 0) ? curr : best;
+                  const currScore = curr.evaluation_json?.score4 ?? curr.evaluation_json?.score ?? 0;
+                  const bestScore = best.evaluation_json?.score4 ?? best.evaluation_json?.score ?? 0;
+                  return currScore > bestScore ? curr : best;
                 }, null);
 
                 if (!bestAnswer) return null;
@@ -190,12 +192,12 @@ export default function History() {
                         <p className="text-sm text-muted-foreground">Q{idx + 1} - {q.domain}</p>
                         <p className="font-medium text-foreground mt-1">{q.shortTitle}</p>
                       </div>
-                      <div className={cn(
-                        "px-3 py-1 rounded-lg text-sm font-semibold",
-                        getScoreColor(bestAnswer.evaluation_json?.judgementBand)
-                      )}>
-                        {bestAnswer.evaluation_json?.score?.toFixed(1) || 'N/A'}
-                      </div>
+                    <div className={cn(
+                      "px-3 py-1 rounded-lg text-sm font-semibold",
+                      getScoreColor(bestAnswer.evaluation_json?.judgementBand)
+                    )}>
+                      {(bestAnswer.evaluation_json?.score4 ?? bestAnswer.evaluation_json?.score ?? 0).toFixed(1)}
+                    </div>
                     </div>
 
                     {/* Transcript */}

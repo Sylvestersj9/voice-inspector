@@ -16,7 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, ChevronLeft, ChevronRight, MessageCircleQuestion, Clock, Settings, RefreshCw, AlertTriangle, MessageSquare, Mail, Check } from "lucide-react";
 import { detectFollowUpNeed, FollowUpDecision, getFollowUpLabel } from "@/lib/followUpRules";
-import { evaluationResultSchema } from "@/lib/evaluationSchema";
+import { evaluationSchema } from "@/lib/evaluationSchema";
 
 type Step = 
   | "ready" 
@@ -197,20 +197,28 @@ const Index = () => {
       const data = await response.json();
       if (data.error) throw new Error(data.error);
 
-      const parsedEvaluation = evaluationResultSchema.parse(data);
+      const parsedEvaluationResult = evaluationSchema.safeParse(data);
+      if (!parsedEvaluationResult.success) {
+        console.error("Evaluation schema error", parsedEvaluationResult.error, data);
+        throw new Error("Invalid evaluation response");
+      }
+      const parsedEvaluation = parsedEvaluationResult.data;
+
       const judgementBand = parsedEvaluation.overall_judgement as EvaluationResult["judgementBand"];
       const score4 = parsedEvaluation.score4;
+
+      const riskFlags = (parsedEvaluation as any).risk_flags ?? (parsedEvaluation as any).riskFlags ?? [];
 
       const mappedEvaluation: EvaluationResult = {
         judgementBand,
         score: score4,
         score4,
-        strengths: parsedEvaluation.strengths,
-        gaps: parsedEvaluation.gaps.length ? parsedEvaluation.gaps : parsedEvaluation.weaknesses || [],
+        strengths: parsedEvaluation.strengths || [],
+        gaps: parsedEvaluation.gaps || parsedEvaluation.weaknesses || [],
         weaknesses: parsedEvaluation.weaknesses || [],
         recommendations: parsedEvaluation.recommendations || [],
-        recommendedActions: parsedEvaluation.recommendations || [],
-        riskFlags: parsedEvaluation.riskFlags || [],
+        recommendedActions: parsedEvaluation.next_actions || parsedEvaluation.recommendations || [],
+        riskFlags,
         followUpQuestions: parsedEvaluation.follow_up_questions || [],
         whatInspectorWantsToHear: parsedEvaluation.what_inspector_wants_to_hear,
         evidenceToQuoteNextTime: parsedEvaluation.evidence_to_quote_next_time,
@@ -699,7 +707,7 @@ const Index = () => {
                       </h3>
                     </div>
                     <p className="text-sm text-muted-foreground mb-3">
-                      Your score was {evaluation.score}/5. You can answer one follow-up question to potentially improve your evaluation.
+                      Your judgement was {evaluation.judgementBand}. You can answer one follow-up question to potentially improve your evaluation.
                     </p>
                     {getFollowUpQuestion() && (
                       <p className="text-foreground font-medium">

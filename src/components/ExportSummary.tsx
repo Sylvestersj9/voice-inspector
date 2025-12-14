@@ -9,8 +9,9 @@ interface ExportSummaryProps {
 }
 
 export function ExportSummary({ results, sessionDate = new Date() }: ExportSummaryProps) {
-  const averageScore = Array.from(results.values()).reduce((sum, r) => sum + r.score, 0) / results.size;
-  const overallBand = getJudgementBand(averageScore);
+  const scores = Array.from(results.values()).map((r) => r.score4 ?? r.score ?? 0);
+  const averageScore = scores.length ? scores.reduce((sum, v) => sum + v, 0) / scores.length : 0;
+  const overallBand = getJudgementBand(averageScore || 0);
 
   // Collect all strengths, gaps, and actions
   const allStrengths = Array.from(results.values()).flatMap(r => r.strengths).slice(0, 5);
@@ -49,14 +50,13 @@ export function ExportSummary({ results, sessionDate = new Date() }: ExportSumma
 
         {/* Overall Score */}
         <div className="flex items-center gap-6 p-4 bg-muted/50 rounded-lg print:bg-gray-100">
-          <div className="text-center">
-            <div className="text-4xl font-bold text-foreground print:text-black">
-              {averageScore.toFixed(1)}
-            </div>
-            <div className="text-sm text-muted-foreground print:text-gray-600">out of 5</div>
-          </div>
           <div>
             <div className="text-xl font-semibold text-foreground print:text-black">{overallBand}</div>
+            {averageScore > 0 && (
+              <p className="text-sm text-muted-foreground print:text-gray-600">
+                Band score: {averageScore.toFixed(2)}/4
+              </p>
+            )}
             <p className="text-sm text-muted-foreground print:text-gray-600">
               Overall judgement across {results.size} questions
             </p>
@@ -130,7 +130,7 @@ export function ExportSummary({ results, sessionDate = new Date() }: ExportSumma
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-semibold text-foreground print:text-black">
-                      {result.score.toFixed(1)}
+                      {(result.score4 ?? result.score ?? 0).toFixed(1)}
                     </span>
                     <span className="text-xs text-muted-foreground print:text-gray-600">
                       ({result.judgementBand})
@@ -171,5 +171,4 @@ export function ExportSummary({ results, sessionDate = new Date() }: ExportSumma
     </div>
   );
 }
-
 

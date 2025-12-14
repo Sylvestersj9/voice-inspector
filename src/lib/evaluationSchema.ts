@@ -1,29 +1,67 @@
 import { z } from "zod";
 
-export const judgementBandSchema = z.enum([
-  "Outstanding",
-  "Good",
-  "Requires improvement to be good",
-  "Inadequate",
-]);
+export const evaluationSchema = z.object({
+  question_area: z.string(),
 
-export const evaluationResultSchema = z.object({
-  overall_judgement: judgementBandSchema,
-  score4: z.number().min(1).max(4).optional(),
+  overall_judgement: z.enum([
+    "Outstanding",
+    "Good",
+    "Requires improvement to be good",
+    "Inadequate",
+  ]),
+
+  score4: z.number().int().min(1).max(4),
+
+  rationale: z.string(),
+
+  rubric: z.object({
+    risk_identification: z.object({
+      band: z.string(),
+      evidence: z.string(),
+      missing: z.string().optional(),
+    }),
+    risk_assessment: z.object({
+      band: z.string(),
+      evidence: z.string(),
+      missing: z.string().optional(),
+    }),
+    risk_management_in_out: z.object({
+      band: z.string(),
+      evidence: z.string(),
+      missing: z.string().optional(),
+    }),
+    safeguarding_response: z.object({
+      band: z.string(),
+      evidence: z.string(),
+      missing: z.string().optional(),
+    }),
+    effectiveness_checks: z.object({
+      band: z.string(),
+      evidence: z.string(),
+      missing: z.string().optional(),
+    }),
+    child_voice_impact: z.object({
+      band: z.string(),
+      evidence: z.string(),
+      missing: z.string().optional(),
+    }),
+  }),
+
   strengths: z.array(z.string()).default([]),
   weaknesses: z.array(z.string()).default([]),
   recommendations: z.array(z.string()).default([]),
-  gaps: z.array(z.string()).default([]),
-  riskFlags: z.array(z.string()).default([]),
   follow_up_questions: z.array(z.string()).default([]),
-  recommendations_full: z.array(z.string()).default([]).optional(),
-  what_inspector_wants_to_hear: z.string().optional(),
-  evidence_to_quote_next_time: z.array(z.string()).default([]).optional(),
-  action_plan_7_days: z.array(z.string()).default([]).optional(),
-  action_plan_30_days: z.array(z.string()).default([]).optional(),
-  debug: z.record(z.any()).optional(),
-  rubric: z.record(z.any()).optional(),
-  schemaVersion: z.string().optional(),
+  next_actions: z.array(z.string()).default([]),
+
+  debug: z
+    .object({
+      wordCount: z.number().optional(),
+      evidenceOk: z.boolean().optional(),
+      escalationOk: z.boolean().optional(),
+      effectivenessOk: z.boolean().optional(),
+      impactOk: z.boolean().optional(),
+    })
+    .optional(),
 });
 
-export type EvaluationResponse = z.infer<typeof evaluationResultSchema>;
+export type EvaluationResponse = z.infer<typeof evaluationSchema>;

@@ -11,8 +11,9 @@ interface SessionSummaryProps {
 }
 
 export function SessionSummary({ results, onStartOver }: SessionSummaryProps) {
-  const averageScore = Array.from(results.values()).reduce((sum, r) => sum + r.score, 0) / results.size;
-  const overallBand = getJudgementBand(averageScore);
+  const scores = Array.from(results.values()).map((r) => r.score4 ?? r.score ?? 0);
+  const averageScore = scores.length ? scores.reduce((sum, v) => sum + v, 0) / scores.length : 0;
+  const overallBand = getJudgementBand(averageScore || 0);
   
   const getScoreColor = (band: string) => {
     switch (band) {
@@ -33,15 +34,14 @@ export function SessionSummary({ results, onStartOver }: SessionSummaryProps) {
         </h2>
         
         <div className="flex flex-col items-center gap-4 mb-6">
-          <div className={cn(
-            "flex items-center justify-center h-32 w-32 rounded-3xl text-4xl font-display font-bold",
-            getScoreColor(overallBand)
-          )}>
-            {averageScore.toFixed(1)}
-          </div>
           <div className={cn("px-6 py-2 rounded-full text-lg font-semibold", getScoreColor(overallBand))}>
             {overallBand}
           </div>
+          {averageScore > 0 && (
+            <div className="text-sm text-muted-foreground">
+              Band score: {averageScore.toFixed(2)}/4
+            </div>
+          )}
         </div>
         
         <p className="text-muted-foreground max-w-lg mx-auto">
@@ -68,7 +68,7 @@ export function SessionSummary({ results, onStartOver }: SessionSummaryProps) {
                   "flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-xl text-lg font-semibold",
                   getScoreColor(result.judgementBand)
                 )}>
-                  {result.score.toFixed(1)}
+                  {(result.score4 ?? result.score ?? 0).toFixed(1)}
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
