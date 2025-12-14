@@ -303,19 +303,18 @@ ${transcript}
 
     parsed.overall_judgement = normalizeBand(parsed?.overall_judgement);
 
-    if (!parsed.weaknesses || !Array.isArray(parsed.weaknesses) || parsed.weaknesses.length === 0) {
+    if (!Array.isArray(parsed.strengths)) parsed.strengths = [];
+    if (!Array.isArray(parsed.weaknesses) || parsed.weaknesses.length === 0) {
       parsed.weaknesses = [
         "No specific examples were provided to demonstrate practice.",
         "Key safeguarding or management processes were not clearly explained.",
         "There was no evidence of review, learning, or impact on outcomes for children.",
       ];
     }
+    if (!Array.isArray(parsed.recommendations)) parsed.recommendations = [];
+    if (!parsed.rubric || typeof parsed.rubric !== "object") parsed.rubric = {};
 
-    if (
-      !parsed.follow_up_questions ||
-      !Array.isArray(parsed.follow_up_questions) ||
-      parsed.follow_up_questions.length === 0
-    ) {
+    if (!Array.isArray(parsed.follow_up_questions) || parsed.follow_up_questions.length === 0) {
       parsed.follow_up_questions = [
         "Can you give a recent, specific example of this in practice?",
         "Who would you escalate this to, and why?",

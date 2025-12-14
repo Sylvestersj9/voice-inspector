@@ -18,6 +18,7 @@ interface ExportSummaryProps {
 
 export function ExportSummary({ results, sessionDate = new Date() }: ExportSummaryProps) {
   const plan: "free" | "pro" = getPlan();
+  const safeArr = <T,>(v: T[] | undefined | null): T[] => (Array.isArray(v) ? v : []);
   const entries = Array.from(results?.entries?.() || []);
   if (!entries.length) {
     return (
@@ -48,9 +49,9 @@ export function ExportSummary({ results, sessionDate = new Date() }: ExportSumma
   const ofstedConclusion = buildOfstedConclusionTemplate(session_band, priorityAreas, trajectory);
 
   // Collect all strengths, gaps, and actions
-  const allStrengths = Array.from(results.values()).flatMap(r => r.strengths).slice(0, 5);
-  const allGaps = Array.from(results.values()).flatMap(r => r.gaps).slice(0, 5);
-  const allActions = Array.from(results.values()).flatMap(r => r.recommendedActions).slice(0, 5);
+  const allStrengths = Array.from(results.values()).flatMap((r) => safeArr(r.strengths)).slice(0, 5);
+  const allGaps = Array.from(results.values()).flatMap((r: any) => safeArr(r.gaps)).slice(0, 5);
+  const allActions = Array.from(results.values()).flatMap((r: any) => safeArr(r.recommendedActions)).slice(0, 5);
 
   const handlePrint = () => {
     window.print();

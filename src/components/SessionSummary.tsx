@@ -20,6 +20,7 @@ interface SessionSummaryProps {
 
 export function SessionSummary({ results, onStartOver }: SessionSummaryProps) {
   const plan: "free" | "pro" = getPlan();
+  const safeArr = <T,>(v: T[] | undefined | null): T[] => (Array.isArray(v) ? v : []);
 
   const entries = Array.from(results?.entries?.() || []);
   if (!entries.length) {
@@ -137,6 +138,8 @@ export function SessionSummary({ results, onStartOver }: SessionSummaryProps) {
         {ofstedQuestions.map((question, index) => {
           const result = results.get(index);
           if (!result) return null;
+          const strengths = safeArr(result.strengths);
+          const gaps = safeArr((result as any).gaps);
           
           return (
             <div key={question.id} className="card-elevated p-6">
@@ -156,14 +159,14 @@ export function SessionSummary({ results, onStartOver }: SessionSummaryProps) {
                   </div>
                   <h4 className="font-medium text-foreground mb-2">{question.domain}</h4>
                   
-                  {result.strengths.length > 0 && (
+                  {strengths.length > 0 && (
                     <p className="text-sm text-success mb-1">
-                      <span className="font-medium">Key strength:</span> {result.strengths[0]}
+                      <span className="font-medium">Key strength:</span> {strengths[0]}
                     </p>
                   )}
-                  {result.gaps.length > 0 && (
+                  {gaps.length > 0 && (
                     <p className="text-sm text-warning">
-                      <span className="font-medium">Area to develop:</span> {result.gaps[0]}
+                      <span className="font-medium">Area to develop:</span> {gaps[0]}
                     </p>
                   )}
                 </div>
