@@ -2,6 +2,7 @@ import { supabase } from "@/lib/supabase";
 import { logAudit } from "@/audit/logAudit";
 import type { InspectionReport, ReportBand } from "./types";
 import { canGenerateReport } from "@/billing/enforcement";
+import { generateActionsFromEvaluations } from "@/actionPlans/generateFromEvaluations";
 
 const bandFromScore = (score: number): ReportBand => {
   if (score >= 3.6) return "Outstanding";
@@ -108,6 +109,25 @@ export async function generateInspectionReport(
     entityId: inspectionSessionId,
     metadata: { overall_band, overall_score: avg },
   });
+
+  // Auto-generate action plan if not present
+  const { data: existingPlan } = await supabase
+    .from("inspection_action_plans")
+    .select("id")
+    .eq("session_id", inspectionSessionId)
+    .maybeSingle();
+
+  if (!existingPlan) {
+    const autoActions = generateActionsFromEvaluations(evaluations as any[]);
+    try {
+      await supabase.from("inspection_action_plans").insert({
+        session_id: inspectionSessionId,
+        actions: autoActions,
+      });
+    } catch (planErr) {
+      console.warn("Unable to generate action plan", planErr);
+    }
+  }
 
   return { report: upserted as InspectionReport, domains };
 }

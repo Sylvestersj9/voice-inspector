@@ -1,6 +1,7 @@
 import { supabase } from "@/lib/supabase";
 import { logAudit } from "@/audit/logAudit";
 import type { InspectionAnswer } from "./types";
+import { toast } from "@/hooks/use-toast";
 
 type SaveAnswerInput = {
   sessionQuestionId: string;
@@ -13,23 +14,31 @@ type SaveAnswerInput = {
 // Upsert an answer for a session question; one answer per question.
 // Permission/ownership checks should be applied by caller.
 export async function saveAnswer(input: SaveAnswerInput): Promise<InspectionAnswer> {
+  const payload = {
+    inspection_session_question_id: input.sessionQuestionId,
+    answered_by: input.profileId,
+    answer_text: input.answerText ?? null,
+    transcript: input.transcript ?? null,
+    evidence_notes: input.evidenceNotes ?? null,
+    updated_at: new Date().toISOString(),
+  };
+
+  console.log("INSERTING INTO inspection_answers", payload);
+
   const { data, error } = await supabase
     .from("inspection_answers")
-    .upsert(
-      {
-        inspection_session_question_id: input.sessionQuestionId,
-        answered_by: input.profileId,
-        answer_text: input.answerText ?? null,
-        transcript: input.transcript ?? null,
-        evidence_notes: input.evidenceNotes ?? null,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "inspection_session_question_id" },
-    )
+    .upsert(payload, { onConflict: "inspection_session_question_id" })
     .select("*")
     .single();
 
-  if (error || !data) throw error || new Error("Failed to save answer");
+  console.log("INSERT RESULT inspection_answers", { data, error });
+
+  if (error || !data) {
+    console.error("SUPABASE SAVE FAILED", error);
+    if (error?.message) toast({ title: "Save failed", description: error.message, variant: "destructive" });
+    throw error || new Error("Failed to save answer");
+  }
+  console.log("Saved answer", input.sessionQuestionId);
 
   // Fire-and-forget audit
   logAudit({

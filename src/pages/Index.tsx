@@ -54,8 +54,8 @@ async function sendFeedback(payload: Record<string, string>, type: SubmitType): 
       method: "POST",
       headers: { 
         "Content-Type": "application/json",
-        apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-        Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
       },
       body: JSON.stringify({ type, ...payload }),
     });
@@ -112,6 +112,8 @@ const Index = () => {
   const [contactMessage, setContactMessage] = useState("");
   const [contactStatus, setContactStatus] = useState<string | null>(null);
   const [contactSubmitting, setContactSubmitting] = useState(false);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [sessionQuestionIds, setSessionQuestionIds] = useState<string[]>([]);
 
   const currentQuestion = ofstedQuestions[currentQuestionIndex];
 
@@ -132,6 +134,45 @@ const Index = () => {
     setStep("recording");
   };
 
+  const requireAuth = async () => {
+    const { data, error } = await supabase.auth.getSession();
+    if (error) throw error;
+    const user = data.session?.user;
+    if (!user) {
+      const err = new Error("Not authenticated (missing session)");
+      throw err;
+    }
+    console.log("AUTH USER", user.id);
+    return user;
+  };
+
+  const ensureProfile = async (user: { id: string; email?: string | null }) => {
+    const payload = {
+      id: user.id,
+      email: user.email ?? null,
+      plan: "free",
+      status: "inactive",
+      role: "manager",
+    };
+
+    console.log("UPSERT profiles", payload);
+
+    const { data, error } = await supabase
+      .from("profiles")
+      .upsert(payload, { onConflict: "id" })
+      .select()
+      .single();
+
+    console.log("UPSERT profiles result", { data, error });
+
+    if (error) {
+      toast({ title: "Profile setup failed", description: error.message, variant: "destructive" });
+      throw error;
+    }
+
+    return data;
+  };
+
   const handleTextSubmit = (text: string) => {
     const trimmed = text.trim();
     if (!trimmed) {
@@ -141,6 +182,166 @@ const Index = () => {
     setTranscript(trimmed);
     setTranscriptionWarning(false);
     handleSubmitForEvaluation(trimmed);
+  };
+
+  const ensureSessionAndQuestions = async (): Promise<string[] | null> => {
+    if (sessionId && sessionQuestionIds.length === ofstedQuestions.length) {
+      return sessionQuestionIds;
+    }
+    let user;
+    try {
+      user = await requireAuth();
+      await ensureProfile(user);
+    } catch (err: any) {
+      console.error(err);
+      toast({ title: "Please log in again", description: err?.message, variant: "destructive" });
+      navigate("/login");
+      return null;
+    }
+
+    const sessionPayload = { status: "draft", title: "Inspection practice", created_by: user.id };
+    console.log("INSERTING INTO inspection_sessions (app)", sessionPayload);
+
+    const { data: session, error: sessionError } = await supabase
+      .from("inspection_sessions")
+      .insert(sessionPayload)
+      .select()
+      .single();
+
+    console.log("INSERT RESULT inspection_sessions (app)", { data: session, error: sessionError });
+
+    if (sessionError || !session) {
+      console.error(sessionError);
+      toast({ title: "Failed to start session", description: sessionError?.message, variant: "destructive" });
+      return null;
+    }
+
+    setSessionId(session.id);
+    console.log("SESSION CREATED", session.id);
+
+    const questionPayload = ofstedQuestions.map((q, idx) => ({
+      inspection_session_id: session.id,
+      question_text: q.question,
+      domain_name: q.domain,
+      sort_order: idx,
+    }));
+
+    console.log("INSERTING INTO inspection_session_questions (app)", questionPayload);
+
+    const { data: questionRows, error: questionsError } = await supabase
+      .from("inspection_session_questions")
+      .insert(questionPayload)
+      .select();
+
+    console.log("INSERT RESULT inspection_session_questions (app)", { data: questionRows, error: questionsError });
+
+    if (questionsError || !questionRows) {
+      console.error(questionsError);
+      toast({ title: "Failed to create questions", description: questionsError?.message, variant: "destructive" });
+      return null;
+    }
+
+    const sorted = [...questionRows].sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+    const ids = sorted.map((row: any) => row.id);
+    setSessionQuestionIds(ids);
+    console.log("SESSION QUESTIONS CREATED", ids);
+
+    return ids;
+  };
+
+  const saveAnswerToSupabase = async (sessionQuestionId: string, text: string) => {
+    try {
+      await requireAuth();
+    } catch (err: any) {
+      console.error(err);
+      toast({ title: "Please log in again", description: err?.message, variant: "destructive" });
+      navigate("/login");
+      return false;
+    }
+
+    const payload = {
+      inspection_session_question_id: sessionQuestionId,
+      answer_text: text,
+      transcript: text,
+    };
+
+    console.log("INSERTING INTO inspection_answers (app)", payload);
+
+    const { data, error } = await supabase
+      .from("inspection_answers")
+      .insert(payload)
+      .select()
+      .single();
+
+    console.log("INSERT RESULT inspection_answers (app)", { data, error });
+
+    if (error || !data) {
+      console.error(error);
+      toast({ title: "Failed to save answer", description: error?.message, variant: "destructive" });
+      return false;
+    }
+
+    console.log("Saved answer", sessionQuestionId);
+    return true;
+  };
+
+  const saveEvaluationToSupabase = async (sessionQuestionId: string, mappedEvaluation: EvaluationResult) => {
+    try {
+      await requireAuth();
+    } catch (err: any) {
+      console.error(err);
+      toast({ title: "Please log in again", description: err?.message, variant: "destructive" });
+      navigate("/login");
+      return;
+    }
+
+    const strengths = Array.isArray((mappedEvaluation as any).strengths) ? (mappedEvaluation as any).strengths : [];
+    const gaps = Array.isArray((mappedEvaluation as any).gaps)
+      ? (mappedEvaluation as any).gaps
+      : Array.isArray((mappedEvaluation as any).weaknesses)
+        ? (mappedEvaluation as any).weaknesses
+        : [];
+    const followUps = Array.isArray((mappedEvaluation as any).follow_up_questions)
+      ? (mappedEvaluation as any).follow_up_questions
+      : Array.isArray(mappedEvaluation.followUpQuestions)
+        ? mappedEvaluation.followUpQuestions
+        : [];
+    const band = (mappedEvaluation as any).band ?? mappedEvaluation.judgementBand ?? "Requires Improvement";
+    const scoreVal = (mappedEvaluation as any).score ?? mappedEvaluation.score4 ?? mappedEvaluation.score;
+    const score = Number.isFinite(scoreVal) ? Number(scoreVal) : 0;
+    const strengthsStr = JSON.stringify(Array.isArray(strengths) ? strengths : []);
+    const gapsStr = JSON.stringify(Array.isArray(gaps) ? gaps : []);
+    const followUpsStr = JSON.stringify(Array.isArray(followUps) ? followUps : []);
+    const bandStr = String(band ?? "Requires Improvement");
+    const scoreInt = Number.isFinite(score) ? Math.max(0, Math.min(100, Number(score))) : 0;
+
+    const payload = {
+      inspection_session_question_id: sessionQuestionId,
+      score: scoreInt,
+      band: bandStr,
+      strengths: strengthsStr,
+      gaps: gapsStr,
+      follow_up_questions: followUpsStr,
+    };
+    console.log("EVAL PAYLOAD", payload);
+
+    console.log("INSERTING INTO inspection_evaluations (app)", payload);
+
+    const { data, error } = await supabase
+      .from("inspection_evaluations")
+      .upsert(payload, { onConflict: "inspection_session_question_id" })
+      .select()
+      .single();
+
+    console.log("INSERT RESULT inspection_evaluations (app)", { data, error });
+
+    if (error || !data) {
+      console.error(error);
+      toast({ title: "Failed to save evaluation", description: error?.message, variant: "destructive" });
+      return;
+    }
+
+    console.log("EVALUATION SAVED", sessionQuestionId);
   };
 
   const handleRecordingComplete = async (audioBlob: Blob) => {
@@ -158,8 +359,8 @@ const Index = () => {
         {
           method: "POST",
           headers: {
-            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
           },
           body: fd,
         },
@@ -189,32 +390,50 @@ const Index = () => {
     }
   };
 
-  const handleSubmitForEvaluation = async (overrideTranscript?: string) => {
-    const transcriptToUse = (overrideTranscript ?? transcript).trim();
+  const handleSubmitForEvaluation = async (overrideTranscript?: string | null) => {
+    const raw = typeof overrideTranscript === "string" ? overrideTranscript : transcript;
+    const transcriptToUse = (raw ?? "").toString().trim();
     if (!transcriptToUse) {
       toast({ title: "No response to evaluate", variant: "destructive" });
       return;
     }
+    const ensuredIds = await ensureSessionAndQuestions();
+    if (!ensuredIds) return;
+    const questionId = ensuredIds[currentQuestionIndex];
+    if (!questionId) {
+      toast({ title: "Unable to map question", description: "Please restart the session.", variant: "destructive" });
+      return;
+    }
+
+    const savedAnswer = await saveAnswerToSupabase(questionId, transcriptToUse);
+    if (!savedAnswer) {
+      setStep("editing");
+      return;
+    }
+
     setTranscript(transcriptToUse);
     setStep("evaluating");
     loading.show("Evaluating your response...");
     try {
       const plan = "free";
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/evaluate`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/evaluate`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({
+            transcript: transcriptToUse,
+            question: currentQuestion.question,
+            domain: currentQuestion.domain,
+            question_area: currentQuestion.domain,
+            plan,
+          }),
         },
-        body: JSON.stringify({
-          transcript: transcriptToUse,
-          question: currentQuestion.question,
-          domain: currentQuestion.domain,
-          question_area: currentQuestion.domain,
-          plan,
-        }),
-      });
+      );
 
       const data = await response.json();
       if (data.error) throw new Error(data.error);
@@ -291,6 +510,8 @@ const Index = () => {
         title: "Evaluation complete", 
         description: `${ui.icon} ${ui.label}` 
       });
+
+      await saveEvaluationToSupabase(questionId, mappedEvaluation);
     } catch (error) {
       console.error('Evaluation error:', error);
       toast({ 
@@ -405,40 +626,12 @@ const Index = () => {
     };
 
     try {
-      const { data: session, error: sessionError } = await supabase
-        .from('sessions')
-        .insert({ overall_score: averageScore, overall_band: overallBand })
-        .select()
-        .single();
-
-      if (sessionError) throw sessionError;
-
-      const answers = Array.from(results.entries()).flatMap(([qIndex, result]) => {
-        const question = ofstedQuestions[qIndex];
-        const entries = [{
-          session_id: session.id,
-          question_id: question.id,
-          question_domain: question.domain,
-          transcript: result.transcript,
-          evaluation_json: result.evaluation,
-          attempt_index: 0,
-        }];
-        
-        if (result.followUpTranscript && result.followUpEvaluation) {
-          entries.push({
-            session_id: session.id,
-            question_id: question.id,
-            question_domain: question.domain,
-            transcript: result.followUpTranscript,
-            evaluation_json: result.followUpEvaluation,
-            attempt_index: 1,
-          });
-        }
-        return entries;
-      });
-
-      const answersResult = await supabase.from('session_answers').insert(answers);
-      if (answersResult.error) throw answersResult.error;
+      if (!sessionId) {
+        saveSessionLocally();
+        return;
+      }
+      // Session, answers, and evaluations are saved per question; just log completion.
+      console.log("SESSION COMPLETE", { sessionId, averageScore, overallBand });
     } catch (error) {
       console.error('Error saving session:', error);
       // Fallback to local storage so history still works without auth/DB
@@ -535,8 +728,17 @@ const Index = () => {
   );
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate("/login?loggedOut=true", { replace: true });
+    loading.show("Logging you out...");
+    try {
+      await supabase.auth.signOut();
+    } catch (error) {
+      console.error("Logout error:", error);
+    } finally {
+      setTimeout(() => {
+        loading.hide();
+        navigate("/login?loggedOut=true", { replace: true });
+      }, 2000);
+    }
   };
 
   const handlePracticeAgain = () => {
@@ -883,4 +1085,3 @@ const Index = () => {
 };
 
 export default Index;
-

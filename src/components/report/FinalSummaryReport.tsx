@@ -4,10 +4,10 @@ type EvalLike = {
   question_id?: string;
   score?: number | null;
   band?: string | null;
-  strengths?: string[] | null;
-  gaps?: string[] | null;
-  recommendations?: string[] | null;
-  follow_up_questions?: string[] | null;
+  strengths?: string[] | string | null;
+  gaps?: string[] | string | null;
+  recommendations?: string[] | string | null;
+  follow_up_questions?: string[] | string | null;
   [k: string]: any;
 };
 
@@ -47,9 +47,20 @@ function pct(n?: number | null) {
   return clamped;
 }
 
-function joinOrDash(items?: string[] | null | undefined) {
-  if (!items || items.length === 0) return "—";
-  return items.join(" • ");
+function toList(val?: string[] | string | null) {
+  if (Array.isArray(val)) return val.filter(Boolean).map((v) => String(v).trim()).filter(Boolean);
+  if (typeof val === "string")
+    return val
+      .split(/\n|•|;|,/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+  return [];
+}
+
+function joinOrMessage(items?: string[] | string | null, emptyMessage?: string) {
+  const list = toList(items);
+  if (!list.length) return emptyMessage ?? "";
+  return list.join(" • ");
 }
 
 function pickAnswer(a?: ALike | null) {
@@ -180,9 +191,9 @@ export default function FinalSummaryReport({
 
   const overallTone = bandTone(overallBand);
 
-  const allStrengths = byQ.flatMap((x) => x.e?.strengths ?? []).filter(Boolean);
-  const allGaps = byQ.flatMap((x) => x.e?.gaps ?? []).filter(Boolean);
-  const allRecs = byQ.flatMap((x) => x.e?.recommendations ?? []).filter(Boolean);
+  const allStrengths = byQ.flatMap((x) => toList(x.e?.strengths)).filter(Boolean);
+  const allGaps = byQ.flatMap((x) => toList(x.e?.gaps)).filter(Boolean);
+  const allRecs = byQ.flatMap((x) => toList(x.e?.recommendations)).filter(Boolean);
 
   const topN = (arr: string[], n: number) => Array.from(new Set(arr)).slice(0, n);
 
@@ -282,8 +293,8 @@ export default function FinalSummaryReport({
               </div>
             </div>
             <div className="rounded-xl border bg-white p-4">
-              <div className="text-xs font-semibold text-slate-500">Evidence prompts (pick 2–3)</div>
-              <div className="mt-2">{joinOrDash([
+              <div className="text-xs font-semibold text-slate-500">Evidence prompts (pick 2-3)</div>
+              <div className="mt-2">{joinOrMessage([
                 "audits & sampling",
                 "incident trends",
                 "missing episodes & return interviews",
@@ -294,7 +305,7 @@ export default function FinalSummaryReport({
             </div>
             <div className="rounded-xl border bg-white p-4">
               <div className="text-xs font-semibold text-slate-500">Impact prompts (say what changed)</div>
-              <div className="mt-2">{joinOrDash([
+              <div className="mt-2">{joinOrMessage([
                 "risk reduced over time",
                 "fewer incidents / improved patterns",
                 "child feels safer / engages more",
@@ -363,26 +374,36 @@ export default function FinalSummaryReport({
                   <div className="space-y-3">
                     <div className="rounded-xl border bg-white p-4">
                       <div className="text-xs font-semibold text-slate-500">What landed well</div>
-                      <div className="mt-2 text-sm text-slate-700">{joinOrDash(e?.strengths)}</div>
+                      <div className="mt-2 text-sm text-slate-700">
+                        {joinOrMessage(e?.strengths, "Add examples/evidence to unlock strengths.")}
+                      </div>
                     </div>
                     <div className="rounded-xl border bg-white p-4">
                       <div className="text-xs font-semibold text-slate-500">What to tighten</div>
-                      <div className="mt-2 text-sm text-slate-700">{joinOrDash(e?.gaps)}</div>
+                      <div className="mt-2 text-sm text-slate-700">
+                        {joinOrMessage(e?.gaps, "No gaps captured. Add more detail to get tighter feedback.")}
+                      </div>
                     </div>
                   </div>
                 </div>
 
                 <div className="mt-4 grid gap-4 lg:grid-cols-2">
                   <div className="rounded-xl border bg-white p-4">
-                    <div className="text-xs font-semibold text-slate-500">Recommended improvements</div>
-                    <ul className="mt-2 space-y-2 text-sm text-slate-700">
-                      {(e?.recommendations?.length ? e.recommendations : ["—"]).map((r: any, i: number) => (
-                        <li key={i} className="flex gap-2">
-                          <span className="mt-2 h-1.5 w-1.5 rounded-full bg-teal-600" />
-                          <span>{String(r)}</span>
-                        </li>
-                      ))}
-                    </ul>
+                    {toList(e?.recommendations).length ? (
+                      <>
+                        <div className="text-xs font-semibold text-slate-500">Recommended improvements</div>
+                        <ul className="mt-2 space-y-2 text-sm text-slate-700">
+                          {toList(e?.recommendations).map((r: any, i: number) => (
+                            <li key={i} className="flex gap-2">
+                              <span className="mt-2 h-1.5 w-1.5 rounded-full bg-teal-600" />
+                              <span>{String(r)}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </>
+                    ) : (
+                      <div className="text-xs text-slate-500">Add more detail to receive tailored recommendations.</div>
+                    )}
                   </div>
 
                   <div className="rounded-xl border bg-white p-4">
