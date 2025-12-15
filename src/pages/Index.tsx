@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+﻿import { useState, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
 import { useToast } from "@/hooks/use-toast";
@@ -197,7 +197,7 @@ const Index = () => {
     }
     setTranscript(transcriptToUse);
     setStep("evaluating");
-    loading.show("Evaluating your response…");
+    loading.show("Evaluating your responseâ€¦");
     try {
       const plan = "free";
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/evaluate`, {
@@ -620,6 +620,12 @@ const Index = () => {
   return (
     <div className="min-h-screen gradient-hero py-8 px-4">
       {showGlobalLoading && <LoadingOverlay message="Processing..." />}
+      <div className="mb-3">
+        <div className="mx-auto flex max-w-5xl items-center justify-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-1.5 text-sm font-semibold text-emerald-800 shadow-sm">
+          <span className="h-2 w-2 rounded-full bg-emerald-600 inline-block" />
+          <span>Open access beta — no account or billing required while we collect feedback.</span>
+        </div>
+      </div>
       <div className="max-w-4xl mx-auto flex items-center justify-between px-4 pb-2">
         <div className="flex items-center gap-2">
           <div className="h-10 w-10 rounded-full bg-white/20 ring-1 ring-white/40 overflow-hidden flex items-center justify-center">
@@ -635,7 +641,6 @@ const Index = () => {
         </button>
       </div>
       <div className="container max-w-4xl mx-auto">
-
         {/* Header */}
         <header className="text-center mb-8 animate-fade-in-up">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-accent text-accent-foreground text-sm font-medium mb-4">
@@ -646,9 +651,6 @@ const Index = () => {
           </h1>
           <p className="text-muted-foreground max-w-xl mx-auto">
             Practice your responses to key SCCIF inspection questions and receive AI-powered feedback
-          </p>
-          <p className="text-xs text-primary font-medium max-w-xl mx-auto mt-1">
-            Open access beta — no account or billing required while we collect feedback.
           </p>
           <p className="text-xs text-muted-foreground max-w-xl mx-auto flex items-center justify-center gap-2 mt-2">
             <AlertTriangle className="h-3 w-3" />
@@ -880,3 +882,5 @@ const Index = () => {
 };
 
 export default Index;
+
+
