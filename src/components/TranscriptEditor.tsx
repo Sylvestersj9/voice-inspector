@@ -83,7 +83,7 @@ export function TranscriptEditor({
             Record Again
           </Button>
           <Button
-            onClick={onSubmitForEvaluation}
+            onClick={() => onSubmitForEvaluation()}
             variant="default"
             disabled={isLoading || !transcript.trim()}
           >

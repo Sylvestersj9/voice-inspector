@@ -197,13 +197,14 @@ const Index = () => {
     }
     setTranscript(transcriptToUse);
     setStep("evaluating");
-    loading.show("Evaluating your responseâ€¦");
+    loading.show("Evaluating your response...");
     try {
       const plan = "free";
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/evaluate`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
         body: JSON.stringify({
@@ -882,5 +883,4 @@ const Index = () => {
 };
 
 export default Index;
-
 
