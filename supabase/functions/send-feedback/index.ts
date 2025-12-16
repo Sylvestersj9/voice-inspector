@@ -46,17 +46,25 @@ serve(async (req) => {
   }
 
   try {
-    let payload: any = {};
+    let payload: unknown = {};
     try { payload = await req.json(); }
     catch { return json({ error: "Invalid JSON body" }, 400, corsHeaders); }
 
-    const type = payload?.type === "contact" ? "contact" : "feedback";
-    const name = typeof payload?.name === "string" ? payload.name.trim() : "";
-    const email = typeof payload?.email === "string" ? payload.email.trim() : "";
-    const organization = typeof payload?.organization === "string" ? payload.organization.trim() : "";
-    const details = typeof payload?.details === "string" ? payload.details.trim() : "";
-    const message = typeof payload?.message === "string" ? payload.message.trim() : "";
-    const website = typeof payload?.website === "string" ? payload.website.trim() : "";
+    const payloadObj = (payload && typeof payload === "object") ? payload as Record<string, unknown> : {};
+
+    const type = payloadObj?.type === "contact" ? "contact" : "feedback";
+    const name = typeof payloadObj?.name === "string" ? payloadObj.name.trim() : "";
+    const email = typeof payloadObj?.email === "string" ? payloadObj.email.trim() : "";
+    const organization = typeof payloadObj?.organization === "string" ? payloadObj.organization.trim() : "";
+    const details = typeof payloadObj?.details === "string" ? payloadObj.details.trim() : "";
+    const expected = typeof payloadObj?.expected === "string" ? payloadObj.expected.trim() : "";
+    const message = typeof payloadObj?.message === "string" ? payloadObj.message.trim() : "";
+    const website = typeof payloadObj?.website === "string" ? payloadObj.website.trim() : "";
+    const ratingRaw = payloadObj?.rating;
+    const rating = typeof ratingRaw === "number" && Number.isFinite(ratingRaw) ? ratingRaw : undefined;
+    const userId = typeof payloadObj?.userId === "string" ? payloadObj.userId : "";
+    const appVersion = typeof payloadObj?.appVersion === "string" ? payloadObj.appVersion : "";
+    const context = payloadObj?.context && typeof payloadObj.context === "object" ? payloadObj.context : null;
 
     // Honeypot: if filled, silently accept
     if (website) {
@@ -109,8 +117,13 @@ serve(async (req) => {
       `Type: ${type}`,
       name ? `Name: ${name}` : null,
       email ? `Email: ${email}` : null,
+      userId ? `User: ${userId}` : null,
       organization ? `Organisation: ${organization}` : null,
+      appVersion ? `App: ${appVersion}` : null,
+      rating ? `Rating: ${rating}` : null,
       details ? `Details: ${details}` : null,
+      expected ? `Expected: ${expected}` : null,
+      context ? `Context: ${JSON.stringify(context)}` : null,
       "",
       "Message:",
       message,

@@ -18,5 +18,8 @@ export async function saveActionPlan(sessionId: string, actions: ActionItem[]): 
     throw error || new Error("Failed to save action plan");
   }
 
-  return { ...data, actions: (data.actions as any) || [] } as ActionPlan;
+  const persistedActions = Array.isArray((data as { actions?: unknown }).actions)
+    ? (data as { actions?: unknown }).actions
+    : [];
+  return { ...data, actions: persistedActions } as ActionPlan;
 }

@@ -53,6 +53,8 @@ export function EvaluationResults({
     }
   };
 
+  const strengths = result.strengths?.length ? result.strengths : [];
+
   return (
     <div className="space-y-6 animate-fade-in-up">
       {/* Score Header */}
@@ -81,22 +83,26 @@ export function EvaluationResults({
       </div>
 
       {/* Strengths */}
-      {result.strengths.length > 0 && (
-        <div className="card-elevated p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <CheckCircle2 className="h-5 w-5 text-success" />
-            <h3 className="font-display text-lg font-semibold text-foreground">Strengths</h3>
-          </div>
+      <div className="card-elevated p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <CheckCircle2 className="h-5 w-5 text-success" />
+          <h3 className="font-display text-lg font-semibold text-foreground">Strengths</h3>
+        </div>
+        {strengths.length > 0 ? (
           <ul className="space-y-2 stagger-children">
-            {result.strengths.map((strength, index) => (
+            {strengths.map((strength, index) => (
               <li key={index} className="flex items-start gap-3 text-foreground">
                 <span className="text-success mt-1">-</span>
                 <span>{strength}</span>
               </li>
             ))}
           </ul>
-        </div>
-      )}
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            No explicit strengths were identified. Focus on providing specific examples and evidence to demonstrate good practice.
+          </p>
+        )}
+      </div>
 
       {/* Weaknesses */}
       {showWeaknesses && (

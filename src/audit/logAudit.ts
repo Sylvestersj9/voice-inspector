@@ -6,7 +6,7 @@ type LogAuditInput = {
   action: AuditAction;
   entityType: string;
   entityId?: string | null;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 };
 
 // Fire-and-forget audit logger. Never throws; warns on failure.

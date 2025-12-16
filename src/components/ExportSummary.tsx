@@ -50,8 +50,8 @@ export function ExportSummary({ results, sessionDate = new Date() }: ExportSumma
 
   // Collect all strengths, gaps, and actions
   const allStrengths = Array.from(results.values()).flatMap((r) => safeArray(r.strengths)).slice(0, 5);
-  const allGaps = Array.from(results.values()).flatMap((r: any) => safeArray(r.gaps)).slice(0, 5);
-  const allActions = Array.from(results.values()).flatMap((r: any) => safeArray(r.recommendedActions)).slice(0, 5);
+  const allGaps = Array.from(results.values()).flatMap((r) => safeArray(r.gaps)).slice(0, 5);
+  const allActions = Array.from(results.values()).flatMap((r) => safeArray(r.recommendedActions)).slice(0, 5);
 
   const handlePrint = () => {
     window.print();

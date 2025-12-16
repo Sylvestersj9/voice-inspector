@@ -4,6 +4,14 @@ import type { InspectionReport, ReportBand } from "./types";
 import { canGenerateReport } from "@/billing/enforcement";
 import { generateActionsFromEvaluations } from "@/actionPlans/generateFromEvaluations";
 
+type EvaluationRow = {
+  score: number | null;
+  strengths?: string | null;
+  gaps?: string | null;
+  follow_up_questions?: string | null;
+  inspection_session_questions?: { domain_name?: string | null } | null;
+};
+
 const bandFromScore = (score: number): ReportBand => {
   if (score >= 3.6) return "Outstanding";
   if (score >= 2.8) return "Good";
@@ -52,7 +60,7 @@ export async function generateInspectionReport(
   const risks: string[] = [];
   const actions: string[] = [];
 
-  evaluations.forEach((ev: any) => {
+  (evaluations as EvaluationRow[]).forEach((ev) => {
     const score = Number(ev.score) || 0;
     total += score;
     const domain = ev.inspection_session_questions?.domain_name || "General";
@@ -118,7 +126,7 @@ export async function generateInspectionReport(
     .maybeSingle();
 
   if (!existingPlan) {
-    const autoActions = generateActionsFromEvaluations(evaluations as any[]);
+    const autoActions = generateActionsFromEvaluations(evaluations as EvaluationRow[]);
     try {
       await supabase.from("inspection_action_plans").insert({
         session_id: inspectionSessionId,

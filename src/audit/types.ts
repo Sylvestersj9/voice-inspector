@@ -21,5 +21,5 @@ export type AuditLog = {
   action: AuditAction;
   entity_type: string;
   entity_id?: string | null;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 };

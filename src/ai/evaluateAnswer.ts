@@ -121,16 +121,19 @@ export async function evaluateAnswer(input: EvaluateAnswerInput): Promise<Inspec
     throw new Error(`LLM error: ${res.status} ${raw.slice(0, 500)}`);
   }
 
-  let parsed: any;
+  let parsed: unknown;
   try {
     const data = JSON.parse(raw);
-    const content = data?.choices?.[0]?.message?.content ?? "";
-    parsed = JSON.parse(content);
+    const content = (data as { choices?: Array<{ message?: { content?: string } }> })?.choices?.[0]?.message?.content ?? "";
+    parsed = JSON.parse(content || "{}");
   } catch (err) {
     throw new Error("Failed to parse LLM JSON");
   }
 
-  const dimensions = parsed?.dimension_scores || {};
+  const parsedObj = (parsed && typeof parsed === "object") ? parsed as Record<string, unknown> : {};
+  const dimensions = (parsedObj.dimension_scores && typeof parsedObj.dimension_scores === "object")
+    ? (parsedObj.dimension_scores as Record<string, unknown>)
+    : {};
   const dimVals = [
     Number(dimensions.safeguarding) || 0,
     Number(dimensions.evidence) || 0,
@@ -138,13 +141,13 @@ export async function evaluateAnswer(input: EvaluateAnswerInput): Promise<Inspec
     Number(dimensions.reflection) || 0,
   ].map((n: number) => Math.max(0, Math.min(3, Math.round(n))));
   const totalScore = dimVals.reduce((a: number, b: number) => a + b, 0);
-  let score = Math.max(0, Math.min(12, Number(parsed?.score ?? totalScore)));
+  let score = Math.max(0, Math.min(12, Number(parsedObj?.score ?? totalScore)));
   // ensure score matches dimensions sum
   score = totalScore;
 
   let band: EvaluationBand = bandFromScore(score);
-  const redFlags: string[] = Array.isArray(parsed?.red_flags)
-    ? parsed.red_flags.filter(Boolean).map((s: any) => String(s))
+  const redFlags: string[] = Array.isArray((parsedObj as { red_flags?: unknown }).red_flags)
+    ? (parsedObj as { red_flags?: unknown }).red_flags.filter(Boolean).map((s: unknown) => String(s))
     : [];
 
   // guardrails
@@ -156,16 +159,16 @@ export async function evaluateAnswer(input: EvaluateAnswerInput): Promise<Inspec
     score = Math.max(score, 7);
   }
 
-  const normaliseList = (val: any, max: number, min: number) => {
+  const normaliseList = (val: unknown, max: number, min: number) => {
     const arr = Array.isArray(val) ? val : val ? [val] : [];
     const trimmed = arr.filter(Boolean).map((s) => String(s).trim()).filter(Boolean).slice(0, max);
     while (trimmed.length < min) trimmed.push("");
     return trimmed.filter(Boolean);
   };
 
-  const strengths = normaliseList(parsed?.strengths, 4, 0).join("\n");
-  const gaps = normaliseList(parsed?.gaps, 4, 0).join("\n");
-  const follow_up_questions = normaliseList(parsed?.follow_up_questions, 4, 0).join("\n");
+  const strengths = normaliseList(parsedObj?.strengths, 4, 0).join("\n");
+  const gaps = normaliseList(parsedObj?.gaps, 4, 0).join("\n");
+  const follow_up_questions = normaliseList(parsedObj?.follow_up_questions, 4, 0).join("\n");
 
   const payload = {
     inspection_session_question_id: input.sessionQuestion.id,

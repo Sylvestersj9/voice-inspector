@@ -11,6 +11,8 @@ import Terms from "./pages/legal/Terms";
 import Privacy from "./pages/legal/Privacy";
 import Disclaimer from "./pages/legal/Disclaimer";
 import AcceptableUse from "./pages/legal/AcceptableUse";
+import Sessions from "./pages/Sessions";
+import Dashboard from "./pages/Dashboard";
 
 export default function App() {
   return (
@@ -34,6 +36,22 @@ export default function App() {
           element={
             <RequireAuth>
               <Index />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/app/sessions"
+          element={
+            <RequireAuth>
+              <Sessions />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/app/dashboard"
+          element={
+            <RequireAuth>
+              <Dashboard />
             </RequireAuth>
           }
         />

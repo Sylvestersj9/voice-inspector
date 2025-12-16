@@ -10,8 +10,12 @@ export async function getActionPlan(sessionId: string): Promise<ActionPlan | nul
 
   if (error) throw error;
   if (!data) return null;
+  const actions = Array.isArray((data as { actions?: unknown }).actions)
+    ? (data as { actions?: unknown }).actions
+    : [];
+
   return {
     ...data,
-    actions: (data.actions as any) || [],
+    actions,
   } as ActionPlan;
 }

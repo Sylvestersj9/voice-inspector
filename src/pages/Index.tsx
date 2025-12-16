@@ -1,5 +1,5 @@
 ﻿import { useState, useMemo } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
 import { useToast } from "@/hooks/use-toast";
 import { ofstedQuestions, EvaluationResult, getJudgementBand } from "@/lib/questions";
@@ -20,6 +20,10 @@ import { Loader2, ChevronLeft, ChevronRight, MessageCircleQuestion, Clock, Setti
 import { detectFollowUpNeed, FollowUpDecision, getFollowUpLabel } from "@/lib/followUpRules";
 import { evaluationSchema } from "@/lib/evaluationSchema";
 import FinalSummaryReport from "@/components/report/FinalSummaryReport";
+import { BetaFeedback } from "@/components/BetaFeedback";
+import FeedbackButton from "@/feedback/FeedbackButton";
+import CompletionPrompt from "@/feedback/CompletionPrompt";
+import { useOnboardingChecklist } from "@/onboarding/useOnboardingChecklist";
 
 type Step = 
   | "ready" 
@@ -47,6 +51,7 @@ interface SendResult {
 }
 
 const emailAddress = "reports@ziantra.co.uk";
+const ACTIVE_SESSION_KEY = "active_session_id";
 
 async function sendFeedback(payload: Record<string, string>, type: SubmitType): Promise<SendResult> {
   try {
@@ -92,6 +97,12 @@ const fetchWithTimeout = async (url: string, options: RequestInit, timeoutMs: nu
   }
 };
 
+const normalizeList = (value: unknown, fallback: string[]): string[] => {
+  if (!Array.isArray(value)) return fallback;
+  const cleaned = value.map((v) => (v ?? "").toString().trim()).filter(Boolean);
+  return cleaned.length ? cleaned : fallback;
+};
+
 const Index = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -114,12 +125,72 @@ const Index = () => {
   const [contactSubmitting, setContactSubmitting] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [sessionQuestionIds, setSessionQuestionIds] = useState<string[]>([]);
+  const [savedAnswers, setSavedAnswers] = useState<Record<string, string>>({});
+  const [storedSessionId, setStoredSessionId] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    return localStorage.getItem("active_session_id");
+  });
+  const { completeItem } = useOnboardingChecklist();
+  const [markedAnswerComplete, setMarkedAnswerComplete] = useState(false);
+  const [resumeLoading, setResumeLoading] = useState(false);
+
+  const persistActiveSession = (id: string) => {
+    try {
+      localStorage.setItem(ACTIVE_SESSION_KEY, id);
+    } catch {
+      // ignore
+    }
+    setStoredSessionId(id);
+  };
+
+  const clearActiveSessionFlag = () => {
+    try {
+      localStorage.removeItem(ACTIVE_SESSION_KEY);
+    } catch {
+      // ignore
+    }
+    setStoredSessionId(null);
+  };
+
+  const clearActiveSession = () => {
+    clearActiveSessionFlag();
+    setSessionId(null);
+    setSessionQuestionIds([]);
+    setSavedAnswers({});
+    setResults(new Map());
+    setCompletedQuestions([]);
+    setEvaluation(null);
+    setTranscript("");
+    setFollowUpCount(0);
+    setIsFollowUp(false);
+    setStep("ready");
+  };
 
   const currentQuestion = ofstedQuestions[currentQuestionIndex];
 
   const progressLabel = useMemo(() => {
     return `Question ${currentQuestionIndex + 1} of ${ofstedQuestions.length}`;
   }, [currentQuestionIndex]);
+
+  useEffect(() => {
+    if (sessionId || resumeLoading) return;
+    const existing = storedSessionId || (typeof window !== "undefined" ? localStorage.getItem(ACTIVE_SESSION_KEY) : null);
+    if (existing) {
+      setStoredSessionId(existing);
+      void resumeSession(existing);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionId, storedSessionId]);
+
+  useEffect(() => {
+    const qId = sessionQuestionIds[currentQuestionIndex];
+    const saved = qId ? savedAnswers[qId] : "";
+    if (!qId || !saved) return;
+    if (step === "ready" && !transcript) {
+      setTranscript(saved);
+      setStep("editing");
+    }
+  }, [currentQuestionIndex, sessionQuestionIds, savedAnswers, step, transcript]);
 
   const resetForQuestion = () => {
     setStep("ready");
@@ -186,15 +257,19 @@ const Index = () => {
 
   const ensureSessionAndQuestions = async (): Promise<string[] | null> => {
     if (sessionId && sessionQuestionIds.length === ofstedQuestions.length) {
+      if (storedSessionId !== sessionId) {
+        persistActiveSession(sessionId);
+      }
       return sessionQuestionIds;
     }
     let user;
     try {
       user = await requireAuth();
       await ensureProfile(user);
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Not authenticated (missing session)";
       console.error(err);
-      toast({ title: "Please log in again", description: err?.message, variant: "destructive" });
+      toast({ title: "Please log in again", description: message, variant: "destructive" });
       navigate("/login");
       return null;
     }
@@ -217,6 +292,8 @@ const Index = () => {
     }
 
     setSessionId(session.id);
+    persistActiveSession(session.id);
+    completeItem("create_session");
     console.log("SESSION CREATED", session.id);
 
     const questionPayload = ofstedQuestions.map((q, idx) => ({
@@ -241,20 +318,85 @@ const Index = () => {
       return null;
     }
 
-    const sorted = [...questionRows].sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
-    const ids = sorted.map((row: any) => row.id);
+    const sorted = [...questionRows].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+    const ids = sorted.map((row) => row.id);
     setSessionQuestionIds(ids);
     console.log("SESSION QUESTIONS CREATED", ids);
 
     return ids;
   };
 
+  const resumeSession = async (existingId: string) => {
+    setResumeLoading(true);
+    try {
+      await requireAuth();
+    } catch (err: unknown) {
+      setResumeLoading(false);
+      const message = err instanceof Error ? err.message : "Please log in again";
+      toast({ title: "Please log in again", description: message, variant: "destructive" });
+      navigate("/login");
+      return;
+    }
+
+    const { data: questions, error: qErr } = await supabase
+      .from("inspection_session_questions")
+      .select("id,sort_order")
+      .eq("inspection_session_id", existingId)
+      .order("sort_order", { ascending: true });
+
+    if (qErr || !questions || questions.length === 0) {
+      clearActiveSession();
+      setResumeLoading(false);
+      return;
+    }
+
+    const sorted = [...questions].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+    const ids = sorted.map((q) => q.id);
+    setSessionId(existingId);
+    setSessionQuestionIds(ids);
+    persistActiveSession(existingId);
+
+    const { data: answers, error: aErr } = await supabase
+      .from("inspection_answers")
+      .select("inspection_session_question_id,answer_text,transcript")
+      .in("inspection_session_question_id", ids);
+
+    if (aErr) {
+      console.error("Resume load answers error", aErr);
+    }
+
+    const map: Record<string, string> = {};
+    if (answers) {
+      answers.forEach((row: { inspection_session_question_id: string; answer_text: string | null; transcript: string | null }) => {
+        const text = (row.answer_text || row.transcript || "").toString();
+        if (text.trim()) map[row.inspection_session_question_id] = text;
+      });
+    }
+    setSavedAnswers(map);
+
+    const completed: number[] = [];
+    ids.forEach((id, idx) => {
+      if (map[id]) completed.push(idx);
+    });
+    setCompletedQuestions(completed);
+    setMarkedAnswerComplete(completed.length > 0);
+
+    const firstIncomplete = ids.findIndex((id) => !map[id]);
+    const targetIndex = firstIncomplete >= 0 ? firstIncomplete : 0;
+    setCurrentQuestionIndex(targetIndex);
+    const initialTranscript = map[ids[targetIndex]] || "";
+    setTranscript(initialTranscript);
+    setEvaluation(null);
+    setStep(initialTranscript ? "editing" : "ready");
+  };
+
   const saveAnswerToSupabase = async (sessionQuestionId: string, text: string) => {
     try {
       await requireAuth();
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Please log in again";
       console.error(err);
-      toast({ title: "Please log in again", description: err?.message, variant: "destructive" });
+      toast({ title: "Please log in again", description: message, variant: "destructive" });
       navigate("/login");
       return false;
     }
@@ -282,32 +424,39 @@ const Index = () => {
     }
 
     console.log("Saved answer", sessionQuestionId);
+    setSavedAnswers((prev) => ({ ...prev, [sessionQuestionId]: text }));
+    if (!markedAnswerComplete) {
+      setMarkedAnswerComplete(true);
+      completeItem("answer_questions");
+    }
     return true;
   };
 
   const saveEvaluationToSupabase = async (sessionQuestionId: string, mappedEvaluation: EvaluationResult) => {
     try {
       await requireAuth();
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Please log in again";
       console.error(err);
-      toast({ title: "Please log in again", description: err?.message, variant: "destructive" });
+      toast({ title: "Please log in again", description: message, variant: "destructive" });
       navigate("/login");
       return;
     }
 
-    const strengths = Array.isArray((mappedEvaluation as any).strengths) ? (mappedEvaluation as any).strengths : [];
-    const gaps = Array.isArray((mappedEvaluation as any).gaps)
-      ? (mappedEvaluation as any).gaps
-      : Array.isArray((mappedEvaluation as any).weaknesses)
-        ? (mappedEvaluation as any).weaknesses
-        : [];
-    const followUps = Array.isArray((mappedEvaluation as any).follow_up_questions)
-      ? (mappedEvaluation as any).follow_up_questions
-      : Array.isArray(mappedEvaluation.followUpQuestions)
-        ? mappedEvaluation.followUpQuestions
-        : [];
-    const band = (mappedEvaluation as any).band ?? mappedEvaluation.judgementBand ?? "Requires Improvement";
-    const scoreVal = (mappedEvaluation as any).score ?? mappedEvaluation.score4 ?? mappedEvaluation.score;
+    const strengths = normalizeList(mappedEvaluation.strengths as unknown, ["—"]);
+    const gaps = normalizeList(
+      (mappedEvaluation as unknown as { gaps?: unknown; weaknesses?: unknown }).gaps ??
+        (mappedEvaluation as unknown as { weaknesses?: unknown }).weaknesses,
+      ["—"],
+    );
+    const followUps = normalizeList(
+      (mappedEvaluation as unknown as { follow_up_questions?: unknown }).follow_up_questions ??
+        mappedEvaluation.followUpQuestions,
+      ["Can you give a recent, specific example with outcomes?"],
+    );
+    const mapped = mappedEvaluation as Partial<EvaluationResult> & { band?: unknown; score?: unknown; score4?: unknown };
+    const band = typeof mapped.band === "string" ? mapped.band : mapped.judgementBand ?? "Requires Improvement";
+    const scoreVal = typeof mapped.score === "number" ? mapped.score : mapped.score4 ?? mappedEvaluation.score;
     const score = Number.isFinite(scoreVal) ? Number(scoreVal) : 0;
     const strengthsStr = JSON.stringify(Array.isArray(strengths) ? strengths : []);
     const gapsStr = JSON.stringify(Array.isArray(gaps) ? gaps : []);
@@ -342,6 +491,7 @@ const Index = () => {
     }
 
     console.log("EVALUATION SAVED", sessionQuestionId);
+    completeItem("run_evaluation");
   };
 
   const handleRecordingComplete = async (audioBlob: Blob) => {
@@ -448,24 +598,34 @@ const Index = () => {
       const judgementBand = parsedEvaluation.overall_judgement as EvaluationResult["judgementBand"];
       const score4 = parsedEvaluation.score4;
 
-      const riskFlags = (parsedEvaluation as any).risk_flags ?? (parsedEvaluation as any).riskFlags ?? [];
+      const riskFlagsRaw = (parsedEvaluation as unknown as { risk_flags?: unknown; riskFlags?: unknown });
+      const riskFlags =
+        (Array.isArray(riskFlagsRaw.risk_flags) && riskFlagsRaw.risk_flags) ||
+        (Array.isArray(riskFlagsRaw.riskFlags) && riskFlagsRaw.riskFlags) ||
+        [];
+
+      const strengthsNorm = normalizeList(parsedEvaluation.strengths, ["—"]);
+      const gapsNorm = normalizeList(parsedEvaluation.gaps || parsedEvaluation.weaknesses, ["—"]);
+      const followUpsNorm = normalizeList(parsedEvaluation.follow_up_questions, [
+        "Can you give a recent, specific example with outcomes?",
+      ]);
 
       const mappedEvaluation: EvaluationResult = {
         judgementBand,
         score: score4,
         score4,
-        strengths: parsedEvaluation.strengths || [],
-        gaps: parsedEvaluation.gaps || parsedEvaluation.weaknesses || [],
-        weaknesses: parsedEvaluation.weaknesses || [],
+        strengths: strengthsNorm,
+        gaps: gapsNorm,
+        weaknesses: gapsNorm,
         recommendations: parsedEvaluation.recommendations || [],
         recommendedActions: parsedEvaluation.next_actions || parsedEvaluation.recommendations || [],
         riskFlags,
-        followUpQuestions: parsedEvaluation.follow_up_questions || [],
+        followUpQuestions: followUpsNorm,
         whatInspectorWantsToHear: parsedEvaluation.what_inspector_wants_to_hear,
         evidenceToQuoteNextTime: parsedEvaluation.evidence_to_quote_next_time,
         actionPlan7Days: parsedEvaluation.action_plan_7_days,
         actionPlan30Days: parsedEvaluation.action_plan_30_days,
-        confidenceBand: parsedEvaluation.confidence_band as any,
+        confidenceBand: parsedEvaluation.confidence_band as EvaluationResult["confidenceBand"],
         note: parsedEvaluation.note,
         debug: parsedEvaluation.debug,
       };
@@ -487,13 +647,13 @@ const Index = () => {
           ...existingResult,
           followUpUsed: true,
           followUpTranscript: transcript,
-          followUpEvaluation: parsedEvaluation,
+          followUpEvaluation: mappedEvaluation,
           followUpDecision,
         }));
       } else {
         setResults(prev => new Map(prev).set(currentQuestionIndex, {
           transcript: transcriptToUse,
-          evaluation: parsedEvaluation,
+          evaluation: mappedEvaluation,
           followUpUsed: false,
           followUpDecision,
         }));
@@ -646,9 +806,14 @@ const Index = () => {
     }
   };
 
-  const handleViewSummary = () => setStep("summary");
+  const handleViewSummary = () => {
+    completeItem("review_summary");
+    clearActiveSessionFlag();
+    setStep("summary");
+  };
 
   const handleStartOver = () => {
+    clearActiveSession();
     setCurrentQuestionIndex(0);
     resetForQuestion();
     setResults(new Map());
@@ -734,14 +899,14 @@ const Index = () => {
     } catch (error) {
       console.error("Logout error:", error);
     } finally {
-      setTimeout(() => {
-        loading.hide();
-        navigate("/login?loggedOut=true", { replace: true });
-      }, 2000);
+      loading.hide();
+      toast({ title: "Logged out successfully" });
+      navigate("/login", { replace: true, state: { toast: "Logged out successfully" } });
     }
   };
 
   const handlePracticeAgain = () => {
+    clearActiveSession();
     setCurrentQuestionIndex(0);
     setResults(new Map());
     setCompletedQuestions([]);
@@ -752,6 +917,58 @@ const Index = () => {
     setStep("ready");
     setTranscriptionWarning(false);
     setTranscriptionError(null);
+  };
+
+  const AppNav = () => {
+    const linkBase =
+      "text-sm font-medium px-3 py-2 rounded-lg transition hover:text-slate-900 hover:bg-slate-100";
+    return (
+      <div className="sticky top-0 z-20 bg-white/80 backdrop-blur border-b border-slate-200">
+        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
+          <div className="flex items-center gap-2">
+            <div className="text-base font-bold text-black font-display">Voice Inspector</div>
+            <span className="rounded-full bg-teal-50 px-2 py-0.5 text-xs font-semibold text-teal-700 ring-1 ring-teal-100">
+              Beta
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <NavLink
+              to="/app"
+              className={({ isActive }) =>
+                [linkBase, isActive ? "text-slate-900 bg-slate-100" : "text-slate-600"].join(" ")
+              }
+            >
+              Simulator
+            </NavLink>
+            <NavLink
+              to="/app/sessions"
+              className={({ isActive }) =>
+                [linkBase, isActive ? "text-slate-900 bg-slate-100" : "text-slate-600"].join(" ")
+              }
+            >
+              My sessions
+            </NavLink>
+            <NavLink
+              to="/app/dashboard"
+              className={({ isActive }) =>
+                [linkBase, isActive ? "text-slate-900 bg-slate-100" : "text-slate-600"].join(" ")
+              }
+            >
+              Dashboard
+            </NavLink>
+          </div>
+          <div className="flex items-center gap-3">
+            <BetaFeedback />
+            <button
+              onClick={handleLogout}
+              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-teal-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-700"
+            >
+              Logout
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   if (step === "summary") {
@@ -810,6 +1027,7 @@ const Index = () => {
             evaluations={evaluationsForReport}
             onPracticeAgain={handlePracticeAgain}
           />
+          <CompletionPrompt sessionId={sessionId} userId={null} />
           <div className="mt-8">{contactCard}</div>
         </div>
         <Toaster />
@@ -822,26 +1040,33 @@ const Index = () => {
 
   return (
     <div className="min-h-screen gradient-hero py-8 px-4">
+      <AppNav />
+      <FeedbackButton
+        sessionId={sessionId || undefined}
+        userId={undefined}
+        onSent={() => completeItem("send_feedback")}
+      />
       {showGlobalLoading && <LoadingOverlay message="Processing..." />}
+      <div className="mx-auto mb-3 flex max-w-5xl justify-end gap-2">
+        {storedSessionId && (!sessionId || sessionId !== storedSessionId) && (
+          <Button variant="outline" size="sm" onClick={() => storedSessionId && resumeSession(storedSessionId)} disabled={resumeLoading}>
+            {resumeLoading ? "Resuming..." : "Resume previous session"}
+          </Button>
+        )}
+        {sessionId && (
+          <Button variant="ghost" size="sm" onClick={clearActiveSession}>
+            Exit session
+          </Button>
+        )}
+        <Button variant="outline" size="sm" onClick={handleStartOver}>
+          Start new session
+        </Button>
+      </div>
       <div className="mb-3">
         <div className="mx-auto flex max-w-5xl items-center justify-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-1.5 text-sm font-semibold text-emerald-800 shadow-sm">
           <span className="h-2 w-2 rounded-full bg-emerald-600 inline-block" />
-          <span>Open access beta — no account or billing required while we collect feedback.</span>
+          <span>Open access beta - no account or billing required while we collect feedback.</span>
         </div>
-      </div>
-      <div className="max-w-4xl mx-auto flex items-center justify-between px-4 pb-2">
-        <div className="flex items-center gap-2">
-          <div className="h-10 w-10 rounded-full bg-white/20 ring-1 ring-white/40 overflow-hidden flex items-center justify-center">
-            <img src="/logo.svg" alt="Voice Inspector" className="h-9 w-9 object-contain" />
-          </div>
-          <div className="text-base font-bold text-black font-display">Voice Inspector</div>
-        </div>
-        <button
-          onClick={handleLogout}
-          className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-teal-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-700"
-        >
-          Logout
-        </button>
       </div>
       <div className="container max-w-4xl mx-auto">
         {/* Header */}

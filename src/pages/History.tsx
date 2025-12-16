@@ -18,7 +18,7 @@ interface SessionAnswer {
   question_id: number;
   question_domain: string;
   transcript: string;
-  evaluation_json: any;
+  evaluation_json: unknown;
   attempt_index: number;
 }
 
@@ -53,7 +53,7 @@ export default function History() {
     setSelectedSession(sessionId);
     if (sessionId.startsWith("local-")) {
       const local = JSON.parse(localStorage.getItem("localSessions") || "[]");
-      const found = local.find((s: any) => s.id === sessionId);
+      const found = local.find((s: { id?: string }) => s.id === sessionId);
       setSessionAnswers(found?.answers || []);
       return;
     }

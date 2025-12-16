@@ -47,8 +47,9 @@ export default function Login() {
         provider: "google",
         options: { redirectTo: `${window.location.origin}/auth/callback` },
       });
-    } catch (e: any) {
-      setError(e?.message ?? "Google sign-in failed.");
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Google sign-in failed.";
+      setError(message);
     } finally {
       loading.hide();
       setBusy(false);
@@ -79,8 +80,9 @@ export default function Login() {
 
         setMessage("Account created. If email confirmation is enabled, check your inbox to finish signup.");
       }
-    } catch (e: any) {
-      setError(e?.message ?? "Authentication failed.");
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Authentication failed.";
+      setError(message);
     } finally {
       loading.hide();
       setBusy(false);
@@ -191,8 +193,9 @@ export default function Login() {
                               redirectTo: `${window.location.origin}/auth/callback`,
                             });
                             setMessage("Reset link sent. Check your inbox to continue.");
-                          } catch (e: any) {
-                            setError(e?.message ?? "Unable to send reset link right now.");
+                          } catch (e: unknown) {
+                            const message = e instanceof Error ? e.message : "Unable to send reset link right now.";
+                            setError(message);
                           } finally {
                             loading.hide();
                             setBusy(false);

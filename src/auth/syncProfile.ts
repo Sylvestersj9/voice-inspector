@@ -5,12 +5,13 @@ export async function syncProfile() {
   const user = data.user;
   if (!user) return;
 
-  const meta: any = user.user_metadata ?? {};
+  const meta = (user.user_metadata ?? {}) as Record<string, unknown>;
   const payload = {
     id: user.id,
     email: user.email ?? null,
-    full_name: meta.full_name ?? meta.name ?? null,
-    avatar_url: meta.avatar_url ?? meta.picture ?? null,
+    full_name: (typeof meta.full_name === "string" && meta.full_name) || (typeof meta.name === "string" ? meta.name : null),
+    avatar_url:
+      (typeof meta.avatar_url === "string" && meta.avatar_url) || (typeof meta.picture === "string" ? meta.picture : null),
     updated_at: new Date().toISOString(),
   };
 

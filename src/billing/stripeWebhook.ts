@@ -17,8 +17,9 @@ export async function handleStripeWebhook(req: Request): Promise<Response> {
   let event: Stripe.Event;
   try {
     event = stripe.webhooks.constructEvent(body, sig, webhookSecret);
-  } catch (err: any) {
-    return new Response(`Webhook Error: ${err.message}`, { status: 400 });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Invalid signature";
+    return new Response(`Webhook Error: ${message}`, { status: 400 });
   }
 
   try {
@@ -72,7 +73,7 @@ export async function handleStripeWebhook(req: Request): Promise<Response> {
       default:
         break;
     }
-  } catch (err) {
+  } catch (err: unknown) {
     console.warn("Stripe webhook handling error:", err);
     return new Response("fail", { status: 500 });
   }

@@ -8,7 +8,7 @@ type EvalLike = {
   gaps?: string[] | string | null;
   recommendations?: string[] | string | null;
   follow_up_questions?: string[] | string | null;
-  [k: string]: any;
+  [k: string]: unknown;
 };
 
 type QLike = {
@@ -393,7 +393,7 @@ export default function FinalSummaryReport({
                       <>
                         <div className="text-xs font-semibold text-slate-500">Recommended improvements</div>
                         <ul className="mt-2 space-y-2 text-sm text-slate-700">
-                          {toList(e?.recommendations).map((r: any, i: number) => (
+                          {toList(e?.recommendations).map((r: string, i: number) => (
                             <li key={i} className="flex gap-2">
                               <span className="mt-2 h-1.5 w-1.5 rounded-full bg-teal-600" />
                               <span>{String(r)}</span>
@@ -423,7 +423,7 @@ export default function FinalSummaryReport({
                   <div className="mt-4 rounded-xl border bg-amber-50/50 p-4">
                     <div className="text-xs font-semibold text-amber-900">Likely follow-up questions (be ready)</div>
                     <ul className="mt-2 space-y-2 text-sm text-amber-900">
-                      {e.follow_up_questions.map((f: any, i: number) => (
+                      {e.follow_up_questions.map((f: string, i: number) => (
                         <li key={i} className="flex gap-2">
                           <span className="mt-2 h-1.5 w-1.5 rounded-full bg-amber-600" />
                           <span>{String(f)}</span>

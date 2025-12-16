@@ -80,17 +80,53 @@ serve(async (req: Request) => {
     return order.indexOf(cur) > order.indexOf(tar) ? tar : cur;
   };
 
-  const textish = (v: any) => (typeof v === "string" ? v : v ? JSON.stringify(v) : "");
+  const textish = (v: unknown) => (typeof v === "string" ? v : v ? JSON.stringify(v) : "");
+
+  const cleanArray = (val: unknown) =>
+    Array.isArray(val) ? val.map((v) => textish(v).trim()).filter(Boolean) : [];
+
+  const fallbackFromTranscript = (text: string, maxItems = 4) => {
+    const sentences = text
+      .split(/(?<=[.!?])\s+/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+    return sentences.slice(0, maxItems).map((s) => (s.length > 140 ? `${s.slice(0, 137)}...` : s));
+  };
+
+  const fallbackStrengths = (text: string) => {
+    const basics = [
+      "The response shows awareness of the topic.",
+      "The answer attempts to address the question.",
+      "The tone is professional and structured.",
+    ];
+    const extracts = fallbackFromTranscript(text, 3);
+    const combined = cleanArray([...extracts, ...basics]);
+    return combined.length > 0 ? combined.slice(0, 4) : [
+      "The response demonstrates initial engagement with the question and provides a starting point for further development.",
+    ];
+  };
+
+  const fallbackGaps = () => [
+    "No clear gaps were identified; add specific safeguarding, oversight, and impact details.",
+    "Explain escalation routes, monitoring, and how you evidence impact for children.",
+  ];
+
+  const fallbackFollowUps = () => [
+    "Can you give a recent, specific example of this in practice?",
+    "Who would you escalate this to, and why?",
+    "How do you know this approach is effective?",
+  ];
 
   // checks: simplistic but effective “caps” enforcement
-  const getEvidenceHits = (obj: any) => {
+  const getEvidenceHits = (obj: unknown) => {
     const fields: string[] = [];
     try {
-      const rubric = obj?.rubric || {};
+      const rubric = (obj as { rubric?: Record<string, unknown> })?.rubric || {};
       for (const k of Object.keys(rubric)) {
-        fields.push(textish(rubric?.[k]?.evidence));
+        const val = rubric?.[k] as { evidence?: unknown };
+        fields.push(textish(val?.evidence));
       }
-      fields.push(textish(obj?.rationale));
+      fields.push(textish((obj as { rationale?: unknown })?.rationale));
     } catch {
       // ignore
     }
@@ -126,11 +162,11 @@ serve(async (req: Request) => {
     return hits;
   };
 
-  const hasSafeguardingEscalation = (obj: any) => {
+  const hasSafeguardingEscalation = (obj: unknown) => {
     const combined = (
-      textish(obj?.rubric?.safeguarding_response?.evidence) +
+      textish((obj as { rubric?: { safeguarding_response?: { evidence?: unknown } } })?.rubric?.safeguarding_response?.evidence) +
       " " +
-      textish(obj?.rationale)
+      textish((obj as { rationale?: unknown })?.rationale)
     ).toLowerCase();
     return (
       combined.includes("mash") ||
@@ -147,11 +183,11 @@ serve(async (req: Request) => {
     );
   };
 
-  const hasEffectivenessChecks = (obj: any) => {
+  const hasEffectivenessChecks = (obj: unknown) => {
     const combined = (
-      textish(obj?.rubric?.effectiveness_checks?.evidence) +
+      textish((obj as { rubric?: { effectiveness_checks?: { evidence?: unknown } } })?.rubric?.effectiveness_checks?.evidence) +
       " " +
-      textish(obj?.rationale)
+      textish((obj as { rationale?: unknown })?.rationale)
     ).toLowerCase();
     return (
       combined.includes("audit") ||
@@ -163,11 +199,11 @@ serve(async (req: Request) => {
     );
   };
 
-  const hasImpact = (obj: any) => {
+  const hasImpact = (obj: unknown) => {
     const combined = (
-      textish(obj?.rubric?.child_voice_impact?.evidence) +
+      textish((obj as { rubric?: { child_voice_impact?: { evidence?: unknown } } })?.rubric?.child_voice_impact?.evidence) +
       " " +
-      textish(obj?.rationale)
+      textish((obj as { rationale?: unknown })?.rationale)
     ).toLowerCase();
     return (
       combined.includes("impact") ||
@@ -276,35 +312,47 @@ ${transcript}
       return json(502, { error: "OpenAI evaluate failed", status: resp.status, details: raw });
     }
 
-    let parsed: any;
+    let parsed: unknown;
     try {
       const data = JSON.parse(raw);
-      const content = data?.choices?.[0]?.message?.content ?? "";
-      parsed = JSON.parse(content);
+      const content = (data as { choices?: Array<{ message?: { content?: string } }> })?.choices?.[0]?.message?.content ?? "";
+      parsed = JSON.parse(content || "{}");
     } catch {
       return json(502, { error: "Bad model JSON", details: raw.slice(0, 2000) });
     }
 
-    parsed.overall_judgement = normalizeBand(parsed?.overall_judgement);
+    const parsedObj = (parsed && typeof parsed === "object") ? (parsed as Record<string, unknown>) : {};
 
-    if (!Array.isArray(parsed.strengths)) parsed.strengths = [];
-    if (!Array.isArray(parsed.weaknesses) || parsed.weaknesses.length === 0) {
-      parsed.weaknesses = [
-        "No specific examples were provided to demonstrate practice.",
-        "Key safeguarding or management processes were not clearly explained.",
-        "There was no evidence of review, learning, or impact on outcomes for children.",
-      ];
-    }
-    if (!Array.isArray(parsed.recommendations)) parsed.recommendations = [];
-    if (!parsed.rubric || typeof parsed.rubric !== "object") parsed.rubric = {};
+    parsedObj.overall_judgement = normalizeBand((parsedObj as { overall_judgement?: string }).overall_judgement as string);
 
-    if (!Array.isArray(parsed.follow_up_questions) || parsed.follow_up_questions.length === 0) {
-      parsed.follow_up_questions = [
-        "Can you give a recent, specific example of this in practice?",
-        "Who would you escalate this to, and why?",
-        "How do you know this approach is effective?",
-      ];
+    const strengths = cleanArray(parsedObj.strengths);
+    const strengthNormalized = strengths.length > 0 ? strengths : fallbackStrengths(transcript);
+    parsedObj.strengths =
+      strengthNormalized.length > 0
+        ? strengthNormalized
+        : [
+            "The response demonstrates initial engagement with the question and provides a starting point for further development.",
+          ];
+
+    const gaps = cleanArray(parsedObj.gaps || parsedObj.weaknesses);
+    const defaultGaps = fallbackGaps();
+    parsedObj.gaps = gaps.length > 0 ? gaps : defaultGaps;
+
+    if (!Array.isArray(parsedObj.weaknesses) || parsedObj.weaknesses.length === 0) {
+      parsedObj.weaknesses = parsedObj.gaps;
+    } else {
+      parsedObj.weaknesses = cleanArray(parsedObj.weaknesses);
+      if ((parsedObj.weaknesses as unknown[]).length === 0) {
+        parsedObj.weaknesses = parsedObj.gaps;
+      }
     }
+
+    if (!Array.isArray(parsedObj.recommendations)) parsedObj.recommendations = [];
+    if (!parsedObj.rubric || typeof parsedObj.rubric !== "object") parsedObj.rubric = {};
+
+    const followUps = cleanArray(parsedObj.follow_up_questions);
+    const followUpNormalized = followUps.length > 0 ? followUps : fallbackFollowUps();
+    parsedObj.follow_up_questions = followUpNormalized.length > 0 ? followUpNormalized : fallbackFollowUps();
 
     const wordCount = transcript.split(/\s+/).filter(Boolean).length;
 
@@ -393,7 +441,7 @@ ${transcript}
     if (plan === "free" && parsed.overall_judgement === "Outstanding") {
       parsed.overall_judgement = "Good";
       confidence = "strong";
-      (parsed as any).note = "Upgrade to unlock Outstanding judgements and advanced coaching.";
+      (parsedObj as { note?: string }).note = "Upgrade to unlock Outstanding judgements and advanced coaching.";
     }
 
     const score4 = bandToScore4(parsed.overall_judgement);

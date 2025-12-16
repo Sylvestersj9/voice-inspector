@@ -27,7 +27,7 @@ export default function Onboarding() {
           id: user.id,
           email: user.email,
           role: "manager",
-          full_name: (user.user_metadata as any)?.full_name ?? null,
+          full_name: (user.user_metadata as { full_name?: unknown } | undefined)?.full_name ?? null,
         });
       }
 
@@ -39,9 +39,10 @@ export default function Onboarding() {
 
       setSubmitting(false);
       navigate("/app");
-    } catch (err: any) {
+    } catch (err: unknown) {
       setSubmitting(false);
-      setError(err?.message || "Onboarding failed");
+      const message = err instanceof Error ? err.message : "Onboarding failed";
+      setError(message);
     }
   };
 

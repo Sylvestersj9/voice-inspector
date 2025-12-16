@@ -34,7 +34,7 @@ export async function getAnswersForSession(inspectionSessionId: string): Promise
 
   if (error || !data) throw error || new Error("Failed to fetch session questions");
 
-  return (data as any[]).map((row) => ({
+  return (data as (InspectionSessionQuestion & { inspection_answers?: InspectionAnswer[] | null })[]).map((row) => ({
     id: row.id,
     inspection_session_id: row.inspection_session_id,
     domain_name: row.domain_name,

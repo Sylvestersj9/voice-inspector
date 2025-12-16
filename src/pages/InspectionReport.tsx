@@ -32,7 +32,7 @@ export default function InspectionReport() {
     return "bg-emerald-50 text-emerald-900 ring-emerald-100";
   };
 
-  const handleUpdateAction = (index: number, field: keyof ActionItem, value: any) => {
+  const handleUpdateAction = (index: number, field: keyof ActionItem, value: ActionItem[keyof ActionItem]) => {
     setPlanActions((prev) => {
       const next = [...prev];
       next[index] = { ...next[index], [field]: value };
@@ -69,8 +69,9 @@ export default function InspectionReport() {
       const saved = await saveActionPlan(inspectionId, sanitised);
       setPlanActions(saved.actions || []);
       setPlanDirty(false);
-    } catch (err: any) {
-      setPlanError(err?.message || "Failed to save action plan");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to save action plan";
+      setPlanError(message);
     } finally {
       setPlanSaving(false);
     }
@@ -103,8 +104,9 @@ export default function InspectionReport() {
         setDomains(res.domains);
         setSessionTitle(res.sessionTitle);
         setHomeName(res.homeName);
-      } catch (err: any) {
-        setError(err?.message || "Failed to load report");
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : "Failed to load report";
+        setError(message);
       } finally {
         setLoading(false);
       }
@@ -140,8 +142,9 @@ export default function InspectionReport() {
         const auto = generateActionsFromEvaluations(evals || []);
         const saved = await saveActionPlan(inspectionId, auto);
         setPlanActions(saved.actions || []);
-      } catch (err: any) {
-        setPlanError(err?.message || "Failed to load action plan");
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : "Failed to load action plan";
+        setPlanError(message);
       } finally {
         setPlanLoading(false);
       }

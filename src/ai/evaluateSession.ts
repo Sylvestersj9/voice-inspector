@@ -4,6 +4,8 @@ import type { InspectionSessionQuestion } from "@/framework/types";
 import type { InspectionAnswer } from "@/answers/types";
 import { logAudit } from "@/audit/logAudit";
 
+type QuestionRow = InspectionSessionQuestion & { inspection_answers?: InspectionAnswer[] | null };
+
 export async function evaluateSession(inspectionSessionId: string) {
   const { data, error } = await supabase
     .from("inspection_session_questions")
@@ -35,7 +37,7 @@ export async function evaluateSession(inspectionSessionId: string) {
   let totalScore = 0;
   let evaluatedCount = 0;
 
-  for (const row of data as any[]) {
+  for (const row of data as QuestionRow[]) {
     const question: InspectionSessionQuestion = {
       id: row.id,
       inspection_session_id: row.inspection_session_id,
