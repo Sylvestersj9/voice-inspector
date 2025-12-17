@@ -668,11 +668,15 @@ const Index = () => {
     }
     const ensuredIds = await ensureSessionAndQuestions();
     if (!ensuredIds) return;
-    if (!activeQuestion) {
+    const dbQuestionId = ensuredIds[currentQuestionIndex];
+    if (!dbQuestionId) {
       toast({ title: "Unable to map question", description: "Please restart the session.", variant: "destructive" });
       return;
     }
-    const questionId = activeQuestion.id;
+    if (!activeQuestion || activeQuestion.id !== dbQuestionId) {
+      setActiveQuestionId(dbQuestionId);
+    }
+    const questionId = dbQuestionId;
 
     const savedAnswer = await saveAnswerToSupabase(questionId, transcriptToUse);
     if (!savedAnswer) {
