@@ -145,6 +145,9 @@ const Index = () => {
   const [markedAnswerComplete, setMarkedAnswerComplete] = useState(false);
   const [resumeLoading, setResumeLoading] = useState(false);
 
+  const activeQuestion =
+    sessionQuestions.find((q) => q.id === activeQuestionId) || null;
+
   const normalizeLegacyBand = (band: unknown): EvaluationResult["judgementBand"] => {
     const val = (band ?? "").toString().toLowerCase();
     if (val.includes("outstanding")) return "Outstanding";
@@ -658,11 +661,11 @@ const Index = () => {
     }
     const ensuredIds = await ensureSessionAndQuestions();
     if (!ensuredIds) return;
-    const questionId = activeQuestion?.id || ensuredIds[currentQuestionIndex];
-    if (!questionId || !activeQuestion) {
+    if (!activeQuestion) {
       toast({ title: "Unable to map question", description: "Please restart the session.", variant: "destructive" });
       return;
     }
+    const questionId = activeQuestion.id;
 
     const savedAnswer = await saveAnswerToSupabase(questionId, transcriptToUse);
     if (!savedAnswer) {
