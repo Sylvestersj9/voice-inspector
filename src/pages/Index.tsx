@@ -412,11 +412,13 @@ const Index = () => {
     const sorted = [...questionRows].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
     const ids = sorted.map((row) => row.id);
     setSessionQuestionIds(ids);
-    setSessionQuestions(sorted.map((row) => ({
+    const mapped = sorted.map((row) => ({
       id: String(row.id),
       domain: (row as { domain_name?: string }).domain_name || "Safeguarding",
       text: (row as { question_text?: string }).question_text || "",
-    })));
+    }));
+    setSessionQuestions(mapped);
+    setActiveQuestionId(mapped[0]?.id ?? null);
     console.log("SESSION QUESTIONS CREATED", ids);
 
     return ids;
@@ -457,7 +459,7 @@ const Index = () => {
     setSessionId(existingId);
     setSessionQuestionIds(ids);
     persistActiveSession(existingId);
-    setActiveQuestionId((prev) => prev ?? mappedQuestions[0]?.id ?? null);
+    setActiveQuestionId(mappedQuestions[0]?.id ?? null);
 
     const { data: answers, error: aErr } = await supabase
       .from("inspection_answers")
