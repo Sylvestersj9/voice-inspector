@@ -494,6 +494,11 @@ const Index = () => {
   };
 
   const saveAnswerToSupabase = async (sessionQuestionId: string, text: string) => {
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(sessionQuestionId)) {
+      console.error("Bad inspection_session_question_id", sessionQuestionId);
+      toast({ title: "Failed to save answer", description: "Bad question id", variant: "destructive" });
+      return false;
+    }
     try {
       await requireAuth();
     } catch (err: unknown) {
