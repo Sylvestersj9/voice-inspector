@@ -144,6 +144,67 @@ const Index = () => {
   const [markedAnswerComplete, setMarkedAnswerComplete] = useState(false);
   const [resumeLoading, setResumeLoading] = useState(false);
 
+  const normalizeLegacyBand = (band: unknown): EvaluationResult["judgementBand"] => {
+    const val = (band ?? "").toString().toLowerCase();
+    if (val.includes("outstanding")) return "Outstanding";
+    if (val.includes("good")) return "Good";
+    if (val.includes("inadequate")) return "Inadequate";
+    return "Requires improvement to be good";
+  };
+
+  const normalizeEvaluationResponse = (data: unknown) => {
+    const obj = (data && typeof data === "object") ? (data as Record<string, unknown>) : {};
+    const hasV2 =
+      typeof obj.score === "number" &&
+      typeof obj.band === "string" &&
+      Array.isArray(obj.strengths) &&
+      Array.isArray(obj.weaknesses);
+    if (hasV2) return obj;
+
+    const legacyStrengths = Array.isArray(obj.strengths)
+      ? (obj.strengths as unknown[]).map((s) => ({
+          evidence: [],
+          what_worked: (s ?? "").toString(),
+          why_it_matters_to_ofsted: "",
+        }))
+      : [];
+    const legacyWeaknesses = Array.isArray(obj.weaknesses)
+      ? (obj.weaknesses as unknown[]).map((w) => ({
+          evidence: [],
+          gap: (w ?? "").toString(),
+          risk: "",
+          what_ofsted_expected: "",
+        }))
+      : [];
+
+    const legacyFollowUps = Array.isArray(obj.follow_up_questions)
+      ? (obj.follow_up_questions as unknown[]).map((q) => ({
+          question: (q ?? "").toString(),
+          why: "",
+          what_good_looks_like: "",
+        }))
+      : [];
+
+    return {
+      score:
+        typeof obj.score === "number"
+          ? obj.score
+          : typeof obj.score4 === "number"
+            ? Math.max(0, Math.min(100, obj.score4 * 25))
+            : 0,
+      band: normalizeLegacyBand((obj as { overall_judgement?: unknown }).overall_judgement),
+      summary: (obj as { rationale?: unknown }).rationale?.toString?.() || "No summary provided.",
+      strengths: legacyStrengths,
+      weaknesses: legacyWeaknesses,
+      sentence_improvements: [],
+      missing_key_points: Array.isArray(obj.missing_key_points) ? obj.missing_key_points : [],
+      follow_up_questions: legacyFollowUps,
+      sentences: Array.isArray((obj as { sentences?: unknown }).sentences)
+        ? (obj as { sentences?: unknown }).sentences
+        : undefined,
+    };
+  };
+
   const persistActiveSession = (id: string) => {
     try {
       localStorage.setItem(ACTIVE_SESSION_KEY, id);
@@ -621,14 +682,15 @@ const Index = () => {
         },
       );
 
-      const data = await response.json();
-      if (data.error) throw new Error(data.error);
+        const rawData = await response.json();
+        if (rawData.error) throw new Error(rawData.error);
 
-      const parsedEvaluationResult = evaluationSchema.safeParse(data);
-      if (!parsedEvaluationResult.success) {
-        console.error("Evaluation schema error", parsedEvaluationResult.error, data);
-        throw new Error("Invalid evaluation response");
-      }
+        const normalizedData = normalizeEvaluationResponse(rawData);
+        const parsedEvaluationResult = evaluationSchema.safeParse(normalizedData);
+        if (!parsedEvaluationResult.success) {
+          console.error("Evaluation schema error", parsedEvaluationResult.error, normalizedData);
+          throw new Error("Invalid evaluation response");
+        }
         const parsedEvaluation = parsedEvaluationResult.data;
 
         const bandRaw = parsedEvaluation.band as EvaluationResult["judgementBand"];
