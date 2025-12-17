@@ -171,56 +171,58 @@ export default function Dashboard() {
 
   const AppNav = () => {
     return (
-      <div className="sticky top-0 z-20 bg-white/80 backdrop-blur border-b border-slate-200">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-2">
-            <div className="text-base font-bold text-black font-display">Voice Inspector</div>
-            <span className="rounded-full bg-teal-50 px-2 py-0.5 text-xs font-semibold text-teal-700 ring-1 ring-teal-100">
-              Beta
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <NavLink
-              to="/app"
-              className={({ isActive }) =>
-                [linkBase, isActive ? "text-slate-900 bg-slate-100" : "text-slate-600"].join(" ")
-              }
-            >
-              Simulator
-            </NavLink>
-            <NavLink
-              to="/app/sessions"
-              className={({ isActive }) =>
-                [linkBase, isActive ? "text-slate-900 bg-slate-100" : "text-slate-600"].join(" ")
-              }
-            >
-              My sessions
-            </NavLink>
-            <NavLink
-              to="/app/dashboard"
-              className={({ isActive }) =>
-                [linkBase, isActive ? "text-slate-900 bg-slate-100" : "text-slate-600"].join(" ")
-              }
-            >
-              Dashboard
-            </NavLink>
-          </div>
-          <div className="flex items-center gap-3">
-            <BetaFeedback />
-            <button
-              onClick={async () => {
-                await supabase.auth.signOut();
-                toast({ title: "Logged out successfully" });
-                navigate("/login", { replace: true, state: { toast: "Logged out successfully" } });
-              }}
-              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-teal-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-700"
-            >
-              Logout
-            </button>
+      <>
+        <div className="sticky top-0 z-20 bg-white/80 backdrop-blur border-b border-slate-200">
+          <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
+            <div className="flex items-center gap-2">
+              <div className="text-base font-bold text-black font-display">Voice Inspector</div>
+              <span className="rounded-full bg-teal-50 px-2 py-0.5 text-xs font-semibold text-teal-700 ring-1 ring-teal-100">
+                Beta
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <NavLink
+                to="/app"
+                className={({ isActive }) =>
+                  [linkBase, isActive ? "text-slate-900 bg-slate-100" : "text-slate-600"].join(" ")
+                }
+              >
+                Simulator
+              </NavLink>
+              <NavLink
+                to="/app/sessions"
+                className={({ isActive }) =>
+                  [linkBase, isActive ? "text-slate-900 bg-slate-100" : "text-slate-600"].join(" ")
+                }
+              >
+                My sessions
+              </NavLink>
+              <NavLink
+                to="/app/dashboard"
+                className={({ isActive }) =>
+                  [linkBase, isActive ? "text-slate-900 bg-slate-100" : "text-slate-600"].join(" ")
+                }
+              >
+                Dashboard
+              </NavLink>
+            </div>
+            <div className="flex items-center gap-3">
+              <BetaFeedback />
+              <button
+                onClick={async () => {
+                  await supabase.auth.signOut();
+                  toast({ title: "Logged out successfully" });
+                  navigate("/login", { replace: true, state: { toast: "Logged out successfully" } });
+                }}
+                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-teal-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-700"
+              >
+                Logout
+              </button>
+            </div>
           </div>
         </div>
-      </div>
-      <BetaBanner />
+        <BetaBanner />
+      </>
     );
   };
 
