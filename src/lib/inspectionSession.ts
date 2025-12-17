@@ -1,4 +1,4 @@
-import { EvaluationResult, JudgementBand } from "@/lib/questions";
+import { EvaluationResult, JudgementBand, BankQuestion, Domain, questionBank } from "@/lib/questions";
 
 type ConfidenceBand = "borderline" | "secure" | "strong";
 
@@ -6,7 +6,97 @@ const BAND_SCORE: Record<JudgementBand, number> = {
   Outstanding: 4,
   Good: 3,
   "Requires improvement to be good": 2,
+  "Requires Improvement": 2,
   Inadequate: 1,
+};
+
+const domains: Domain[] = [
+  "Safeguarding",
+  "Leadership",
+  "CarePlanning",
+  "StaffPractice",
+  "Outcomes",
+  "RiskMissingExploitation",
+];
+
+const hashSeed = (seed: string) => {
+  let h = 2166136261 >>> 0;
+  for (let i = 0; i < seed.length; i++) {
+    h ^= seed.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+};
+
+const mulberry32 = (seed: string) => {
+  let a = hashSeed(seed);
+  return () => {
+    a |= 0;
+    a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+};
+
+const shuffle = <T>(arr: T[], rng: () => number) => {
+  const copy = [...arr];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+};
+
+const groupBankByDomain = (): Record<Domain, BankQuestion[]> => {
+  const grouped: Record<Domain, BankQuestion[]> = {
+    Safeguarding: [],
+    Leadership: [],
+    CarePlanning: [],
+    StaffPractice: [],
+    Outcomes: [],
+    RiskMissingExploitation: [],
+  };
+  for (const q of questionBank) {
+    grouped[q.domain]?.push(q);
+  }
+  return grouped;
+};
+
+export const generateSessionQuestions = (
+  sessionId: string,
+  desiredCount: 5 | 6 | 7 = 6,
+): BankQuestion[] => {
+  const rng = mulberry32(sessionId || "default");
+  const grouped = groupBankByDomain();
+
+  // pick one per domain
+  const selections: BankQuestion[] = [];
+  for (const domain of domains) {
+    const pool = shuffle(grouped[domain], rng);
+    if (pool.length) selections.push(pool[0]);
+  }
+
+  // adjust for 5 or 7
+  if (desiredCount === 5) {
+    const dropIndex = Math.floor(rng() * selections.length);
+    selections.splice(dropIndex, 1);
+  } else if (desiredCount === 7) {
+    const domainOrder = shuffle(domains, rng);
+    let added = 0;
+    for (const domain of domainOrder) {
+      if (added >= 2) break;
+      const pool = shuffle(grouped[domain], rng).filter(
+        (q) => !selections.find((s) => s.id === q.id),
+      );
+      if (pool.length) {
+        selections.push(pool[0]);
+        added += 1;
+      }
+    }
+  }
+
+  return shuffle(selections, rng);
 };
 
 export interface SessionAreaResult {

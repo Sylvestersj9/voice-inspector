@@ -1,4 +1,4 @@
-import { EvaluationResult, ofstedQuestions, getJudgementBand } from "@/lib/questions";
+import { EvaluationResult, getJudgementBand, BankQuestion } from "@/lib/questions";
 import { Button } from "@/components/ui/button";
 import { Printer } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -14,10 +14,20 @@ import { safeArray } from "@/lib/safeArray";
 
 interface ExportSummaryProps {
   results: Map<number, EvaluationResult>;
+  questions: BankQuestion[];
   sessionDate?: Date;
 }
 
-export function ExportSummary({ results, sessionDate = new Date() }: ExportSummaryProps) {
+const formatHundredScore = (val: number) => {
+  const rounded = Math.round(val);
+  const suffix = rounded < 50 ? " – early draft answer" : "";
+  return `${rounded}/100${suffix}`;
+};
+
+const friendlyBand = (band: string | null | undefined) =>
+  band === "Inadequate" ? "Needs development" : band || "Evaluation";
+
+export function ExportSummary({ results, questions, sessionDate = new Date() }: ExportSummaryProps) {
   const plan: "free" | "pro" = getPlan();
   const entries = Array.from(results?.entries?.() || []);
   if (!entries.length) {
@@ -32,7 +42,7 @@ export function ExportSummary({ results, sessionDate = new Date() }: ExportSumma
   const averageScore = scores.length ? scores.reduce((sum, v) => sum + v, 0) / scores.length : 0;
   const overallBand = getJudgementBand(averageScore || 0);
 
-  const sessionAreas = ofstedQuestions.map((q, idx) => {
+  const sessionAreas = questions.map((q, idx) => {
     const r = results.get(idx);
     return {
       area: q.domain,
@@ -86,7 +96,7 @@ export function ExportSummary({ results, sessionDate = new Date() }: ExportSumma
         {/* Overall Score */}
         <div className="flex items-center gap-6 p-4 bg-muted/50 rounded-lg print:bg-gray-100">
           <div>
-            <div className="text-xl font-semibold text-foreground print:text-black">{session_band}</div>
+            <div className="text-xl font-semibold text-foreground print:text-black">{friendlyBand(session_band)}</div>
             {session_score4 > 0 && (
               <p className="text-sm text-muted-foreground print:text-gray-600">
                 Session score: {session_score4.toFixed(2)}/4
@@ -100,7 +110,7 @@ export function ExportSummary({ results, sessionDate = new Date() }: ExportSumma
             </p>
             {plan === "pro" && (
               <>
-                <p className="text-sm text-muted-foreground print:text-gray-600">Readiness: {readiness}/100</p>
+                <p className="text-sm text-muted-foreground print:text-gray-600">Readiness: {formatHundredScore(readiness)}</p>
                 <p className="text-sm text-muted-foreground print:text-gray-600">Trajectory: {trajectory}</p>
                 <p className="text-sm text-foreground print:text-black mt-1">{ofstedConclusion}</p>
               </>
@@ -164,7 +174,7 @@ export function ExportSummary({ results, sessionDate = new Date() }: ExportSumma
             Question Breakdown
           </h2>
           <div className="space-y-2">
-            {ofstedQuestions.map((q, idx) => {
+            {questions.map((q, idx) => {
               const result = results.get(idx);
               if (!result) return null;
               return (
@@ -178,7 +188,7 @@ export function ExportSummary({ results, sessionDate = new Date() }: ExportSumma
                       {(result.score4 ?? result.score ?? 0).toFixed(1)}
                     </span>
                     <span className="text-xs text-muted-foreground print:text-gray-600">
-                      ({result.judgementBand})
+                      ({friendlyBand(result.judgementBand)})
                     </span>
                   </div>
                 </div>

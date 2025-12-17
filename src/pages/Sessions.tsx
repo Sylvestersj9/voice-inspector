@@ -5,6 +5,7 @@ import { toast } from "@/components/ui/use-toast";
 import { BetaFeedback } from "@/components/BetaFeedback";
 import FeedbackButton from "@/feedback/FeedbackButton";
 import { useOnboardingChecklist } from "@/onboarding/useOnboardingChecklist";
+import { BetaBanner } from "@/components/BetaBanner";
 
 type SessionRow = {
   id: string;
@@ -91,6 +92,7 @@ export default function Sessions() {
       const { data, error } = await supabase
         .from("inspection_sessions")
         .select("id,title,status,created_at")
+        .eq("created_by", auth.user.id)
         .order("created_at", { ascending: false })
         .limit(50);
 
@@ -295,6 +297,7 @@ export default function Sessions() {
           </div>
         </div>
       </div>
+      <BetaBanner />
     );
   };
 
@@ -425,12 +428,12 @@ export default function Sessions() {
                                   </span>
                                 </div>
                                 <div className="text-base font-semibold text-slate-900">{q.question_text}</div>
-                                {ev ? (
-                                  <div className="inline-flex items-center gap-2 rounded-full bg-[#0D9488] px-3 py-1 text-sm font-semibold text-white">
-                                    <span>{ev.band || "-"}</span>
-                                    {typeof ev.score === "number" && <span className="text-xs font-medium">Score: {ev.score}</span>}
-                                  </div>
-                                ) : (
+                        {ev ? (
+                          <div className="inline-flex items-center gap-2 rounded-full bg-[#0D9488] px-3 py-1 text-sm font-semibold text-white">
+                            <span>{ev.band === "Inadequate" ? "Needs development" : (ev.band || "-")}</span>
+                            {typeof ev.score === "number" && <span className="text-xs font-medium">Score: {ev.score}</span>}
+                          </div>
+                        ) : (
                                   <div className="text-xs text-slate-500">Not evaluated yet</div>
                                 )}
                               </div>

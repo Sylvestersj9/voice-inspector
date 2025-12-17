@@ -9,21 +9,43 @@ import {
   ChevronRight
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { buildFallbackActions, buildFallbackGaps, buildFallbackStrengths, buildFollowUpFallback, nonEmptyArray } from "@/lib/evalFallbacks";
+import { CoachMode } from "@/components/CoachMode";
+import { useState } from "react";
 
 interface EvaluationResultsProps {
   result: EvaluationResult;
+  transcript: string;
   onNextQuestion: () => void;
   isLastQuestion: boolean;
   onViewSummary?: () => void;
+  onExitSession?: () => void;
 }
 
 export function EvaluationResults({ 
   result, 
+  transcript,
   onNextQuestion, 
   isLastQuestion,
-  onViewSummary 
+  onViewSummary,
+  onExitSession
 }: EvaluationResultsProps) {
-  const weaknesses = result.weaknesses?.length ? result.weaknesses : result.gaps;
+  const [coachMode, setCoachMode] = useState(true);
+  const [jumpToSentence, setJumpToSentence] = useState<(id: string) => void>(() => () => {});
+  const strengthFallback = buildFallbackStrengths("");
+  const gapFallback = buildFallbackGaps("");
+  const followUpFallback = buildFollowUpFallback();
+  const actionFallback = buildFallbackActions();
+  const displayBand =
+    result.judgementBand === "Inadequate" ? "Needs development" : result.judgementBand;
+
+  const strengthsStructured = Array.isArray(result.strengthsStructured) ? result.strengthsStructured : [];
+  const weaknessesStructured = Array.isArray(result.weaknessesStructured) ? result.weaknessesStructured : [];
+  const strengths = strengthsStructured.length > 0 ? [] : nonEmptyArray(result.strengths, strengthFallback);
+  const weaknesses = weaknessesStructured.length > 0 ? [] : nonEmptyArray(result.weaknesses ?? result.gaps, gapFallback);
+  const followUps = nonEmptyArray(result.followUpQuestions, followUpFallback);
+  const recommendedActions = nonEmptyArray(result.recommendedActions, actionFallback);
+  const riskFlags = Array.isArray(result.riskFlags) ? result.riskFlags : [];
   const showWeaknesses =
     result.judgementBand === "Inadequate" ||
     result.judgementBand === "Requires improvement to be good" ||
@@ -37,6 +59,7 @@ export function EvaluationResults({
         return "bg-primary text-primary-foreground";
       case "Requires improvement to be good":
         return "bg-warning text-warning-foreground";
+      case "Needs development":
       case "Inadequate":
         return "bg-destructive text-destructive-foreground";
     }
@@ -53,8 +76,6 @@ export function EvaluationResults({
     }
   };
 
-  const strengths = result.strengths?.length ? result.strengths : [];
-
   return (
     <div className="space-y-6 animate-fade-in-up">
       {/* Score Header */}
@@ -64,7 +85,7 @@ export function EvaluationResults({
             "inline-block px-4 py-1.5 rounded-full text-sm font-semibold",
             getScoreColor()
           )}>
-            {result.judgementBand}
+            {displayBand}
           </div>
           {typeof result.score4 === "number" && (
             <div className="text-sm text-muted-foreground">
@@ -88,7 +109,27 @@ export function EvaluationResults({
           <CheckCircle2 className="h-5 w-5 text-success" />
           <h3 className="font-display text-lg font-semibold text-foreground">Strengths</h3>
         </div>
-        {strengths.length > 0 ? (
+        {strengthsStructured.length > 0 ? (
+          <ul className="space-y-3 stagger-children">
+            {strengthsStructured.map((s, index) => (
+              <li key={index} className="flex flex-col gap-1 text-foreground rounded-lg border bg-muted/50 p-3">
+                <div className="text-sm font-medium">{s.whatWorked}</div>
+                <div className="text-xs text-muted-foreground">{s.whyMatters}</div>
+                <div className="flex flex-wrap gap-2 mt-1">
+                  {(s.evidence || []).map((e) => (
+                    <button
+                      key={e}
+                      onClick={() => jumpToSentence(e)}
+                      className="px-2 py-0.5 text-xs rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition"
+                    >
+                      {e}
+                    </button>
+                  ))}
+                </div>
+              </li>
+            ))}
+          </ul>
+        ) : strengths.length > 0 ? (
           <ul className="space-y-2 stagger-children">
             {strengths.map((strength, index) => (
               <li key={index} className="flex items-start gap-3 text-foreground">
@@ -111,7 +152,28 @@ export function EvaluationResults({
             <AlertTriangle className="h-5 w-5 text-warning" />
             <h3 className="font-display text-lg font-semibold text-foreground">Weaknesses</h3>
           </div>
-          {weaknesses && weaknesses.length > 0 ? (
+          {weaknessesStructured.length > 0 ? (
+            <ul className="space-y-3 stagger-children">
+              {weaknessesStructured.map((w, index) => (
+                <li key={index} className="flex flex-col gap-1 text-foreground rounded-lg border bg-muted/50 p-3">
+                  <div className="text-sm font-medium">{w.gap}</div>
+                  <div className="text-xs text-warning">Risk: {w.risk}</div>
+                  <div className="text-xs text-muted-foreground">What Ofsted expected: {w.expected}</div>
+                  <div className="flex flex-wrap gap-2 mt-1">
+                    {(w.evidence || []).map((e) => (
+                      <button
+                        key={e}
+                        onClick={() => jumpToSentence(e)}
+                        className="px-2 py-0.5 text-xs rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition"
+                      >
+                        {e}
+                      </button>
+                    ))}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : weaknesses && weaknesses.length > 0 ? (
             <ul className="space-y-2 stagger-children">
               {weaknesses.map((gap, index) => (
                 <li key={index} className="flex items-start gap-3 text-foreground">
@@ -129,14 +191,14 @@ export function EvaluationResults({
       )}
 
       {/* Risk Flags */}
-      {result.riskFlags.length > 0 && (
+      {riskFlags.length > 0 && (
         <div className="card-elevated p-6 border-destructive/30">
           <div className="flex items-center gap-2 mb-4">
             <XCircle className="h-5 w-5 text-destructive" />
             <h3 className="font-display text-lg font-semibold text-foreground">Risk Flags</h3>
           </div>
           <ul className="space-y-2 stagger-children">
-            {result.riskFlags.map((flag, index) => (
+            {riskFlags.map((flag, index) => (
               <li key={index} className="flex items-start gap-3 text-foreground">
                 <span className="text-destructive mt-1">-</span>
                 <span>{flag}</span>
@@ -158,7 +220,7 @@ export function EvaluationResults({
       )}
 
       {/* Follow-up Questions */}
-      {result.followUpQuestions.length > 0 && (
+      {followUps.length > 0 && (
         <div className="card-elevated p-6">
           <div className="flex items-center gap-2 mb-4">
             <HelpCircle className="h-5 w-5 text-primary" />
@@ -168,7 +230,7 @@ export function EvaluationResults({
             An inspector might ask these follow-up questions based on your response:
           </p>
           <ul className="space-y-3 stagger-children">
-            {result.followUpQuestions.map((question, index) => (
+            {followUps.map((question, index) => (
               <li key={index} className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
                 <span className="text-primary font-semibold">{index + 1}.</span>
                 <span className="text-foreground">{question}</span>
@@ -188,14 +250,14 @@ export function EvaluationResults({
       )}
 
       {/* Recommended Actions */}
-      {result.recommendedActions.length > 0 && (
+      {recommendedActions.length > 0 && (
         <div className="card-elevated p-6">
           <div className="flex items-center gap-2 mb-4">
             <Lightbulb className="h-5 w-5 text-warning" />
             <h3 className="font-display text-lg font-semibold text-foreground">Recommended Actions</h3>
           </div>
           <ul className="space-y-3 stagger-children">
-            {result.recommendedActions.map((action, index) => (
+            {recommendedActions.map((action, index) => (
               <li key={index} className="flex items-start gap-3 p-3 rounded-lg bg-accent/50">
                 <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center font-semibold">
                   {index + 1}
@@ -207,8 +269,34 @@ export function EvaluationResults({
         </div>
       )}
 
+      {/* Coach mode toggle */}
+      <div className="card-elevated p-4">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <HelpCircle className="h-5 w-5 text-primary" />
+            <div>
+              <p className="font-display text-md font-semibold text-foreground">Coach mode</p>
+              <p className="text-xs text-muted-foreground">Show transcript, improvements, and clickable evidence.</p>
+            </div>
+          </div>
+          <Button variant={coachMode ? "default" : "outline"} size="sm" onClick={() => setCoachMode((v) => !v)}>
+            {coachMode ? "Hide" : "Show"}
+          </Button>
+        </div>
+        {coachMode && (
+          <CoachMode
+            transcript={transcript}
+            sentences={result.sentences}
+            strengths={strengthsStructured}
+            weaknesses={weaknessesStructured}
+            improvements={result.sentenceImprovements}
+            registerJump={(fn) => setJumpToSentence(() => fn)}
+          />
+        )}
+      </div>
+
       {/* Navigation */}
-      <div className="flex justify-end gap-3 pt-4">
+      <div className="flex flex-col items-end gap-2 pt-4">
         {isLastQuestion ? (
           <Button onClick={onViewSummary} variant="default" size="lg">
             View Full Summary
@@ -218,6 +306,11 @@ export function EvaluationResults({
           <Button onClick={onNextQuestion} variant="default" size="lg">
             Next Question
             <ChevronRight className="h-4 w-4 ml-1" />
+          </Button>
+        )}
+        {onExitSession && (
+          <Button variant="ghost" size="sm" onClick={onExitSession} className="text-muted-foreground">
+            Exit session
           </Button>
         )}
       </div>

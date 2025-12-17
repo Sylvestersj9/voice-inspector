@@ -59,13 +59,15 @@ export function buildDashboardModel({ questions, evaluations, sessionCreatedAt }
   const avgScore = scores.length ? scores.reduce((s, v) => s + v, 0) / scores.length : 0;
   const avgRounded = Math.round(avgScore * 10) / 10;
 
+  const fallbackDomain = "Not enough data yet";
+
   const strongest = domainStats.reduce(
     (best, cur) => (cur.average > best.score ? { domain: cur.domain, score: cur.average } : best),
-    { domain: "—", score: -Infinity },
+    { domain: fallbackDomain, score: -Infinity },
   );
   const weakest = domainStats.reduce(
     (worst, cur) => (cur.average < worst.score ? { domain: cur.domain, score: cur.average } : worst),
-    { domain: "—", score: Infinity },
+    { domain: fallbackDomain, score: Infinity },
   );
 
   const strengthThemesTop = dedupe(strengthThemes).slice(0, 3);
@@ -78,8 +80,8 @@ export function buildDashboardModel({ questions, evaluations, sessionCreatedAt }
     evaluatedCount: evaluations.length,
     averageScore: avgRounded,
     band: scoreToBand(avgRounded || 0),
-    strongestDomain: strongest.score === -Infinity ? "—" : strongest.domain,
-    weakestDomain: weakest.score === Infinity ? "—" : weakest.domain,
+    strongestDomain: strongest.score === -Infinity ? fallbackDomain : strongest.domain,
+    weakestDomain: weakest.score === Infinity ? fallbackDomain : weakest.domain,
     domainStats,
     strengthThemes: strengthThemesTop,
     improvementActions,

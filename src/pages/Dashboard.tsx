@@ -8,6 +8,7 @@ import { BetaFeedback } from "@/components/BetaFeedback";
 import FeedbackButton from "@/feedback/FeedbackButton";
 import { OnboardingChecklist } from "@/onboarding/OnboardingChecklist";
 import { useOnboardingChecklist } from "@/onboarding/useOnboardingChecklist";
+import { BetaBanner } from "@/components/BetaBanner";
 
 type SessionRow = {
   id: string;
@@ -67,6 +68,7 @@ export default function Dashboard() {
       const { data: sessionsWithEvals, error: sessErr } = await supabase
         .from("inspection_sessions")
         .select("id, created_at, inspection_session_questions(id, inspection_evaluations(id))")
+        .eq("created_by", auth.user.id)
         .order("created_at", { ascending: false })
         .limit(10);
 
@@ -135,8 +137,8 @@ export default function Dashboard() {
           evaluatedCount: 0,
           averageScore: 0,
           band: scoreToBand(0),
-          strongestDomain: "—",
-          weakestDomain: "—",
+          strongestDomain: "Not enough data yet",
+          weakestDomain: "Not enough data yet",
           domainStats: [],
           strengthThemes: [],
           improvementActions: [],
@@ -218,6 +220,7 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+      <BetaBanner />
     );
   };
 

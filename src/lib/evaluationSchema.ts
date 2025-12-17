@@ -1,73 +1,55 @@
 import { z } from "zod";
 
+const sentenceSchema = z.object({
+  id: z.string(),
+  text: z.string(),
+});
+
+const strengthSchema = z.object({
+  evidence: z.array(z.string()),
+  what_worked: z.string(),
+  why_it_matters_to_ofsted: z.string(),
+});
+
+const weaknessSchema = z.object({
+  evidence: z.array(z.string()),
+  gap: z.string(),
+  risk: z.string(),
+  what_ofsted_expected: z.string(),
+});
+
+const sentenceImprovementSchema = z.object({
+  sentence_id: z.string(),
+  original: z.string(),
+  issue: z.string(),
+  better_version: z.string(),
+  synonyms_or_phrases: z.array(z.string()),
+  impact: z.string(),
+});
+
+const followUpSchema = z.object({
+  question: z.string(),
+  why: z.string(),
+  what_good_looks_like: z.string(),
+});
+
 export const evaluationSchema = z.object({
-  question_area: z.string(),
-
-  overall_judgement: z.enum([
-    "Outstanding",
-    "Good",
-    "Requires improvement to be good",
-    "Inadequate",
-  ]),
-
-  score4: z.number().int().min(1).max(4),
-
-  rationale: z.string(),
-
-  rubric: z.object({
-    risk_identification: z.object({
-      band: z.string(),
-      evidence: z.string(),
-      missing: z.string().optional(),
-    }),
-    risk_assessment: z.object({
-      band: z.string(),
-      evidence: z.string(),
-      missing: z.string().optional(),
-    }),
-    risk_management_in_out: z.object({
-      band: z.string(),
-      evidence: z.string(),
-      missing: z.string().optional(),
-    }),
-    safeguarding_response: z.object({
-      band: z.string(),
-      evidence: z.string(),
-      missing: z.string().optional(),
-    }),
-    effectiveness_checks: z.object({
-      band: z.string(),
-      evidence: z.string(),
-      missing: z.string().optional(),
-    }),
-    child_voice_impact: z.object({
-      band: z.string(),
-      evidence: z.string(),
-      missing: z.string().optional(),
-    }),
-  }),
-
-  strengths: z.array(z.string()).default([]),
-  weaknesses: z.array(z.string()).default([]),
-  recommendations: z.array(z.string()).default([]),
-  follow_up_questions: z.array(z.string()).default([]),
-  next_actions: z.array(z.string()).default([]),
-  confidence_band: z.enum(["borderline", "secure", "strong"]).optional(),
-  note: z.string().optional(),
-
-  debug: z
-    .object({
-      wordCount: z.number().optional(),
-      evidenceOk: z.boolean().optional(),
-      escalationOk: z.boolean().optional(),
-      effectivenessOk: z.boolean().optional(),
-      impactOk: z.boolean().optional(),
-      evidenceHits: z.number().optional(),
-      areaKey: z.string().optional(),
-      hasEffectivenessText: z.boolean().optional(),
-      hasEscalationText: z.boolean().optional(),
-    })
-    .optional(),
+  score: z.number().min(0).max(100),
+  band: z.enum(["Inadequate", "Requires Improvement", "Good", "Outstanding"]),
+  summary: z.string(),
+  strengths: z.array(strengthSchema),
+  weaknesses: z.array(weaknessSchema),
+  sentence_improvements: z.array(sentenceImprovementSchema),
+  missing_key_points: z.array(z.string()),
+  follow_up_questions: z.array(followUpSchema),
+  score4: z.number().optional(),
+  judgement_band: z.string().optional(),
+  original_answer: z.string().optional(),
+  sentences: z.array(sentenceSchema).optional(),
+  question: z.string().optional(),
+  question_area: z.string().optional(),
+  plan: z.string().optional(),
+  debug: z.any().optional(),
 });
 
 export type EvaluationResponse = z.infer<typeof evaluationSchema>;

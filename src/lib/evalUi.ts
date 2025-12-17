@@ -12,24 +12,24 @@ export function normaliseBand(band?: string | null): EvalBand {
 export function bandUi(band?: string | null) {
   const b = normaliseBand(band);
 
-  let icon = "ℹ️";
+  let icon = "-";
   let tone: "danger" | "warn" | "success" | "info" = "info";
   let label = band ?? "Evaluation";
 
   if (b === "inadequate") {
-    icon = "❗";
-    tone = "danger";
-    label = "Inadequate";
+    icon = "•";
+    tone = "warn";
+    label = "Needs development";
   } else if (b === "requires_improvement" || b === "requires-improvement") {
-    icon = "⚠️";
+    icon = "•";
     tone = "warn";
     label = "Requires improvement";
   } else if (b === "good") {
-    icon = "✅";
+    icon = "✓";
     tone = "success";
     label = "Good";
   } else if (b === "outstanding") {
-    icon = "⭐";
+    icon = "★";
     tone = "success";
     label = "Outstanding";
   }

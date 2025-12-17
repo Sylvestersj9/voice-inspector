@@ -1,4 +1,4 @@
-import { EvaluationResult, ofstedQuestions, getJudgementBand } from "@/lib/questions";
+import { EvaluationResult, getJudgementBand, BankQuestion } from "@/lib/questions";
 import { Button } from "@/components/ui/button";
 import { RotateCcw, Clock, Printer } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -16,10 +16,11 @@ import { safeArray } from "@/lib/safeArray";
 
 interface SessionSummaryProps {
   results: Map<number, EvaluationResult>;
+  questions: BankQuestion[];
   onStartOver: () => void;
 }
 
-export function SessionSummary({ results, onStartOver }: SessionSummaryProps) {
+export function SessionSummary({ results, questions, onStartOver }: SessionSummaryProps) {
   const plan: "free" | "pro" = getPlan();
 
   const entries = Array.from(results?.entries?.() || []);
@@ -35,7 +36,7 @@ export function SessionSummary({ results, onStartOver }: SessionSummaryProps) {
   const averageScore = scores.length ? scores.reduce((sum, v) => sum + v, 0) / scores.length : 0;
   const overallBand = getJudgementBand(averageScore || 0);
 
-  const sessionAreas = ofstedQuestions.map((q, idx) => {
+  const sessionAreas = questions.map((q, idx) => {
     const r = results.get(idx);
     return {
       area: q.domain,
@@ -129,13 +130,13 @@ export function SessionSummary({ results, onStartOver }: SessionSummaryProps) {
       </div>
 
       {/* Export Summary */}
-      <ExportSummary results={results} />
+      <ExportSummary results={results} questions={questions} />
 
       {/* Individual Results */}
       <div className="space-y-4">
         <h3 className="font-display text-xl font-semibold text-foreground">Question-by-Question Results</h3>
         
-        {ofstedQuestions.map((question, index) => {
+        {questions.map((question, index) => {
           const result = results.get(index);
           if (!result) return null;
           const strengths = safeArray(result.strengths);

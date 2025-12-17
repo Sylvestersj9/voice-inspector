@@ -2,7 +2,7 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
 import { useToast } from "@/hooks/use-toast";
-import { ofstedQuestions, EvaluationResult, getJudgementBand } from "@/lib/questions";
+import { EvaluationResult, getJudgementBand, BankQuestion } from "@/lib/questions";
 import { QuestionCard } from "@/components/QuestionCard";
 import { VoiceRecorder } from "@/components/VoiceRecorder";
 import { TranscriptEditor } from "@/components/TranscriptEditor";
@@ -19,11 +19,14 @@ import { useLoading } from "@/providers/LoadingProvider";
 import { Loader2, ChevronLeft, ChevronRight, MessageCircleQuestion, Clock, Settings, RefreshCw, AlertTriangle, MessageSquare, Mail, Check } from "lucide-react";
 import { detectFollowUpNeed, FollowUpDecision, getFollowUpLabel } from "@/lib/followUpRules";
 import { evaluationSchema } from "@/lib/evaluationSchema";
+import { buildFallbackActions, buildFallbackGaps, buildFallbackStrengths, buildFollowUpFallback, nonEmptyArray } from "@/lib/evalFallbacks";
 import FinalSummaryReport from "@/components/report/FinalSummaryReport";
 import { BetaFeedback } from "@/components/BetaFeedback";
 import FeedbackButton from "@/feedback/FeedbackButton";
 import CompletionPrompt from "@/feedback/CompletionPrompt";
 import { useOnboardingChecklist } from "@/onboarding/useOnboardingChecklist";
+import { BetaBanner } from "@/components/BetaBanner";
+import { generateSessionQuestions } from "@/lib/inspectionSession";
 
 type Step = 
   | "ready" 
@@ -97,7 +100,7 @@ const fetchWithTimeout = async (url: string, options: RequestInit, timeoutMs: nu
   }
 };
 
-const normalizeList = (value: unknown, fallback: string[]): string[] => {
+const normalizeList = (value: unknown, fallback: string[] = []): string[] => {
   if (!Array.isArray(value)) return fallback;
   const cleaned = value.map((v) => (v ?? "").toString().trim()).filter(Boolean);
   return cleaned.length ? cleaned : fallback;
@@ -107,6 +110,13 @@ const Index = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const loading = useLoading();
+  const desiredQuestionCountEnv = Number((import.meta as { env?: Record<string, string> })?.env?.VITE_SESSION_QUESTION_COUNT);
+  const desiredQuestionCount = ((desiredQuestionCountEnv >= 5 && desiredQuestionCountEnv <= 7)
+    ? desiredQuestionCountEnv
+    : 6) as 5 | 6 | 7;
+  const [sessionQuestions, setSessionQuestions] = useState<BankQuestion[]>(() =>
+    generateSessionQuestions("preview", desiredQuestionCount),
+  );
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [step, setStep] = useState<Step>("ready");
   const [transcript, setTranscript] = useState("");
@@ -156,6 +166,7 @@ const Index = () => {
     clearActiveSessionFlag();
     setSessionId(null);
     setSessionQuestionIds([]);
+    setSessionQuestions(generateSessionQuestions("preview", desiredQuestionCount));
     setSavedAnswers({});
     setResults(new Map());
     setCompletedQuestions([]);
@@ -166,11 +177,11 @@ const Index = () => {
     setStep("ready");
   };
 
-  const currentQuestion = ofstedQuestions[currentQuestionIndex];
+  const currentQuestion = sessionQuestions[currentQuestionIndex] || sessionQuestions[0];
 
   const progressLabel = useMemo(() => {
-    return `Question ${currentQuestionIndex + 1} of ${ofstedQuestions.length}`;
-  }, [currentQuestionIndex]);
+    return `Question ${currentQuestionIndex + 1} of ${sessionQuestions.length}`;
+  }, [currentQuestionIndex, sessionQuestions.length]);
 
   useEffect(() => {
     if (sessionId || resumeLoading) return;
@@ -256,7 +267,7 @@ const Index = () => {
   };
 
   const ensureSessionAndQuestions = async (): Promise<string[] | null> => {
-    if (sessionId && sessionQuestionIds.length === ofstedQuestions.length) {
+    if (sessionId && sessionQuestionIds.length === sessionQuestions.length) {
       if (storedSessionId !== sessionId) {
         persistActiveSession(sessionId);
       }
@@ -296,9 +307,12 @@ const Index = () => {
     completeItem("create_session");
     console.log("SESSION CREATED", session.id);
 
-    const questionPayload = ofstedQuestions.map((q, idx) => ({
+    const generated = generateSessionQuestions(session.id, desiredQuestionCount);
+    setSessionQuestions(generated);
+
+    const questionPayload = generated.map((q, idx) => ({
       inspection_session_id: session.id,
-      question_text: q.question,
+      question_text: q.text,
       domain_name: q.domain,
       sort_order: idx,
     }));
@@ -321,6 +335,11 @@ const Index = () => {
     const sorted = [...questionRows].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
     const ids = sorted.map((row) => row.id);
     setSessionQuestionIds(ids);
+    setSessionQuestions(sorted.map((row) => ({
+      id: String(row.id),
+      domain: (row as { domain_name?: string }).domain_name || "Safeguarding",
+      text: (row as { question_text?: string }).question_text || "",
+    })));
     console.log("SESSION QUESTIONS CREATED", ids);
 
     return ids;
@@ -338,11 +357,11 @@ const Index = () => {
       return;
     }
 
-    const { data: questions, error: qErr } = await supabase
-      .from("inspection_session_questions")
-      .select("id,sort_order")
-      .eq("inspection_session_id", existingId)
-      .order("sort_order", { ascending: true });
+      const { data: questions, error: qErr } = await supabase
+        .from("inspection_session_questions")
+        .select("id,sort_order,question_text,domain_name")
+        .eq("inspection_session_id", existingId)
+        .order("sort_order", { ascending: true });
 
     if (qErr || !questions || questions.length === 0) {
       clearActiveSession();
@@ -350,8 +369,15 @@ const Index = () => {
       return;
     }
 
-    const sorted = [...questions].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
-    const ids = sorted.map((q) => q.id);
+      const sorted = [...questions].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+      const ids = sorted.map((q) => q.id);
+      setSessionQuestions(
+        sorted.map((row) => ({
+          id: String(row.id),
+          domain: (row as { domain_name?: string }).domain_name || "Safeguarding",
+          text: (row as { question_text?: string }).question_text || "",
+        })),
+      );
     setSessionId(existingId);
     setSessionQuestionIds(ids);
     persistActiveSession(existingId);
@@ -443,16 +469,25 @@ const Index = () => {
       return;
     }
 
-    const strengths = normalizeList(mappedEvaluation.strengths as unknown, ["—"]);
-    const gaps = normalizeList(
-      (mappedEvaluation as unknown as { gaps?: unknown; weaknesses?: unknown }).gaps ??
-        (mappedEvaluation as unknown as { weaknesses?: unknown }).weaknesses,
-      ["—"],
+    const strengths = nonEmptyArray(
+      normalizeList(mappedEvaluation.strengths as unknown, []),
+      buildFallbackStrengths(""),
     );
-    const followUps = normalizeList(
-      (mappedEvaluation as unknown as { follow_up_questions?: unknown }).follow_up_questions ??
-        mappedEvaluation.followUpQuestions,
-      ["Can you give a recent, specific example with outcomes?"],
+    const gaps = nonEmptyArray(
+      normalizeList(
+        (mappedEvaluation as unknown as { gaps?: unknown; weaknesses?: unknown }).gaps ??
+          (mappedEvaluation as unknown as { weaknesses?: unknown }).weaknesses,
+        [],
+      ),
+      buildFallbackGaps(""),
+    );
+    const followUps = nonEmptyArray(
+      normalizeList(
+        (mappedEvaluation as unknown as { follow_up_questions?: unknown }).follow_up_questions ??
+          mappedEvaluation.followUpQuestions,
+        [],
+      ),
+      buildFollowUpFallback(),
     );
     const mapped = mappedEvaluation as Partial<EvaluationResult> & { band?: unknown; score?: unknown; score4?: unknown };
     const band = typeof mapped.band === "string" ? mapped.band : mapped.judgementBand ?? "Requires Improvement";
@@ -544,7 +579,7 @@ const Index = () => {
     const raw = typeof overrideTranscript === "string" ? overrideTranscript : transcript;
     const transcriptToUse = (raw ?? "").toString().trim();
     if (!transcriptToUse) {
-      toast({ title: "No response to evaluate", variant: "destructive" });
+      toast({ title: "Please record or type an answer", variant: "destructive" });
       return;
     }
     const ensuredIds = await ensureSessionAndQuestions();
@@ -577,7 +612,8 @@ const Index = () => {
           },
           body: JSON.stringify({
             transcript: transcriptToUse,
-            question: currentQuestion.question,
+            answerText: transcriptToUse,
+              question: currentQuestion.text,
             domain: currentQuestion.domain,
             question_area: currentQuestion.domain,
             plan,
@@ -593,42 +629,107 @@ const Index = () => {
         console.error("Evaluation schema error", parsedEvaluationResult.error, data);
         throw new Error("Invalid evaluation response");
       }
-      const parsedEvaluation = parsedEvaluationResult.data;
+        const parsedEvaluation = parsedEvaluationResult.data;
 
-      const judgementBand = parsedEvaluation.overall_judgement as EvaluationResult["judgementBand"];
-      const score4 = parsedEvaluation.score4;
+        const bandRaw = parsedEvaluation.band as EvaluationResult["judgementBand"];
+        const judgementBand =
+          bandRaw === "Requires Improvement"
+            ? ("Requires improvement to be good" as EvaluationResult["judgementBand"])
+            : bandRaw;
 
-      const riskFlagsRaw = (parsedEvaluation as unknown as { risk_flags?: unknown; riskFlags?: unknown });
-      const riskFlags =
-        (Array.isArray(riskFlagsRaw.risk_flags) && riskFlagsRaw.risk_flags) ||
-        (Array.isArray(riskFlagsRaw.riskFlags) && riskFlagsRaw.riskFlags) ||
-        [];
+        const score4 =
+          typeof parsedEvaluation.score4 === "number"
+            ? parsedEvaluation.score4
+            : Math.max(0, Math.min(4, Math.round(((parsedEvaluation.score ?? 0) / 25) * 10) / 10));
 
-      const strengthsNorm = normalizeList(parsedEvaluation.strengths, ["—"]);
-      const gapsNorm = normalizeList(parsedEvaluation.gaps || parsedEvaluation.weaknesses, ["—"]);
-      const followUpsNorm = normalizeList(parsedEvaluation.follow_up_questions, [
-        "Can you give a recent, specific example with outcomes?",
-      ]);
+        const riskFlags: string[] = [];
+
+        const strengthsDetailed =
+          Array.isArray(parsedEvaluation.strengths) && parsedEvaluation.strengths.length > 0
+            ? parsedEvaluation.strengths.map((s) => ({
+                evidence: Array.isArray(s.evidence) ? s.evidence : [],
+                whatWorked: s.what_worked,
+                whyMatters: s.why_it_matters_to_ofsted,
+              }))
+            : [];
+
+        const strengthsNorm =
+          strengthsDetailed.length > 0
+            ? strengthsDetailed.map((s) => `${s.whatWorked} — ${s.whyMatters}`)
+            : [];
+
+        const weaknessesDetailed =
+          Array.isArray(parsedEvaluation.weaknesses) && parsedEvaluation.weaknesses.length > 0
+            ? parsedEvaluation.weaknesses.map((w) => ({
+                evidence: Array.isArray(w.evidence) ? w.evidence : [],
+                gap: w.gap,
+                risk: w.risk,
+                expected: w.what_ofsted_expected,
+              }))
+            : [];
+
+        const gapsNorm =
+          weaknessesDetailed.length > 0
+            ? weaknessesDetailed.map(
+                (w) => `${w.gap} (Risk: ${w.risk}; Expected: ${w.expected})`,
+              )
+            : [];
+
+        const followUpsNorm =
+          Array.isArray(parsedEvaluation.follow_up_questions) && parsedEvaluation.follow_up_questions.length > 0
+            ? parsedEvaluation.follow_up_questions.map((f) => f.question)
+            : [];
+
+        const recommendedNorm = normalizeList(parsedEvaluation.missing_key_points, []);
+
+        const sentenceImprovements =
+          Array.isArray(parsedEvaluation.sentence_improvements) && parsedEvaluation.sentence_improvements.length > 0
+            ? parsedEvaluation.sentence_improvements.map((s) => ({
+                sentenceId: s.sentence_id,
+                original: s.original,
+                issue: s.issue,
+                betterVersion: s.better_version,
+                synonymsOrPhrases: s.synonyms_or_phrases || [],
+                impact: s.impact,
+              }))
+            : [];
+
+        const fallbackStrengths = buildFallbackStrengths(transcriptToUse);
+        const fallbackGaps = buildFallbackGaps(transcriptToUse);
+        const fallbackFollowUps = buildFollowUpFallback();
+        const fallbackActions = buildFallbackActions();
+
+      const safeStrengths = nonEmptyArray(strengthsNorm, fallbackStrengths);
+      const safeGaps = nonEmptyArray(gapsNorm, fallbackGaps);
+      const safeFollowUps = nonEmptyArray(followUpsNorm, fallbackFollowUps);
+      const safeActions = nonEmptyArray(recommendedNorm, fallbackActions);
 
       const mappedEvaluation: EvaluationResult = {
-        judgementBand,
-        score: score4,
-        score4,
-        strengths: strengthsNorm,
-        gaps: gapsNorm,
-        weaknesses: gapsNorm,
-        recommendations: parsedEvaluation.recommendations || [],
-        recommendedActions: parsedEvaluation.next_actions || parsedEvaluation.recommendations || [],
-        riskFlags,
-        followUpQuestions: followUpsNorm,
-        whatInspectorWantsToHear: parsedEvaluation.what_inspector_wants_to_hear,
-        evidenceToQuoteNextTime: parsedEvaluation.evidence_to_quote_next_time,
-        actionPlan7Days: parsedEvaluation.action_plan_7_days,
-        actionPlan30Days: parsedEvaluation.action_plan_30_days,
-        confidenceBand: parsedEvaluation.confidence_band as EvaluationResult["confidenceBand"],
-        note: parsedEvaluation.note,
-        debug: parsedEvaluation.debug,
-      };
+          judgementBand,
+          rawBand: bandRaw,
+          score: score4,
+          rawScore100: parsedEvaluation.score,
+          score4,
+          strengths: safeStrengths,
+          strengthsStructured: strengthsDetailed,
+          gaps: safeGaps,
+          weaknesses: safeGaps,
+          weaknessesStructured: weaknessesDetailed,
+          recommendations: nonEmptyArray(parsedEvaluation.missing_key_points ?? [], safeActions),
+          recommendedActions: safeActions,
+          riskFlags,
+          followUpQuestions: safeFollowUps,
+          sentenceImprovements,
+          sentences: parsedEvaluation.sentences,
+          missingKeyPoints: parsedEvaluation.missing_key_points,
+          rawFollowUps: parsedEvaluation.follow_up_questions?.map((f) => ({
+            question: f.question,
+            why: f.why,
+            whatGoodLooksLike: f.what_good_looks_like,
+          })),
+          rawSummary: parsedEvaluation.summary,
+          debug: parsedEvaluation.debug as Record<string, unknown> | undefined,
+        };
 
       setEvaluation(mappedEvaluation);
 
@@ -646,7 +747,7 @@ const Index = () => {
         setResults(prev => new Map(prev).set(currentQuestionIndex, {
           ...existingResult,
           followUpUsed: true,
-          followUpTranscript: transcript,
+          followUpTranscript: transcriptToUse,
           followUpEvaluation: mappedEvaluation,
           followUpDecision,
         }));
@@ -722,7 +823,7 @@ const Index = () => {
       toast({ title: "Finish this question first", description: "Please complete an evaluation before moving on." });
       return;
     }
-    if (currentQuestionIndex < ofstedQuestions.length - 1) {
+    if (currentQuestionIndex < sessionQuestions.length - 1) {
       setCurrentQuestionIndex(prev => prev + 1);
       resetForQuestion();
     } else {
@@ -750,7 +851,7 @@ const Index = () => {
       const local = JSON.parse(localStorage.getItem("localSessions") || "[]");
       const sessionId = `local-${Date.now()}`;
       const answers = Array.from(results.entries()).flatMap(([qIndex, result]) => {
-        const question = ofstedQuestions[qIndex];
+        const question = sessionQuestions[qIndex];
         const entries = [{
           session_id: sessionId,
           question_id: question.id,
@@ -818,6 +919,11 @@ const Index = () => {
     resetForQuestion();
     setResults(new Map());
     setCompletedQuestions([]);
+  };
+
+  const handleExitSession = () => {
+    clearActiveSession();
+    navigate("/app");
   };
 
   const handleRecordAgain = () => {
@@ -959,6 +1065,11 @@ const Index = () => {
           </div>
           <div className="flex items-center gap-3">
             <BetaFeedback />
+            {sessionId && (
+              <Button variant="outline" size="sm" onClick={handleExitSession} className="border-slate-200">
+                Exit session
+              </Button>
+            )}
             <button
               onClick={handleLogout}
               className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-teal-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-700"
@@ -968,16 +1079,18 @@ const Index = () => {
           </div>
         </div>
       </div>
+      <BetaBanner />
     );
   };
 
   if (step === "summary") {
     const evaluationResults = new Map<number, EvaluationResult>();
-    const questions = ofstedQuestions.map((q) => ({
-      id: String(q.id),
+    const formatDomain = (d: string) => d.replace(/([A-Z])/g, " $1").replace(/^\s/, "");
+    const questions = sessionQuestions.map((q, idx) => ({
+      id: String(q.id ?? idx + 1),
       domain: q.domain,
-      title: q.shortTitle,
-      question: q.question,
+      title: formatDomain(q.domain),
+      question: q.text,
     }));
 
     const answers: { question_id: string; text?: string }[] = [];
@@ -997,7 +1110,7 @@ const Index = () => {
         : result.evaluation;
       evaluationResults.set(index, evalToUse);
 
-      const question = ofstedQuestions[index];
+      const question = sessionQuestions[index];
       const chosenTranscript = result.followUpTranscript ?? result.transcript;
 
       answers.push({
@@ -1053,11 +1166,6 @@ const Index = () => {
             {resumeLoading ? "Resuming..." : "Resume previous session"}
           </Button>
         )}
-        {sessionId && (
-          <Button variant="ghost" size="sm" onClick={clearActiveSession}>
-            Exit session
-          </Button>
-        )}
         <Button variant="outline" size="sm" onClick={handleStartOver}>
           Start new session
         </Button>
@@ -1089,7 +1197,8 @@ const Index = () => {
         {/* Progress */}
         <ProgressIndicator 
           currentQuestionIndex={currentQuestionIndex} 
-          completedQuestions={completedQuestions} 
+          completedQuestions={completedQuestions}
+          questions={sessionQuestions}
         />
 
         {/* Question Navigation */}
@@ -1121,7 +1230,7 @@ const Index = () => {
         <QuestionCard 
           question={currentQuestion} 
           currentIndex={currentQuestionIndex} 
-          totalQuestions={ofstedQuestions.length} 
+          totalQuestions={sessionQuestions.length} 
         />
 
         {/* Follow-up indicator */}
@@ -1247,12 +1356,14 @@ const Index = () => {
         {/* Step: Evaluation Results */}
         {step === "evaluated" && evaluation && (
           <div className="space-y-6">
-            <EvaluationResults
-              result={evaluation}
-              onNextQuestion={handleNextQuestion}
-              isLastQuestion={currentQuestionIndex === ofstedQuestions.length - 1}
-              onViewSummary={handleViewSummary}
-            />
+          <EvaluationResults
+            result={evaluation}
+            transcript={transcript}
+            onNextQuestion={handleNextQuestion}
+            isLastQuestion={currentQuestionIndex === sessionQuestions.length - 1}
+            onViewSummary={handleViewSummary}
+            onExitSession={handleExitSession}
+          />
             
             {/* Follow-up option */}
             {needsFollowUp() && (

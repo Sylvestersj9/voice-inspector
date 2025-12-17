@@ -1,4 +1,5 @@
 import React from "react";
+import { buildFallbackActions, buildFallbackGaps, buildFallbackStrengths, buildFollowUpFallback, nonEmptyArray, nonEmptyString } from "@/lib/evalFallbacks";
 
 type EvalLike = {
   question_id?: string;
@@ -30,8 +31,8 @@ function normaliseBand(b?: string | null) {
 
 function bandTone(b?: string | null) {
   const band = normaliseBand(b);
-  if (band.includes("inadequate"))
-    return { chip: "bg-red-50 text-red-800 ring-red-100", icon: "❗", label: "Inadequate" };
+  if (band.includes("Needs development"))
+    return { chip: "bg-red-50 text-red-800 ring-red-100", icon: "❗", label: "Needs development" };
   if (band.includes("requires"))
     return { chip: "bg-amber-50 text-amber-900 ring-amber-100", icon: "⚠️", label: "Requires improvement" };
   if (band.includes("good"))
@@ -45,6 +46,13 @@ function pct(n?: number | null) {
   if (typeof n !== "number" || Number.isNaN(n)) return null;
   const clamped = Math.max(0, Math.min(100, Math.round(n)));
   return clamped;
+}
+
+function formatScore(value: number | null) {
+  if (typeof value !== "number" || Number.isNaN(value)) return "";
+  const rounded = Math.round(value);
+  const suffix = rounded < 50 ? " – early draft answer" : "";
+  return `${rounded}/100${suffix}`;
 }
 
 function toList(val?: string[] | string | null) {
@@ -178,7 +186,7 @@ export default function FinalSummaryReport({
 
   const bandRank = (b?: string | null) => {
     const x = normaliseBand(b);
-    if (x.includes("inadequate")) return 0;
+    if (x.includes("Needs development")) return 0;
     if (x.includes("requires")) return 1;
     if (x.includes("good")) return 2;
     if (x.includes("outstanding")) return 3;
@@ -200,6 +208,12 @@ export default function FinalSummaryReport({
   const topStrengths = topN(allStrengths, 6);
   const priorityGaps = topN(allGaps, 6);
   const priorityActions = topN(allRecs, 8);
+  const fallbackStrengths = buildFallbackStrengths("");
+  const fallbackGaps = buildFallbackGaps("");
+  const fallbackActions = buildFallbackActions();
+  const safeTopStrengths = topStrengths.length ? topStrengths : fallbackStrengths;
+  const safePriorityGaps = priorityGaps.length ? priorityGaps : fallbackGaps;
+  const safePriorityActions = priorityActions.length ? priorityActions : fallbackActions;
 
   return (
     <div className="space-y-6">
@@ -214,7 +228,7 @@ export default function FinalSummaryReport({
               <span>{overallTone.icon}</span>
               <span className={overallTone.chip + " rounded-full px-2 py-0.5 ring-1"}>{overallTone.label}</span>
               {avgScore !== null ? <span className="text-slate-500">•</span> : null}
-              {avgScore !== null ? <span className="text-slate-700">Avg score: {avgScore}/100</span> : null}
+              {avgScore !== null ? <span className="text-slate-700">Avg score: {formatScore(avgScore)}</span> : null}
             </div>
           </div>
 
@@ -224,15 +238,15 @@ export default function FinalSummaryReport({
         <div className="grid gap-3 sm:grid-cols-3">
           <div className="rounded-xl border bg-white p-4">
             <div className="text-xs font-semibold text-slate-500">Top strengths</div>
-            <div className="mt-2 text-sm font-medium text-slate-900">{topStrengths.length || "—"}</div>
+            <div className="mt-2 text-sm font-medium text-slate-900">{safeTopStrengths.length}</div>
           </div>
           <div className="rounded-xl border bg-white p-4">
             <div className="text-xs font-semibold text-slate-500">Priority gaps</div>
-            <div className="mt-2 text-sm font-medium text-slate-900">{priorityGaps.length || "—"}</div>
+            <div className="mt-2 text-sm font-medium text-slate-900">{safePriorityGaps.length}</div>
           </div>
           <div className="rounded-xl border bg-white p-4">
             <div className="text-xs font-semibold text-slate-500">Actions generated</div>
-            <div className="mt-2 text-sm font-medium text-slate-900">{priorityActions.length || "—"}</div>
+            <div className="mt-2 text-sm font-medium text-slate-900">{safePriorityActions.length}</div>
           </div>
         </div>
       </div>
@@ -241,7 +255,7 @@ export default function FinalSummaryReport({
         <div className="rounded-2xl border bg-white p-5 lg:col-span-2">
           <div className="text-sm font-semibold text-slate-900">Strengths you demonstrated</div>
           <ul className="mt-3 space-y-2 text-sm text-slate-700">
-            {(topStrengths.length ? topStrengths : ["—"]).map((s, i) => (
+            {safeTopStrengths.map((s, i) => (
               <li key={i} className="flex gap-2">
                 <span className="mt-2 h-1.5 w-1.5 rounded-full bg-teal-600" />
                 <span>{s}</span>
@@ -253,7 +267,7 @@ export default function FinalSummaryReport({
         <div className="rounded-2xl border bg-white p-5">
           <div className="text-sm font-semibold text-slate-900">Priority gaps to tighten</div>
           <ul className="mt-3 space-y-2 text-sm text-slate-700">
-            {(priorityGaps.length ? priorityGaps : ["—"]).map((g, i) => (
+            {safePriorityGaps.map((g, i) => (
               <li key={i} className="flex gap-2">
                 <span className="mt-2 h-1.5 w-1.5 rounded-full bg-amber-500" />
                 <span>{g}</span>
@@ -270,7 +284,7 @@ export default function FinalSummaryReport({
             These are based on the gaps identified across your answers. Turn them into your next supervision / action plan items.
           </p>
           <ul className="mt-3 space-y-2 text-sm text-slate-700">
-            {(priorityActions.length ? priorityActions : ["—"]).map((a, i) => (
+            {safePriorityActions.map((a, i) => (
               <li key={i} className="flex gap-2">
                 <span className="mt-2 h-1.5 w-1.5 rounded-full bg-slate-900" />
                 <span>{a}</span>
@@ -339,6 +353,16 @@ export default function FinalSummaryReport({
             const ui = bandTone(e?.band ?? null);
             const answer = pickAnswer(a);
             const examples = exampleFraming(answer);
+            const questionTitle = nonEmptyString(q.title, "Inspection question");
+            const questionText = nonEmptyString(q.question, "Question not available.");
+            const answerText = nonEmptyString(
+              answer,
+              "No answer captured — ensure your transcript is saved before evaluating.",
+            );
+            const strengthsList = nonEmptyArray(toList(e?.strengths), buildFallbackStrengths(answer));
+            const gapsList = nonEmptyArray(toList(e?.gaps), buildFallbackGaps(answer));
+            const recommendations = nonEmptyArray(toList(e?.recommendations), buildFallbackActions());
+            const followUps = nonEmptyArray(toList(e?.follow_up_questions), buildFollowUpFallback());
 
             return (
               <section key={q.id} className="rounded-2xl border p-5">
@@ -348,10 +372,10 @@ export default function FinalSummaryReport({
                       Question {idx + 1} • {q.domain ?? "SCCIF domain"}
                     </div>
                     <div className="mt-1 text-sm font-semibold text-slate-900">
-                      {q.title ?? "Inspection question"}
+                      {questionTitle}
                     </div>
                     <div className="mt-2 text-sm text-slate-700">
-                      {q.question ?? "—"}
+                      {questionText}
                     </div>
                   </div>
 
@@ -359,7 +383,7 @@ export default function FinalSummaryReport({
                     <span>{ui.icon}</span>
                     <span className={ui.chip + " rounded-full px-2 py-0.5 ring-1"}>{ui.label}</span>
                     {typeof e?.score === "number" ? <span className="text-slate-500">•</span> : null}
-                    {typeof e?.score === "number" ? <span className="text-slate-700">{Math.round(e.score)}/100</span> : null}
+                    {typeof e?.score === "number" ? <span className="text-slate-700">{formatScore(e.score)}</span> : null}
                   </div>
                 </div>
 
@@ -367,7 +391,7 @@ export default function FinalSummaryReport({
                   <div className="rounded-xl border bg-slate-50 p-4">
                     <div className="text-xs font-semibold text-slate-500">Your answer</div>
                     <div className="mt-2 whitespace-pre-wrap text-sm text-slate-800">
-                      {answer ? answer : "— (no answer captured)"}
+                      {answerText}
                     </div>
                   </div>
 
@@ -375,13 +399,13 @@ export default function FinalSummaryReport({
                     <div className="rounded-xl border bg-white p-4">
                       <div className="text-xs font-semibold text-slate-500">What landed well</div>
                       <div className="mt-2 text-sm text-slate-700">
-                        {joinOrMessage(e?.strengths, "Add examples/evidence to unlock strengths.")}
+                        {joinOrMessage(strengthsList, "Add examples/evidence to unlock strengths.")}
                       </div>
                     </div>
                     <div className="rounded-xl border bg-white p-4">
                       <div className="text-xs font-semibold text-slate-500">What to tighten</div>
                       <div className="mt-2 text-sm text-slate-700">
-                        {joinOrMessage(e?.gaps, "No gaps captured. Add more detail to get tighter feedback.")}
+                        {joinOrMessage(gapsList, "No gaps captured. Add more detail to get tighter feedback.")}
                       </div>
                     </div>
                   </div>
@@ -389,21 +413,15 @@ export default function FinalSummaryReport({
 
                 <div className="mt-4 grid gap-4 lg:grid-cols-2">
                   <div className="rounded-xl border bg-white p-4">
-                    {toList(e?.recommendations).length ? (
-                      <>
-                        <div className="text-xs font-semibold text-slate-500">Recommended improvements</div>
-                        <ul className="mt-2 space-y-2 text-sm text-slate-700">
-                          {toList(e?.recommendations).map((r: string, i: number) => (
-                            <li key={i} className="flex gap-2">
-                              <span className="mt-2 h-1.5 w-1.5 rounded-full bg-teal-600" />
-                              <span>{String(r)}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </>
-                    ) : (
-                      <div className="text-xs text-slate-500">Add more detail to receive tailored recommendations.</div>
-                    )}
+                    <div className="text-xs font-semibold text-slate-500">Recommended improvements</div>
+                    <ul className="mt-2 space-y-2 text-sm text-slate-700">
+                      {recommendations.map((r: string, i: number) => (
+                        <li key={i} className="flex gap-2">
+                          <span className="mt-2 h-1.5 w-1.5 rounded-full bg-teal-600" />
+                          <span>{String(r)}</span>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
 
                   <div className="rounded-xl border bg-white p-4">
@@ -419,11 +437,11 @@ export default function FinalSummaryReport({
                   </div>
                 </div>
 
-                {e?.follow_up_questions?.length ? (
+                {followUps.length ? (
                   <div className="mt-4 rounded-xl border bg-amber-50/50 p-4">
                     <div className="text-xs font-semibold text-amber-900">Likely follow-up questions (be ready)</div>
                     <ul className="mt-2 space-y-2 text-sm text-amber-900">
-                      {e.follow_up_questions.map((f: string, i: number) => (
+                      {followUps.map((f: string, i: number) => (
                         <li key={i} className="flex gap-2">
                           <span className="mt-2 h-1.5 w-1.5 rounded-full bg-amber-600" />
                           <span>{String(f)}</span>

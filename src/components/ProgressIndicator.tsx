@@ -1,19 +1,21 @@
-import { ofstedQuestions } from "@/lib/questions";
+import { BankQuestion } from "@/lib/questions";
 import { cn } from "@/lib/utils";
 import { Check } from "lucide-react";
 
 interface ProgressIndicatorProps {
   currentQuestionIndex: number;
   completedQuestions: number[];
+  questions: BankQuestion[];
 }
 
 export function ProgressIndicator({ 
   currentQuestionIndex, 
-  completedQuestions 
+  completedQuestions,
+  questions,
 }: ProgressIndicatorProps) {
   return (
     <div className="flex items-center justify-center gap-2 mb-8">
-      {ofstedQuestions.map((q, index) => {
+      {questions.map((q, index) => {
         const isCompleted = completedQuestions.includes(index);
         const isCurrent = index === currentQuestionIndex;
         
@@ -33,7 +35,7 @@ export function ProgressIndicator({
                 index + 1
               )}
             </div>
-            {index < ofstedQuestions.length - 1 && (
+            {index < questions.length - 1 && (
               <div 
                 className={cn(
                   "w-8 h-0.5 mx-1 transition-all duration-300",

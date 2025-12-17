@@ -1,13 +1,14 @@
-import { OfstedQuestion } from "@/lib/questions";
-import { cn } from "@/lib/utils";
+import { BankQuestion } from "@/lib/questions";
 
 interface QuestionCardProps {
-  question: OfstedQuestion;
+  question: BankQuestion;
   currentIndex: number;
   totalQuestions: number;
 }
 
 export function QuestionCard({ question, currentIndex, totalQuestions }: QuestionCardProps) {
+  const domainLabel = question.domain.replace(/([A-Z])/g, " $1").replace(/^\s/, "");
+
   return (
     <div className="card-elevated p-8 mb-8 animate-fade-in-up">
       <div className="flex items-center gap-3 mb-4">
@@ -18,12 +19,12 @@ export function QuestionCard({ question, currentIndex, totalQuestions }: Questio
           of {totalQuestions} questions
         </span>
         <span className="ml-auto px-3 py-1 rounded-full bg-accent text-accent-foreground text-xs font-medium">
-          {question.domain}
+          {domainLabel}
         </span>
       </div>
       
       <h2 className="font-display text-xl md:text-2xl font-semibold text-foreground leading-relaxed text-balance">
-        {question.question}
+        {question.text}
       </h2>
     </div>
   );
