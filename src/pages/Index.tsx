@@ -117,6 +117,7 @@ const Index = () => {
   const [sessionQuestions, setSessionQuestions] = useState<BankQuestion[]>(() =>
     generateSessionQuestions("preview", desiredQuestionCount),
   );
+  const [activeQuestionId, setActiveQuestionId] = useState<string | null>(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [step, setStep] = useState<Step>("ready");
   const [transcript, setTranscript] = useState("");
@@ -238,11 +239,17 @@ const Index = () => {
     setStep("ready");
   };
 
-  const currentQuestion = sessionQuestions[currentQuestionIndex] || sessionQuestions[0];
+  const currentQuestion = sessionQuestions.find((q) => q.id === activeQuestionId) || sessionQuestions[currentQuestionIndex] || sessionQuestions[0];
 
   const progressLabel = useMemo(() => {
     return `Question ${currentQuestionIndex + 1} of ${sessionQuestions.length}`;
   }, [currentQuestionIndex, sessionQuestions.length]);
+
+  useEffect(() => {
+    if (!activeQuestionId && sessionQuestions.length) {
+      setActiveQuestionId(sessionQuestions[0].id);
+    }
+  }, [activeQuestionId, sessionQuestions]);
 
   useEffect(() => {
     if (sessionId || resumeLoading) return;
@@ -430,18 +437,18 @@ const Index = () => {
       return;
     }
 
-      const sorted = [...questions].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
-      const ids = sorted.map((q) => q.id);
-      setSessionQuestions(
-        sorted.map((row) => ({
-          id: String(row.id),
-          domain: (row as { domain_name?: string }).domain_name || "Safeguarding",
-          text: (row as { question_text?: string }).question_text || "",
-        })),
-      );
+    const sorted = [...questions].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+    const ids = sorted.map((q) => q.id);
+    const mappedQuestions = sorted.map((row) => ({
+      id: String(row.id),
+      domain: (row as { domain_name?: string }).domain_name || "Safeguarding",
+      text: (row as { question_text?: string }).question_text || "",
+    }));
+    setSessionQuestions(mappedQuestions);
     setSessionId(existingId);
     setSessionQuestionIds(ids);
     persistActiveSession(existingId);
+    setActiveQuestionId((prev) => prev ?? mappedQuestions[0]?.id ?? null);
 
     const { data: answers, error: aErr } = await supabase
       .from("inspection_answers")
@@ -645,8 +652,8 @@ const Index = () => {
     }
     const ensuredIds = await ensureSessionAndQuestions();
     if (!ensuredIds) return;
-    const questionId = ensuredIds[currentQuestionIndex];
-    if (!questionId) {
+    const questionId = activeQuestion?.id || ensuredIds[currentQuestionIndex];
+    if (!questionId || !activeQuestion) {
       toast({ title: "Unable to map question", description: "Please restart the session.", variant: "destructive" });
       return;
     }
@@ -674,9 +681,10 @@ const Index = () => {
           body: JSON.stringify({
             transcript: transcriptToUse,
             answerText: transcriptToUse,
-              question: currentQuestion.text,
+            question: currentQuestion.text,
             domain: currentQuestion.domain,
             question_area: currentQuestion.domain,
+            session_question_id: questionId,
             plan,
           }),
         },
@@ -886,7 +894,11 @@ const Index = () => {
       return;
     }
     if (currentQuestionIndex < sessionQuestions.length - 1) {
-      setCurrentQuestionIndex(prev => prev + 1);
+      setCurrentQuestionIndex(prev => {
+        const next = prev + 1;
+        setActiveQuestionId(sessionQuestions[next]?.id ?? null);
+        return next;
+      });
       resetForQuestion();
     } else {
       // Save session before showing summary
@@ -964,7 +976,11 @@ const Index = () => {
 
   const handlePrevQuestion = () => {
     if (currentQuestionIndex > 0) {
-      setCurrentQuestionIndex(prev => prev - 1);
+      setCurrentQuestionIndex(prev => {
+        const next = prev - 1;
+        setActiveQuestionId(sessionQuestions[next]?.id ?? null);
+        return next;
+      });
       resetForQuestion();
     }
   };
