@@ -36,10 +36,6 @@ export function EvaluationResults({
   const registerJump = useCallback((fn: (id: string) => void) => {
     setJumpToSentence((prev) => (prev === fn ? prev : fn));
   }, []);
-
-  const registerJump = useCallback((fn: (id: string) => void) => {
-    setJumpToSentence((prev) => (prev === fn ? prev : fn));
-  }, []);
   const strengthFallback = buildFallbackStrengths("");
   const gapFallback = buildFallbackGaps("");
   const followUpFallback = buildFollowUpFallback();
