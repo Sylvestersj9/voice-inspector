@@ -12,7 +12,8 @@ type EvalV2 = {
   score: number; // 0-100
   band: EvalBand;
   summary: string;
-  strengths: Array<{ evidence: string[]; what_worked: string; why_it_matters_to_ofsted: string }>;
+  relevance: number; // 0..1
+  strengths: Array<{ claim: string; evidence_quote: string; why_it_matters: string }>;
   weaknesses: Array<{ evidence: string[]; gap: string; risk: string; what_ofsted_expected: string }>;
   sentence_improvements: Array<{
     sentence_id: string; // "S3"
@@ -75,22 +76,22 @@ const fallbackStrengths = (sentences: Sentence[]): EvalV2["strengths"] => {
   const refs = sentences.length ? sentences : [{ id: "S1", text: "No answer provided." }];
   const items = [
     {
-      what_worked: "Clear safeguarding process described with staff action.",
-      why_it_matters_to_ofsted: "Shows staff act on concerns and protect children promptly.",
+      claim: "Clear safeguarding process described with staff action.",
+      why_it_matters: "Shows staff act on concerns and protect children promptly.",
     },
     {
-      what_worked: "Evidence of reviewing impact on the child and adjusting plans.",
-      why_it_matters_to_ofsted: "Ofsted want to see outcomes and learning, not just activity.",
+      claim: "Evidence of reviewing impact on the child and adjusting plans.",
+      why_it_matters: "Ofsted want to see outcomes and learning, not just activity.",
     },
     {
-      what_worked: "Attention to the child's voice within day-to-day practice.",
-      why_it_matters_to_ofsted: "Inspection focuses on lived experience and whether children feel safe.",
+      claim: "Attention to the child's voice within day-to-day practice.",
+      why_it_matters: "Inspection focuses on lived experience and whether children feel safe.",
     },
   ];
   return items.slice(0, 2).map((item, idx) => ({
-    evidence: [refs[idx % refs.length].id],
-    what_worked: item.what_worked,
-    why_it_matters_to_ofsted: item.why_it_matters_to_ofsted,
+    claim: item.claim,
+    evidence_quote: refs[idx % refs.length].text,
+    why_it_matters: item.why_it_matters,
   }));
 };
 
@@ -189,17 +190,17 @@ const fallbackFollowUps = (): EvalV2["follow_up_questions"] => [
 
 const ensureStrengthList = (val: unknown, sentences: Sentence[]): EvalV2["strengths"] => {
   const refs = sentences.length ? sentences : [{ id: "S1", text: "No answer provided." }];
-  const items = ensureArray<{ evidence?: unknown; what_worked?: unknown; why_it_matters_to_ofsted?: unknown }>(val);
+  const items = ensureArray<{ claim?: unknown; evidence_quote?: unknown; why_it_matters?: unknown }>(val);
   const normalized = items
     .map((item, idx) => ({
-      evidence: ensureEvidence(item?.evidence, refs, idx),
-      what_worked: safeText(item?.what_worked, "No clear strength provided."),
-      why_it_matters_to_ofsted: safeText(
-        item?.why_it_matters_to_ofsted,
+      claim: safeText(item?.claim, "No clear strength provided."),
+      evidence_quote: safeText(item?.evidence_quote, refs[idx % refs.length].text),
+      why_it_matters: safeText(
+        item?.why_it_matters,
         "Explain why this protects children or assures quality.",
       ),
     }))
-    .filter((s) => s.what_worked.trim().length > 0);
+    .filter((s) => s.claim.trim().length > 0);
 
   const withFallback = normalized.length >= 2 ? normalized : [...normalized, ...fallbackStrengths(refs)];
   return withFallback.slice(0, Math.max(2, withFallback.length));
@@ -334,24 +335,27 @@ serve(async (req: Request) => {
     const system = `You are grading a manager's spoken answer to an Ofsted SCCIF children's homes inspection question.
 Return STRICT JSON only (no markdown, no prose) matching this shape:
 {
-  "score": number, // 0-100
-  "band": "Inadequate" | "Requires Improvement" | "Good" | "Outstanding",
-  "summary": string,
-  "strengths": Array<{ evidence: string[]; what_worked: string; why_it_matters_to_ofsted: string }>,
-  "weaknesses": Array<{ evidence: string[]; gap: string; risk: string; what_ofsted_expected: string }>,
-  "sentence_improvements": Array<{
-    sentence_id: string;
-    original: string;
-    issue: string;
-    better_version: string;
-    synonyms_or_phrases: string[];
-    impact: string;
-  }>,
-  "missing_key_points": string[],
-  "follow_up_questions": Array<{ question: string; why: string; what_good_looks_like: string }>
+"score": number, // 0-100
+"band": "Inadequate" | "Requires Improvement" | "Good" | "Outstanding",
+"summary": string,
+"relevance": number, // 0-1, how well the answer addresses the question
+"strengths": Array<{ claim: string; evidence_quote: string; why_it_matters: string }>,
+"weaknesses": Array<{ evidence: string[]; gap: string; risk: string; what_ofsted_expected: string }>,
+"sentence_improvements": Array<{
+  sentence_id: string;
+  original: string;
+  issue: string;
+  better_version: string;
+  synonyms_or_phrases: string[];
+  impact: string;
+}>,
+"missing_key_points": string[],
+"follow_up_questions": Array<{ question: string; why: string; what_good_looks_like: string }>
 }
 Rules:
 - Use only the numbered sentences (S1..Sn) for evidence references; every strength/weakness evidence must include at least one S#.
+- Every strength MUST include an exact quote from answer_text. If no meaningful quote is available, leave strengths empty.
+- If relevance < 0.35, return strengths as [].
 - Minimum counts: strengths >=2, weaknesses >=2, sentence_improvements >=3 (must cite real sentences), missing_key_points >=3, follow_up_questions >=4.
 - Be specific and evidence-based; avoid generic statements.
 - Band must align to the evidence; if unsafe/unclear practice is evident, select Inadequate. If generic/no evidence, cap at Requires Improvement.
@@ -413,6 +417,9 @@ ${numberedSentences}
     }
 
     const parsedObj = (parsed && typeof parsed === "object") ? (parsed as Record<string, unknown>) : {};
+    const relevanceRaw = Number((parsedObj as { relevance?: unknown }).relevance);
+    const relevance = Number.isFinite(relevanceRaw) ? Math.min(1, Math.max(0, relevanceRaw)) : 0;
+
     const safeEval: EvalV2 = {
       score: clampScore((parsedObj as { score?: unknown }).score),
       band: normalizeBand((parsedObj as { band?: unknown }).band),
@@ -420,6 +427,7 @@ ${numberedSentences}
         (parsedObj as { summary?: unknown }).summary,
         "No summary provided. Summarise the evidence, escalation, impact, and review cadence.",
       ),
+      relevance,
       strengths: ensureStrengthList((parsedObj as { strengths?: unknown }).strengths, sentences),
       weaknesses: ensureWeaknessList((parsedObj as { weaknesses?: unknown }).weaknesses, sentences),
       sentence_improvements: ensureSentenceImprovementsList(
@@ -433,6 +441,20 @@ ${numberedSentences}
         (parsedObj as { follow_up_questions?: unknown }).follow_up_questions,
       ),
     };
+
+    // Filter strengths to only those that quote the answer text
+    const answerLower = transcript.toLowerCase();
+    safeEval.strengths = (safeEval.strengths || []).filter((s) => {
+      const quote = (s.evidence_quote || "").trim().toLowerCase();
+      return quote.length > 0 && answerLower.includes(quote);
+    });
+
+    if (safeEval.relevance < 0.35) {
+      safeEval.strengths = [];
+      safeEval.band = "Inadequate";
+      safeEval.score = 1;
+      safeEval.summary = "Answer did not address the question with relevant evidence.";
+    }
 
     const score4 = Math.max(0, Math.min(4, Math.round((safeEval.score / 25) * 10) / 10));
     const response = {

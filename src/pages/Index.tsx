@@ -160,13 +160,18 @@ const Index = () => {
       typeof obj.band === "string" &&
       Array.isArray(obj.strengths) &&
       Array.isArray(obj.weaknesses);
-    if (hasV2) return obj;
+    if (hasV2) {
+      return {
+        relevance: Number((obj as { relevance?: unknown }).relevance) || 0,
+        ...obj,
+      };
+    }
 
     const legacyStrengths = Array.isArray(obj.strengths)
       ? (obj.strengths as unknown[]).map((s) => ({
-          evidence: [],
-          what_worked: (s ?? "").toString(),
-          why_it_matters_to_ofsted: "",
+          claim: (s ?? "").toString(),
+          evidence_quote: (obj as { transcript?: string })?.transcript ?? "",
+          why_it_matters: "",
         }))
       : [];
     const legacyWeaknesses = Array.isArray(obj.weaknesses)
@@ -193,6 +198,7 @@ const Index = () => {
           : typeof obj.score4 === "number"
             ? Math.max(0, Math.min(100, obj.score4 * 25))
             : 0,
+      relevance: 0,
       band: normalizeLegacyBand((obj as { overall_judgement?: unknown }).overall_judgement),
       summary: (obj as { rationale?: unknown }).rationale?.toString?.() || "No summary provided.",
       strengths: legacyStrengths,
@@ -717,15 +723,15 @@ const Index = () => {
         const strengthsDetailed =
           Array.isArray(parsedEvaluation.strengths) && parsedEvaluation.strengths.length > 0
             ? parsedEvaluation.strengths.map((s) => ({
-                evidence: Array.isArray(s.evidence) ? s.evidence : [],
-                whatWorked: s.what_worked,
-                whyMatters: s.why_it_matters_to_ofsted,
+                evidence: s.evidence_quote ? [s.evidence_quote] : [],
+                whatWorked: s.claim,
+                whyMatters: s.why_it_matters,
               }))
             : [];
 
         const strengthsNorm =
           strengthsDetailed.length > 0
-            ? strengthsDetailed.map((s) => `${s.whatWorked} — ${s.whyMatters}`)
+            ? strengthsDetailed.map((s) => `${s.whatWorked} - ${s.whyMatters}`)
             : [];
 
         const weaknessesDetailed =
@@ -779,6 +785,7 @@ const Index = () => {
           rawBand: bandRaw,
           score: score4,
           rawScore100: parsedEvaluation.score,
+          relevance: parsedEvaluation.relevance,
           score4,
           strengths: safeStrengths,
           strengthsStructured: strengthsDetailed,

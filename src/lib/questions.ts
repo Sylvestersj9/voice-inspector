@@ -75,6 +75,12 @@ export interface EvaluationResult {
   confidenceBand?: "borderline" | "secure" | "strong";
   note?: string;
   strengths: string[];
+  relevance?: number;
+  strengthsStructured?: Array<{
+    evidence: string[];
+    whatWorked: string;
+    whyMatters: string;
+  }>;
   gaps: string[];
   weaknesses?: string[];
   recommendations?: string[];
@@ -82,11 +88,6 @@ export interface EvaluationResult {
   followUpQuestions: string[];
   recommendedActions: string[];
   whatInspectorWantsToHear?: string;
-  strengthsStructured?: Array<{
-    evidence: string[];
-    whatWorked: string;
-    whyMatters: string;
-  }>;
   weaknessesStructured?: Array<{
     evidence: string[];
     gap: string;

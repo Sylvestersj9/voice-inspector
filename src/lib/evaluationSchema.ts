@@ -6,9 +6,9 @@ const sentenceSchema = z.object({
 });
 
 const strengthSchema = z.object({
-  evidence: z.array(z.string()),
-  what_worked: z.string(),
-  why_it_matters_to_ofsted: z.string(),
+  claim: z.string(),
+  evidence_quote: z.string(),
+  why_it_matters: z.string(),
 });
 
 const weaknessSchema = z.object({
@@ -37,6 +37,7 @@ export const evaluationSchema = z.object({
   score: z.number().min(0).max(100),
   band: z.enum(["Inadequate", "Requires Improvement", "Good", "Outstanding"]),
   summary: z.string(),
+  relevance: z.number().min(0).max(1),
   strengths: z.array(strengthSchema),
   weaknesses: z.array(weaknessSchema),
   sentence_improvements: z.array(sentenceImprovementSchema),
