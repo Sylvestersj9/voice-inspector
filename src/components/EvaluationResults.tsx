@@ -11,7 +11,7 @@ import {
 import { cn } from "@/lib/utils";
 import { buildFallbackActions, buildFallbackGaps, buildFallbackStrengths, buildFollowUpFallback, nonEmptyArray } from "@/lib/evalFallbacks";
 import { CoachMode } from "@/components/CoachMode";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 
 interface EvaluationResultsProps {
   result: EvaluationResult;
@@ -32,6 +32,14 @@ export function EvaluationResults({
 }: EvaluationResultsProps) {
   const [coachMode, setCoachMode] = useState(true);
   const [jumpToSentence, setJumpToSentence] = useState<(id: string) => void>(() => () => {});
+
+  const registerJump = useCallback((fn: (id: string) => void) => {
+    setJumpToSentence((prev) => (prev === fn ? prev : fn));
+  }, []);
+
+  const registerJump = useCallback((fn: (id: string) => void) => {
+    setJumpToSentence((prev) => (prev === fn ? prev : fn));
+  }, []);
   const strengthFallback = buildFallbackStrengths("");
   const gapFallback = buildFallbackGaps("");
   const followUpFallback = buildFollowUpFallback();
@@ -290,7 +298,7 @@ export function EvaluationResults({
             strengths={strengthsStructured}
             weaknesses={weaknessesStructured}
             improvements={result.sentenceImprovements}
-            registerJump={(fn) => setJumpToSentence(() => fn)}
+            registerJump={registerJump}
           />
         )}
       </div>

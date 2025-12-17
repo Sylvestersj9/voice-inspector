@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 type Sentence = { id: string; text: string };
 
@@ -58,17 +58,17 @@ export function CoachMode({
     return splitFallbackSentences(transcript);
   }, [sentences, transcript]);
 
-  const handleJump = (sentenceId: string) => {
+  const handleJump = useCallback((sentenceId: string) => {
     const el = sentenceRefs.current[sentenceId];
     if (!el) return;
     el.scrollIntoView({ behavior: "smooth", block: "center" });
     setHighlightId(sentenceId);
     setTimeout(() => setHighlightId((prev) => (prev === sentenceId ? null : prev)), 1500);
-  };
+  }, []);
 
   useEffect(() => {
     if (registerJump) registerJump(handleJump);
-  }, [registerJump]);
+  }, [registerJump, handleJump]);
 
   const renderEvidenceChips = (evidence?: string[]) => {
     if (!evidence || evidence.length === 0) return null;
