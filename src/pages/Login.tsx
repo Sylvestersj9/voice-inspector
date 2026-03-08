@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "../lib/supabase";
+import { lovable } from "@/integrations/lovable/index";
 import { useLoading } from "@/providers/LoadingProvider";
 
 type Mode = "signin" | "signup";
@@ -43,10 +44,10 @@ export default function Login() {
     setBusy(true);
     loading.show("Signing you in...");
     try {
-      await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: { redirectTo: `${window.location.origin}/auth/callback` },
+      const { error } = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin,
       });
+      if (error) throw error;
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : "Google sign-in failed.";
       setError(message);
