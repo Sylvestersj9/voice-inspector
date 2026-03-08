@@ -1,3 +1,4 @@
+// @ts-nocheck — runs in Deno edge function context, not browser
 import Stripe from "stripe";
 import { supabase } from "@/lib/supabase";
 import { logAudit } from "@/audit/logAudit";

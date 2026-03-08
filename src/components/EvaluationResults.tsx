@@ -63,7 +63,6 @@ export function EvaluationResults({
         return "bg-primary text-primary-foreground";
       case "Requires improvement to be good":
         return "bg-warning text-warning-foreground";
-      case "Needs development":
       case "Inadequate":
         return "bg-destructive text-destructive-foreground";
     }

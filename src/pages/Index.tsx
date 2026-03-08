@@ -417,7 +417,7 @@ const Index = () => {
       domain: (row as { domain_name?: string }).domain_name || "Safeguarding",
       text: (row as { question_text?: string }).question_text || "",
     }));
-    setSessionQuestions(mapped);
+    setSessionQuestions(mapped as BankQuestion[]);
     setActiveQuestionId(mapped[0]?.id ?? null);
     console.log("SESSION QUESTIONS CREATED", ids);
 
@@ -455,7 +455,7 @@ const Index = () => {
       domain: (row as { domain_name?: string }).domain_name || "Safeguarding",
       text: (row as { question_text?: string }).question_text || "",
     }));
-    setSessionQuestions(mappedQuestions);
+    setSessionQuestions(mappedQuestions as BankQuestion[]);
     setSessionId(existingId);
     setSessionQuestionIds(ids);
     persistActiveSession(existingId);
