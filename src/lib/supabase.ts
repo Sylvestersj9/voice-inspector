@@ -1,10 +1,8 @@
-import { createClient } from "@supabase/supabase-js";
+// Thin wrapper: re-exports the auto-generated typed client so every file
+// that imports from "@/lib/supabase" shares the same GoTrueClient instance.
+// We cast to `any` so that files referencing tables not yet in the generated
+// types (e.g. inspection_*) continue to work at runtime without TS errors.
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+import { supabase as _supabase } from "@/integrations/supabase/client";
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error("Missing VITE_SUPABASE_URL or VITE_SUPABASE_PUBLISHABLE_KEY in environment variables");
-}
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = _supabase as any;
