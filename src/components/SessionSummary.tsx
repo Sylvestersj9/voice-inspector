@@ -162,7 +162,7 @@ export function SessionSummary({ results, questions, onStartOver }: SessionSumma
                   
                   {strengths.length > 0 && (
                     <p className="text-sm text-success mb-1">
-                      <span className="font-medium">Key strength:</span> {strengths[0]}
+                      <span className="font-medium">Key strength:</span> {String(strengths[0])}
                     </p>
                   )}
                   {gaps.length > 0 && (
