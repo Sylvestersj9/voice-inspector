@@ -9,7 +9,7 @@ Desktop-first Ofsted/SCCIF simulator with grounded evaluations, deterministic fo
 - [x] Follow-up flow capped at 2 attempts with rule-based prompts
 
 ## Environment & Keys
-- Required env vars: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `OPENAI_API_KEY`, `LOVABLE_API_KEY`
+- Required env vars: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `OPENAI_API_KEY`, `LOVABLE_API_KEY`, `GEMINI_API_KEY` (Supabase edge function secret only — not in .env or frontend)
 - Voice: batch upload to `/functions/v1/transcribe` (no live transcription)
 - Evaluation: `/functions/v1/evaluate` (Lovable gateway + schema validation)
 
