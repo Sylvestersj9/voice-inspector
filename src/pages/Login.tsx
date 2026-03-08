@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { supabase } from "../lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 import { useLoading } from "@/providers/LoadingProvider";
 
 type Mode = "signin" | "signup";
