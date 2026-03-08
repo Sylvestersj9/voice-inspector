@@ -139,8 +139,8 @@ export function SessionSummary({ results, questions, onStartOver }: SessionSumma
         {questions.map((question, index) => {
           const result = results.get(index);
           if (!result) return null;
-          const strengths = safeArray(result.strengths);
-          const gaps = safeArray((result as { gaps?: unknown }).gaps);
+          const strengths = safeArray(result.strengths as unknown[]);
+          const gaps = safeArray((result as { gaps?: unknown[] }).gaps ?? []);
           
           return (
             <div key={question.id} className="card-elevated p-6">
