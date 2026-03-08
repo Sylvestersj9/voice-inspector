@@ -43,14 +43,14 @@ export default function Login() {
     setBusy(true);
     loading.show("Signing you in...");
     try {
-      const { error } = await lovable.auth.signInWithOAuth("google", {
+      const params = new URLSearchParams({
+        provider: "google",
         redirect_uri: window.location.origin,
       });
-      if (error) throw error;
+      window.location.href = `/~oauth/initiate?${params.toString()}`;
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : "Google sign-in failed.";
       setError(message);
-    } finally {
       loading.hide();
       setBusy(false);
     }
