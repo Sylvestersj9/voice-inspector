@@ -62,7 +62,7 @@ export async function evaluateAnswer(input: EvaluateAnswerInput): Promise<Inspec
 
   console.log("INSERTING INTO inspection_evaluations", payload);
 
-  const { data: row, error } = await supabase
+  const { data: row, error } = await (supabase as any)
     .from("inspection_evaluations")
     .upsert(payload, { onConflict: "inspection_session_question_id" })
     .select("*")
@@ -76,5 +76,5 @@ export async function evaluateAnswer(input: EvaluateAnswerInput): Promise<Inspec
     throw error || new Error("Failed to upsert evaluation");
   }
 
-  return row as InspectionEvaluation;
+  return row as unknown as InspectionEvaluation;
 }
