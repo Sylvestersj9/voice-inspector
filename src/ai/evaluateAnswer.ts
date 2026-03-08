@@ -1,11 +1,11 @@
 import type { InspectionSessionQuestion } from "@/framework/types";
 import type { InspectionAnswer } from "@/answers/types";
 import type { InspectionEvaluation, EvaluationBand } from "./types";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
 type EvaluateAnswerInput = {
   sessionQuestion: InspectionSessionQuestion;
