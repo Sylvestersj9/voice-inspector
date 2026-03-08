@@ -27,7 +27,7 @@ export default function Onboarding() {
           id: user.id,
           email: user.email,
           role: "manager",
-          full_name: (user.user_metadata as { full_name?: unknown } | undefined)?.full_name ?? null,
+          full_name: ((user.user_metadata as Record<string, unknown> | undefined)?.full_name as string) ?? null,
         });
       }
 

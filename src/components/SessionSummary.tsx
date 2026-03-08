@@ -167,7 +167,7 @@ export function SessionSummary({ results, questions, onStartOver }: SessionSumma
                   )}
                   {gaps.length > 0 && (
                     <p className="text-sm text-warning">
-                      <span className="font-medium">Area to develop:</span> {gaps[0]}
+                      <span className="font-medium">Area to develop:</span> {String(gaps[0])}
                     </p>
                   )}
                 </div>

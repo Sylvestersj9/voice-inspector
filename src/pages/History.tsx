@@ -13,12 +13,20 @@ interface Session {
   overall_band: string | null;
 }
 
+interface EvalJson {
+  score4?: number;
+  score?: number;
+  judgementBand?: string;
+  strengths?: string[];
+  gaps?: string[];
+}
+
 interface SessionAnswer {
   id: string;
   question_id: number;
   question_domain: string;
   transcript: string;
-  evaluation_json: unknown;
+  evaluation_json: EvalJson;
   attempt_index: number;
 }
 
