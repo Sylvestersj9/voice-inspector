@@ -44,7 +44,7 @@ export default function Login() {
     setBusy(true);
     loading.show("Signing you in...");
     try {
-      const { lovable } = await import("@/integrations/lovable/index");
+      const { error } = await lovable.auth.signInWithOAuth("google", {
       const { error } = await lovable.auth.signInWithOAuth("google", {
         redirect_uri: window.location.origin,
       });
