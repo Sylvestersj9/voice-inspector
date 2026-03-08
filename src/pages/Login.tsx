@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "../lib/supabase";
-import { lovable } from "@/integrations/lovable/index";
 import { useLoading } from "@/providers/LoadingProvider";
 
 type Mode = "signin" | "signup";
@@ -44,6 +43,7 @@ export default function Login() {
     setBusy(true);
     loading.show("Signing you in...");
     try {
+      const { lovable } = await import("@/integrations/lovable/index");
       const { error } = await lovable.auth.signInWithOAuth("google", {
         redirect_uri: window.location.origin,
       });
