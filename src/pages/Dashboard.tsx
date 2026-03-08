@@ -136,6 +136,7 @@ export default function Dashboard() {
           totalQuestions: questionIds.length,
           evaluatedCount: 0,
           averageScore: 0,
+          averageScorePercent: 0,
           band: scoreToBand(0),
           strongestDomain: "Not enough data yet",
           weakestDomain: "Not enough data yet",

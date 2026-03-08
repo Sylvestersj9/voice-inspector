@@ -15,6 +15,8 @@ export type DashboardModel = {
   totalQuestions: number;
   evaluatedCount: number;
   averageScore: number;
+  /** 0–100 percentage for progress bars */
+  averageScorePercent: number;
   band: string;
   strongestDomain: string;
   weakestDomain: string;
@@ -58,6 +60,7 @@ export function buildDashboardModel({ questions, evaluations, sessionCreatedAt }
     .filter((s): s is number => s !== null);
   const avgScore = scores.length ? scores.reduce((s, v) => s + v, 0) / scores.length : 0;
   const avgRounded = Math.round(avgScore * 10) / 10;
+  const averageScorePercent = Math.round((avgScore / 12) * 100);
 
   const fallbackDomain = "Not enough data yet";
 
@@ -79,6 +82,7 @@ export function buildDashboardModel({ questions, evaluations, sessionCreatedAt }
     totalQuestions: questions.length,
     evaluatedCount: evaluations.length,
     averageScore: avgRounded,
+    averageScorePercent,
     band: scoreToBand(avgRounded || 0),
     strongestDomain: strongest.score === -Infinity ? fallbackDomain : strongest.domain,
     weakestDomain: weakest.score === Infinity ? fallbackDomain : weakest.domain,
