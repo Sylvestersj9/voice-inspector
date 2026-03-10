@@ -65,10 +65,12 @@ function mulberry32(seed: string) {
   };
 }
 
-// Domains always included — safeguarding is a limiting judgement, leadership is always scrutinised
+// Safeguarding is a limiting judgement — always included first in the list
 const MANDATORY_DOMAINS: Domain[] = ["ProtectionChildren", "LeadershipManagement"];
-// How many additional domains to pick per session
-const OPTIONAL_COUNT = 4;
+// Questions per domain per session (2 × 9 domains = 18 total)
+const QUESTIONS_PER_DOMAIN = 2;
+// Minimum answered questions before a report can be generated
+export const MIN_ANSWERS_FOR_REPORT = 3;
 
 function fisherYates<T>(arr: T[], rng: () => number): T[] {
   const result = [...arr];
@@ -87,21 +89,14 @@ function pickSessionQuestions(sessionId: string): BankQuestion[] {
     grouped[q.domain].push(q);
   }
 
-  // Randomly select OPTIONAL_COUNT domains from the non-mandatory pool
-  const optionalDomains = DOMAIN_ORDER.filter((d) => !MANDATORY_DOMAINS.includes(d));
-  const shuffled = fisherYates(optionalDomains, rng);
-  const selectedOptional = shuffled.slice(0, OPTIONAL_COUNT);
+  // All 9 domains, mandatory first then rest in DOMAIN_ORDER
+  const selectedDomains = DOMAIN_ORDER; // all domains always included
 
-  // Preserve DOMAIN_ORDER ordering in the final list
-  const selectedDomains = DOMAIN_ORDER.filter(
-    (d) => MANDATORY_DOMAINS.includes(d) || selectedOptional.includes(d)
-  );
-
+  // Pick QUESTIONS_PER_DOMAIN random questions per domain (no repeats within domain)
   return selectedDomains
-    .map((domain) => {
-      const pool = grouped[domain] ?? [];
-      const idx = Math.floor(rng() * pool.length);
-      return pool[idx];
+    .flatMap((domain) => {
+      const pool = fisherYates(grouped[domain] ?? [], rng);
+      return pool.slice(0, QUESTIONS_PER_DOMAIN);
     })
     .filter(Boolean);
 }
@@ -536,7 +531,7 @@ export default function Index() {
     : null;
 
   useEffect(() => {
-    setShowGenerate(completedCount >= 5);
+    setShowGenerate(completedCount >= MIN_ANSWERS_FOR_REPORT);
   }, [completedCount]);
 
   useEffect(() => {
@@ -549,9 +544,9 @@ export default function Index() {
   }, [showUpsell, pendingReportId, navigate]);
 
   const handleGenerateReport = async () => {
-    if (completedCount < 5) return;
+    if (completedCount < MIN_ANSWERS_FOR_REPORT) return;
     if (completedCount < questions.length) {
-      const ok = window.confirm("Partial report—add more for full picture?");
+      const ok = window.confirm(`Partial report — you've answered ${completedCount} of ${questions.length} questions. Continue for a fuller picture?`);
       if (!ok) return;
     }
     await completeSession();
@@ -666,10 +661,10 @@ export default function Index() {
                   {justSubscribed ? "Subscription confirmed — unlimited access" : "Ready to practise?"}
                 </h1>
                 <p className="mt-2 text-slate-600">
-                  You'll answer questions across 6 Quality Standards — safeguarding and leadership are always included, the rest are randomly selected, just like a real Ofsted visit.
+                  You'll answer up to 18 questions across all 9 Quality Standards — safeguarding and leadership always come first, just like a real Ofsted visit. Generate your report any time after 3 answers.
                 </p>
                 <div className="mt-3 flex justify-center gap-2 text-xs text-slate-500 flex-wrap">
-                  <span className="inline-flex items-center gap-1"><CheckCircle2 className="h-3.5 w-3.5 text-teal-600" /> 6 questions</span>
+                  <span className="inline-flex items-center gap-1"><CheckCircle2 className="h-3.5 w-3.5 text-teal-600" /> Up to 18 questions</span>
                   <span className="inline-flex items-center gap-1"><CheckCircle2 className="h-3.5 w-3.5 text-teal-600" /> Voice or text</span>
                   <span className="inline-flex items-center gap-1"><CheckCircle2 className="h-3.5 w-3.5 text-teal-600" /> Full Ofsted-style report</span>
                 </div>
@@ -715,9 +710,9 @@ export default function Index() {
                     </button>
                     <button
                       onClick={handleGenerateReport}
-                      disabled={completedCount < 5}
+                      disabled={completedCount < MIN_ANSWERS_FOR_REPORT}
                       className={`inline-flex items-center justify-center gap-2 rounded-xl px-6 py-2.5 text-sm font-semibold transition-colors ${
-                        completedCount >= 5
+                        completedCount >= MIN_ANSWERS_FOR_REPORT
                           ? "border border-teal-200 text-teal-700 hover:bg-teal-50"
                           : "border border-slate-200 text-slate-400 cursor-not-allowed"
                       }`}
