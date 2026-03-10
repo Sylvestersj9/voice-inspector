@@ -191,20 +191,20 @@ export default function Landing() {
           <div className="rounded-2xl border border-slate-200 bg-white p-8 md:p-10 shadow-sm">
             <div className="grid gap-8 md:grid-cols-[auto_1fr] md:items-start">
               <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-teal-600 text-white text-2xl font-bold font-display">
-                L5
+                ✓
               </div>
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wider text-teal-600 mb-2">
-                  Built by a registered manager — not a vendor
+                  Built by a children's home leader — not a vendor
                 </p>
                 <blockquote className="relative">
                   <Quote className="absolute -left-1 -top-1 h-6 w-6 text-slate-200" aria-hidden="true" />
                   <p className="pl-6 text-slate-700 leading-relaxed">
-                    I built MockOfsted because I needed it. As a Level 5 qualified registered
-                    manager of a children's home, I knew the questions inspectors ask — and I knew
-                    that no affordable tool existed to practise answering them under pressure.
-                    Every question in this simulator reflects real SCCIF lines of enquiry. Every
-                    scoring rubric is grounded in how judgements are actually formed.
+                    I built MockOfsted because I needed it. As a Level 5 qualified children's home
+                    leader, I knew the questions inspectors ask — and I knew that no affordable tool
+                    existed to practise answering them under pressure. Every question in this
+                    simulator reflects real SCCIF lines of enquiry. Every scoring rubric is grounded
+                    in how judgements are actually formed.
                   </p>
                 </blockquote>
                 <div className="mt-5 flex flex-wrap gap-4">
