@@ -154,6 +154,20 @@ Fix:
 - After a successful sync, the practice screen shows “Subscription confirmed — unlimited access” and the confetti animation.
 - Both `Index.tsx` and `Dashboard.tsx` treat `status === "active"` as paid even if `stripe_subscription_id` is missing, preventing paid users from seeing trial limits during sync lag.
 
+### 7c) Simulator UX upgrades (pause, generate anytime, skip-once)
+- Added helper `src/lib/simulator.ts` for:
+  - generate report + poll (`generateReportAndWait`)
+  - pause persistence via `localStorage`
+  - progress color mapping
+- `Index.tsx` changes:
+  - “Generate Report” **FAB** appears after ≥5 answers.
+  - Partial report confirmation via `window.confirm` if <6 answered.
+  - Pause button top-right shows overlay with Resume + Generate Report.
+  - Pause state persists across refresh via localStorage per session.
+  - Skip question allowed **once** per session with a replacement question from an unused domain.
+  - Progress bar width uses answered count and color by average score.
+  - Post-session trial upsell overlay with auto-redirect to report.
+- Added `src/pages/Index.test.tsx` for simulator helper behavior (pause persistence + progress color).
 ### 8) FAQ updates + embedded contact form
 - Added more FAQ items; removed AI phrasing.
 - Embedded a contact form in FAQ using the same Supabase `send-feedback` flow as the Contact page.
@@ -206,6 +220,24 @@ Fix:
 - Added `tests/exportReportPdf.test.ts` to verify word truncation logic.
 - `/app/report/:id` now uses **Export PDF** button that calls the new exporter (replaces print-only flow).
 - Added a small typed jsPDF interface and resolved lint errors in the exporter.
+
+### 15) Dashboard session history overhaul
+- Replaced `src/pages/Dashboard.tsx` with a fully rebuilt version.
+- Added `src/types/session.ts` — exports `SessionRow` type (includes `responses: Array<{ domain: string }>`).
+- **Session query**: 10 most recent sessions (`LIMIT 10`, `ORDER BY started_at DESC`) with nested Supabase select `responses(domain)` to derive domain mix without extra round-trips.
+- **Table columns**: Date | Domain Mix | Overall Band | Type | Actions
+  - Domain Mix: "Safeguarding + 4 others" — derives first label from ProtectionChildren > LeadershipManagement > first domain.
+  - Overall Band: colour badge via `getBandColorClass()` (Outstanding=emerald, Good=teal, RI=amber, Inadequate=red).
+  - Session Type: inferred from response count — ≥6 = Full (Clipboard icon), 3–5 = Practice (PlayCircle), 1–2 = Quick (Zap).
+  - Actions: "View Report" → `/app/report/:sessionId` | "Restart" → `/app` | "Continue" for in-progress sessions.
+- **Row click**: clicking a completed row navigates to `/app/report/:sessionId`.
+- **Trial badge**: "Trial: X/5 today | Y/15 total" — teal (plenty) → amber (≤2 remaining) → red (exhausted).
+- **Sub status line**: "Active subscription — unlimited access" | "Trial ends [date]" | "Trial ended — upgrade for unlimited access".
+- **Empty state**: PlayCircle icon + "Start your first practice → Simulator" CTA button to `/app`.
+- **Responsive**: desktop uses `<table>` (`hidden sm:block`); mobile uses stacked cards (`sm:hidden`).
+- **Restart button**: navigates to `/app` (Index.tsx does not currently support domain pre-fill via URL params).
+- Added `tests/dashboard.test.tsx`: 6 tests covering `computeTrialUsage` (counts, expiry, clamp) and `formatDomainMix` (plurals, empty, Safeguarding label). All passing.
+- `bun run typecheck` → clean. No new lint errors introduced.
 
 ## Operational Notes
 

@@ -13,6 +13,7 @@ import {
   type JudgementBand,
 } from "@/lib/questions";
 import { computeTrialUsage, TRIAL_DAILY_LIMIT, TRIAL_TOTAL_LIMIT } from "@/lib/trial";
+import { clearPaused, generateReportAndWait, loadPaused, progressColor, savePaused } from "@/lib/simulator";
 import ConfettiBurst from "@/components/ConfettiBurst";
 import { VoiceRecorder } from "@/components/VoiceRecorder";
 import { TranscriptEditor } from "@/components/TranscriptEditor";
@@ -138,12 +139,15 @@ export default function Index() {
   const [questions, setQuestions] = useState<QuestionState[]>([]);
   const [qIndex, setQIndex] = useState(0);
   const [step, setStep] = useState<Step>("idle");
+  const [skipUsed, setSkipUsed] = useState(false);
   const [inputMode, setInputMode] = useState<InputMode>("voice");
   const [textInput, setTextInput] = useState("");
   const [transcript, setTranscript] = useState("");
   const [evalResult, setEvalResult] = useState<EvalResult | null>(null);
   const [paused, setPaused] = useState(false);
-  const [showReportModal, setShowReportModal] = useState(false);
+  const [showGenerate, setShowGenerate] = useState(false);
+  const [showUpsell, setShowUpsell] = useState(false);
+  const [pendingReportId, setPendingReportId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [reportSessionId, setReportSessionId] = useState<string | null>(null);
   const answerAreaRef = useRef<HTMLDivElement>(null);
@@ -229,6 +233,16 @@ export default function Index() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [checkoutSuccess, user]);
 
+  useEffect(() => {
+    if (!sessionId) return;
+    setPaused(loadPaused(sessionId));
+  }, [sessionId]);
+
+  useEffect(() => {
+    if (!sessionId) return;
+    savePaused(sessionId, paused);
+  }, [paused, sessionId]);
+
   // ── Start session ──────────────────────────────────────────────────────────
 
   const startSession = async () => {
@@ -268,9 +282,14 @@ export default function Index() {
     setQuestions(picked.map((q) => ({ question: q, transcript: "", result: null })));
     setQIndex(0);
     setStep("input");
+    setSkipUsed(false);
+    setShowUpsell(false);
+    setPendingReportId(null);
     setTranscript("");
     setTextInput("");
     setEvalResult(null);
+    setShowGenerate(false);
+    clearPaused(sid);
   };
 
   // ── Transcribe audio ───────────────────────────────────────────────────────
@@ -392,18 +411,48 @@ export default function Index() {
     }
   };
 
+  const pickReplacementQuestion = () => {
+    if (!sessionId) return null;
+    const usedDomains = new Set(questions.map((q) => q.question.domain));
+    const availableDomains = DOMAIN_ORDER.filter((d) => !usedDomains.has(d));
+    if (availableDomains.length === 0) return null;
+    const rng = mulberry32(`${sessionId}-skip`);
+    const domain = availableDomains[Math.floor(rng() * availableDomains.length)];
+    const pool = questionBank.filter((q) => q.domain === domain);
+    if (pool.length === 0) return null;
+    const idx = Math.floor(rng() * pool.length);
+    return pool[idx];
+  };
+
   const skipQuestion = async () => {
-    const isLast = qIndex === questions.length - 1;
-    if (isLast) {
-      await completeSession();
-    } else {
-      setQIndex((i) => i + 1);
-      setStep("input");
-      setTranscript("");
-      setTextInput("");
-      setEvalResult(null);
-      setError(null);
+    if (skipUsed) return;
+    const replacement = pickReplacementQuestion();
+    setSkipUsed(true);
+    if (!replacement) {
+      const isLast = qIndex === questions.length - 1;
+      if (isLast) {
+        await completeSession();
+      } else {
+        setQIndex((i) => i + 1);
+        setStep("input");
+        setTranscript("");
+        setTextInput("");
+        setEvalResult(null);
+        setError(null);
+      }
+      return;
     }
+
+    setQuestions((prev) => {
+      const next = [...prev];
+      next[qIndex] = { question: replacement, transcript: "", result: null };
+      return next;
+    });
+    setStep("input");
+    setTranscript("");
+    setTextInput("");
+    setEvalResult(null);
+    setError(null);
   };
 
   // ── Complete session ───────────────────────────────────────────────────────
@@ -413,18 +462,30 @@ export default function Index() {
     setStep("completing");
 
     try {
-      const { data } = await supabase.functions.invoke("generate-report", {
-        body: { sessionId },
-      });
-
-      // generate-report updates the sessions table internally
-      void data; // suppress lint
+      const ok = await generateReportAndWait({ sessionId });
+      if (!ok) {
+        setError("Report generation is taking longer than expected. Please try again.");
+        setStep("evaluated");
+        return;
+      }
       setReportSessionId(sessionId);
-      setStep("done");
+      if (!isPaidSubscriber && trialInfo) {
+        setPendingReportId(sessionId);
+        setShowUpsell(true);
+        setStep("done");
+      } else {
+        navigate(`/app/report/${sessionId}`);
+      }
     } catch {
       // Even on failure, mark as done and go to report page (report will show raw responses)
       setReportSessionId(sessionId);
-      setStep("done");
+      if (!isPaidSubscriber && trialInfo) {
+        setPendingReportId(sessionId);
+        setShowUpsell(true);
+        setStep("done");
+      } else {
+        navigate(`/app/report/${sessionId}`);
+      }
     } finally {
       if (trialInfo && !isPaidSubscriber) {
         const usedTotal = trialInfo.usedTotal + 1;
@@ -439,6 +500,7 @@ export default function Index() {
           remainingToday,
         });
       }
+      if (sessionId) clearPaused(sessionId);
     }
   };
 
@@ -458,6 +520,7 @@ export default function Index() {
 
   const stopSession = () => {
     if (!window.confirm("Stop this session and return to the dashboard?")) return;
+    if (sessionId) clearPaused(sessionId);
     navigate("/app/dashboard");
   };
 
@@ -468,6 +531,31 @@ export default function Index() {
   const domainTag = currentQ ? DOMAIN_TAGS[currentQ.question.domain as Domain] : "";
   const isLimitingDomain = domainTag === "LIMITING JUDGEMENT";
   const completedCount = questions.filter((q) => q.result !== null).length;
+  const avgScore = completedCount > 0
+    ? questions.reduce((sum, q) => sum + (q.result ? q.result.score : 0), 0) / completedCount
+    : null;
+
+  useEffect(() => {
+    setShowGenerate(completedCount >= 5);
+  }, [completedCount]);
+
+  useEffect(() => {
+    if (!showUpsell || !pendingReportId) return;
+    const t = window.setTimeout(() => {
+      navigate(`/app/report/${pendingReportId}`);
+      setShowUpsell(false);
+    }, 2500);
+    return () => window.clearTimeout(t);
+  }, [showUpsell, pendingReportId, navigate]);
+
+  const handleGenerateReport = async () => {
+    if (completedCount < 5) return;
+    if (completedCount < questions.length) {
+      const ok = window.confirm("Partial report—add more for full picture?");
+      if (!ok) return;
+    }
+    await completeSession();
+  };
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -502,27 +590,6 @@ export default function Index() {
           <div className="flex items-center gap-2">
             {step !== "idle" && step !== "done" && (
               <>
-                <button
-                  onClick={() => completedCount >= 5 && setShowReportModal(true)}
-                  disabled={completedCount < 5}
-                  title={completedCount < 5 ? `Available after answering 5 questions (${completedCount}/5 answered)` : "Generate your report now"}
-                  className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
-                    completedCount >= 5
-                      ? "border-teal-300 text-teal-700 hover:bg-teal-50"
-                      : "border-slate-200 text-slate-300 cursor-not-allowed"
-                  }`}
-                >
-                  <FileText className="h-4 w-4" />
-                  <span className="hidden sm:inline">Generate Report</span>
-                </button>
-                <button
-                  onClick={() => setPaused((p) => !p)}
-                  title={paused ? "Resume session" : "Pause session"}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
-                >
-                  {paused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
-                  <span className="hidden sm:inline">{paused ? "Resume" : "Pause"}</span>
-                </button>
                 <button
                   onClick={restartSession}
                   title="Restart session"
@@ -637,7 +704,7 @@ export default function Index() {
                   </div>
                   <h2 className="mt-4 font-display text-xl font-bold text-slate-900">Session paused</h2>
                   <p className="mt-2 text-sm text-slate-500">
-                    Your answered questions are saved. Take a break and resume when you're ready.
+                    Paused — resume or generate report when you're ready.
                   </p>
                   <div className="mt-6 flex flex-col gap-2">
                     <button
@@ -645,6 +712,17 @@ export default function Index() {
                       className="inline-flex items-center justify-center gap-2 rounded-xl bg-teal-600 px-6 py-3 text-sm font-semibold text-white hover:bg-teal-700 transition-colors"
                     >
                       <Play className="h-4 w-4" /> Resume session
+                    </button>
+                    <button
+                      onClick={handleGenerateReport}
+                      disabled={completedCount < 5}
+                      className={`inline-flex items-center justify-center gap-2 rounded-xl px-6 py-2.5 text-sm font-semibold transition-colors ${
+                        completedCount >= 5
+                          ? "border border-teal-200 text-teal-700 hover:bg-teal-50"
+                          : "border border-slate-200 text-slate-400 cursor-not-allowed"
+                      }`}
+                    >
+                      <FileText className="h-4 w-4" /> Generate report
                     </button>
                     <button
                       onClick={stopSession}
@@ -656,6 +734,14 @@ export default function Index() {
                 </div>
               </div>
             )}
+            <div className="absolute right-0 top-0 z-0">
+              <button
+                onClick={() => setPaused(true)}
+                className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-xs font-semibold text-slate-700 shadow-lg hover:scale-105 transition"
+              >
+                <Pause className="h-3.5 w-3.5" /> Pause
+              </button>
+            </div>
             {/* Progress */}
             <div className="flex items-center justify-between">
               <div>
@@ -677,8 +763,8 @@ export default function Index() {
             {/* Progress bar */}
             <div className="h-1.5 rounded-full bg-slate-200">
               <div
-                className="h-1.5 rounded-full bg-teal-500 transition-all"
-                style={{ width: `${((qIndex) / questions.length) * 100}%` }}
+                className={`h-1.5 rounded-full transition-all ${progressColor(avgScore)}`}
+                style={{ width: `${(completedCount / questions.length) * 100}%` }}
               />
             </div>
 
@@ -722,9 +808,14 @@ export default function Index() {
                     <button
                       onClick={skipQuestion}
                       title="Skip this question"
-                      className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-500 hover:bg-slate-50 transition-colors"
+                      disabled={skipUsed}
+                      className={`flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-medium transition-colors ${
+                        skipUsed
+                          ? "border-slate-200 text-slate-300 cursor-not-allowed"
+                          : "border-slate-200 text-slate-500 hover:bg-slate-50"
+                      }`}
                     >
-                      <SkipForward className="h-3.5 w-3.5" /> Skip question
+                      <SkipForward className="h-3.5 w-3.5" /> {skipUsed ? "Skip used" : "Skip question"}
                     </button>
                   </div>
 
@@ -946,37 +1037,41 @@ export default function Index() {
             <p className="text-xs text-slate-400 max-w-md">{DISCLAIMER}</p>
           </div>
         )}
+        {step !== "idle" && step !== "done" && showGenerate && (
+          <button
+            onClick={handleGenerateReport}
+            className="fixed bottom-6 right-6 z-40 inline-flex items-center gap-2 rounded-full bg-teal-600 px-6 py-3 text-sm font-semibold text-white shadow-lg hover:scale-105 transition"
+          >
+            <FileText className="h-4 w-4" /> Generate Report
+          </button>
+        )}
       </main>
 
-      {/* Generate Report Now — confirmation modal */}
-      {showReportModal && (
+      {showUpsell && trialInfo && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm px-4">
-          <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-teal-50 mb-4">
-              <FileText className="h-6 w-6 text-teal-600" />
+          <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl text-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-amber-50 mb-4 mx-auto">
+              <CheckCircle2 className="h-6 w-6 text-amber-600" />
             </div>
-            <h2 className="font-display text-xl font-bold text-slate-900 mb-2">Generate report now?</h2>
-            <p className="text-sm text-slate-600 leading-relaxed mb-2">
-              You have answered <strong>{completedCount}</strong> of <strong>{questions.length}</strong> questions in this session.
+            <h2 className="font-display text-xl font-bold text-slate-900 mb-2">Great practice!</h2>
+            <p className="text-sm text-slate-600">
+              {trialInfo.remainingToday} sessions left today. Unlimited sessions with Pro.
             </p>
-            <p className="text-sm text-slate-500 leading-relaxed mb-6">
-              You need a minimum of 5 answers to generate a report. You can generate now based on these {completedCount} answers, or continue for a more complete assessment. Any Quality Standards not covered will be clearly noted in the report.
-            </p>
-            <div className="flex flex-col gap-2">
-              <button
-                onClick={async () => {
-                  setShowReportModal(false);
-                  await completeSession();
-                }}
+            <div className="mt-6 flex flex-col gap-2">
+              <Link
+                to="/app/paywall"
                 className="inline-flex items-center justify-center gap-2 rounded-xl bg-teal-600 px-6 py-3 text-sm font-semibold text-white hover:bg-teal-700 transition-colors"
               >
-                <FileText className="h-4 w-4" /> Generate Report Now
-              </button>
+                Go Pro — Unlimited Sessions
+              </Link>
               <button
-                onClick={() => setShowReportModal(false)}
+                onClick={() => {
+                  if (pendingReportId) navigate(`/app/report/${pendingReportId}`);
+                  setShowUpsell(false);
+                }}
                 className="inline-flex items-center justify-center rounded-xl border border-slate-200 px-6 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
               >
-                Continue Session
+                View report
               </button>
             </div>
           </div>
