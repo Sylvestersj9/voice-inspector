@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-route
 import { AnimatePresence } from "framer-motion";
 import RequireAuth from "./auth/RequireAuth";
 import PageTransition from "./components/PageTransition";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 
 const Login = lazy(() => import("./pages/Login"));
 const AuthCallback = lazy(() => import("./pages/AuthCallback"));
@@ -84,12 +85,22 @@ function AppRoutes() {
   );
 }
 
+function LoadingSpinner() {
+  return (
+    <div className="flex min-h-screen items-center justify-center">
+      <div className="h-8 w-8 animate-spin rounded-full border-4 border-teal-600 border-t-transparent" />
+    </div>
+  );
+}
+
 export default function App() {
   return (
-    <BrowserRouter>
-      <Suspense fallback={<div />}>
-        <AppRoutes />
-      </Suspense>
-    </BrowserRouter>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <Suspense fallback={<LoadingSpinner />}>
+          <AppRoutes />
+        </Suspense>
+      </BrowserRouter>
+    </ErrorBoundary>
   );
 }

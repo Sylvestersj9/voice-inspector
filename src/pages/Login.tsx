@@ -7,9 +7,15 @@ import { useLoading } from "@/providers/LoadingProvider";
 type Mode = "signin" | "signup";
 
 const ROLES = [
-  "Registered Manager",
+  "Registered Manager (RM)",
+  "Nominated Individual (NI)",
+  "Responsible Individual (RI)",
   "Deputy Manager",
-  "Responsible Individual",
+  "Team Leader",
+  "Senior Support Worker",
+  "Support Worker",
+  "Key Worker",
+  "Other",
 ] as const;
 
 const BENEFITS = [

@@ -50,11 +50,12 @@ function makeTrialInfo(usedToday: number, usedTotal: number) {
 
 describe("computeTrialUsage", () => {
   it("counts today vs total correctly", () => {
-    const info = makeTrialInfo(3, 7);
-    expect(info.usedToday).toBe(3);
-    expect(info.usedTotal).toBe(7);
-    expect(info.remainingToday).toBe(TRIAL_DAILY_LIMIT - 3);
-    expect(info.remainingTotal).toBe(TRIAL_TOTAL_LIMIT - 7);
+    // Use values within current limits (DAILY=2, TOTAL=6)
+    const info = makeTrialInfo(1, 4);
+    expect(info.usedToday).toBe(1);
+    expect(info.usedTotal).toBe(4);
+    expect(info.remainingToday).toBe(TRIAL_DAILY_LIMIT - 1);
+    expect(info.remainingTotal).toBe(TRIAL_TOTAL_LIMIT - 4);
     expect(info.expired).toBe(false);
   });
 

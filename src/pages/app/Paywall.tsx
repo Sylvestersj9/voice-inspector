@@ -90,7 +90,7 @@ export default function Paywall() {
               Ready to keep practising?
             </h1>
             <p className="mt-2 text-sm text-slate-600">
-              Your free trial limit has been reached. The trial includes 3 days with up to 5 sessions per day (15 total).
+              Your free trial limit has been reached. The trial includes 2 sessions/day for 3 days (6 total).
             </p>
             <p className="mt-2 text-sm text-slate-600">
               Subscribe now to unlock unlimited sessions and full inspection reports.
