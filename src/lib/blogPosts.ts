@@ -91,6 +91,19 @@ export const LOCAL_POSTS: BlogPost[] = [
     readTime: "6 min read",
     isLocal: true,
   },
+  {
+    slug: "unannounced-inspection-prep",
+    title: "Unannounced Ofsted Inspection: A 7-Step Readiness Framework for Children's Homes",
+    date: "2026-03-10",
+    sourceLabel: "MockOfsted Editorial",
+    sourceUrl: "https://www.gov.uk/government/publications/social-care-common-inspection-framework-sccif-childrens-homes",
+    excerpt:
+      "Every Ofsted inspection is unannounced. This framework covers the seven areas where readiness lapses most often occur — from QS7 evidence to Regulation 44 quality, staffing records, and the single most effective preparation tool most homes overlook.",
+    tag: "Inspection Readiness",
+    tagColour: "bg-emerald-50 text-emerald-700",
+    readTime: "8 min read",
+    isLocal: true,
+  },
 ];
 
 function rssItemToPost(item: RssItem): BlogPost {

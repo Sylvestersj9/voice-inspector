@@ -4,6 +4,7 @@ import MarketingLayout from "./MarketingLayout";
 import { useAuth } from "@/auth/AuthProvider";
 import { supabase } from "@/lib/supabase";
 import { useState } from "react";
+import { trackCheckoutStarted } from "@/lib/analytics";
 
 const SOLO_FEATURES = [
   "All 9 Quality Standards",
@@ -37,6 +38,7 @@ export default function Pricing() {
     }
     setBusy(true);
     setError(null);
+    trackCheckoutStarted();
     try {
       const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;

@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Eye, EyeOff, Mic, BarChart3, MessageSquare } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useLoading } from "@/providers/LoadingProvider";
+import { identifyUser, trackSignup } from "@/lib/analytics";
 
 type Mode = "signin" | "signup";
 
@@ -93,8 +94,9 @@ export default function Login() {
     loading.show(mode === "signin" ? "Signing you in..." : "Creating your account...");
     try {
       if (mode === "signin") {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { data: signInData, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
+        if (signInData.user) identifyUser(signInData.user.id, { email: signInData.user.email });
       } else {
         const { data, error } = await supabase.auth.signUp({
           email,
@@ -110,6 +112,7 @@ export default function Login() {
             .from("users")
             .update({ role, home_name: homeName.trim() })
             .eq("id", data.session.user.id);
+          trackSignup(role);
           // Fire welcome email (non-blocking — ignore failures)
           const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
           const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;

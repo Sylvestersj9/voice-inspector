@@ -11,11 +11,12 @@ import { getPostBySlug } from "@/lib/blogPosts";
 
 // ── Static map: slug → lazy component (Vite tree-shakes unused posts) ─────────
 const BLOG_COMPONENT_MAP: Record<string, React.LazyExoticComponent<() => JSX.Element>> = {
-  "sccif-stability-2025":        lazy(() => import("@/content/blog/sccif-stability-2025")),
-  "supported-accomm-inspections":lazy(() => import("@/content/blog/supported-accomm-inspections")),
-  "qs7-safeguarding":            lazy(() => import("@/content/blog/qs7-safeguarding")),
-  "homes-regs-monitoring":       lazy(() => import("@/content/blog/homes-regs-monitoring")),
-  "foster-reforms-2026":         lazy(() => import("@/content/blog/foster-reforms-2026")),
+  "sccif-stability-2025":          lazy(() => import("@/content/blog/sccif-stability-2025")),
+  "supported-accomm-inspections":  lazy(() => import("@/content/blog/supported-accomm-inspections")),
+  "qs7-safeguarding":              lazy(() => import("@/content/blog/qs7-safeguarding")),
+  "homes-regs-monitoring":         lazy(() => import("@/content/blog/homes-regs-monitoring")),
+  "foster-reforms-2026":           lazy(() => import("@/content/blog/foster-reforms-2026")),
+  "unannounced-inspection-prep":   lazy(() => import("@/content/blog/unannounced-inspection-prep")),
 };
 
 // ── Renders markdown-ish summary from DB (no remark/rehype needed) ─────────────

@@ -1,9 +1,11 @@
-import { Suspense, lazy } from "react";
+import { Suspense, lazy, useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import RequireAuth from "./auth/RequireAuth";
 import PageTransition from "./components/PageTransition";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import CookieConsent from "./components/CookieConsent";
+import { trackPageView } from "./lib/analytics";
 
 const Login = lazy(() => import("./pages/Login"));
 const AuthCallback = lazy(() => import("./pages/AuthCallback"));
@@ -27,6 +29,10 @@ const BlogPost = lazy(() => import("./pages/BlogPost"));
 
 function AppRoutes() {
   const location = useLocation();
+
+  useEffect(() => {
+    trackPageView(location.pathname);
+  }, [location.pathname]);
 
   return (
     <AnimatePresence mode="wait" initial={false}>
@@ -111,6 +117,7 @@ export default function App() {
         <Suspense fallback={<LoadingSpinner />}>
           <AppRoutes />
         </Suspense>
+        <CookieConsent />
       </BrowserRouter>
     </ErrorBoundary>
   );
