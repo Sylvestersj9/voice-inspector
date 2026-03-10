@@ -151,8 +151,13 @@ function ArticleShell({
           {/* Body */}
           {children}
 
+          {/* Disclaimer */}
+          <p className="text-xs text-gray-500 mt-8 p-4 bg-gray-50 rounded">
+            AI-summarised from official Ofsted sources. Always verify against primary guidance.
+          </p>
+
           {/* Footer nav */}
-          <div className="mt-12 border-t border-slate-100 pt-8">
+          <div className="mt-8 border-t border-slate-100 pt-8">
             <Link
               to="/blog"
               className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-slate-800"
