@@ -4,181 +4,143 @@ import { ArrowRight } from "lucide-react";
 
 type Props = { children: React.ReactNode };
 
-const email = "reports@ziantra.co.uk";
-const OVERLAY_MS = 1700;
-let hasShownInitialLoad = false;
-
-function LoadingOverlay({ visible }: { visible: boolean }) {
-  return (
-    <div
-      className={[
-        "fixed inset-0 z-[9000] flex items-center justify-center bg-white/80 backdrop-blur-sm transition-opacity duration-300",
-        visible ? "opacity-100" : "pointer-events-none opacity-0",
-      ].join(" ")}
-      aria-live="polite"
-      aria-busy={visible}
-      role="status"
-    >
-      <div className="flex flex-col items-center gap-3 rounded-2xl bg-white px-6 py-5 shadow-lg ring-1 ring-slate-200">
-        <div className="loader h-8 w-8" aria-hidden="true" />
-        <div className="text-sm font-semibold text-slate-800">Loading...</div>
-      </div>
-    </div>
-  );
-}
+const CONTACT_EMAIL = "hello@inspectready.co.uk";
 
 export default function MarketingLayout({ children }: Props) {
   const location = useLocation();
   const [isTop, setIsTop] = useState(true);
-  const [transitioning, setTransitioning] = useState(false);
-  const [fadeIn, setFadeIn] = useState(!hasShownInitialLoad);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
     const onScroll = () => setIsTop(window.scrollY < 12);
     onScroll();
-    window.addEventListener("scroll", onScroll);
+    window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const navLink = (to: string, label: string) => (
-    <Link to={to} className="text-sm font-semibold text-slate-700 transition hover:text-slate-900">
-      {label}
-    </Link>
-  );
-
-  // Show a brief loading overlay + fade transition on route changes (after first render)
   useEffect(() => {
-    if (!hasShownInitialLoad) {
-      hasShownInitialLoad = true;
-      setFadeIn(true);
-      return;
-    }
-
-    setTransitioning(true);
-    setFadeIn(false);
-
-    const fadeTimer = window.setTimeout(() => setFadeIn(true), 180);
-    const hideTimer = window.setTimeout(() => setTransitioning(false), OVERLAY_MS);
-
-    return () => {
-      window.clearTimeout(fadeTimer);
-      window.clearTimeout(hideTimer);
-    };
-  }, [location.pathname, location.search]);
+    setMobileOpen(false);
+    window.scrollTo({ top: 0 });
+  }, [location.pathname]);
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Announcement bar */}
-      <div className="border-b border-emerald-100 bg-emerald-50">
-        <div className="mx-auto flex max-w-6xl items-center gap-2 px-4 py-2 text-sm font-semibold text-emerald-800">
-          <span className="inline-block h-2 w-2 rounded-full bg-emerald-600" />
-          Open access beta - no account or billing required while we collect feedback.
-        </div>
-      </div>
-
+    <div className="min-h-screen bg-white font-body">
       {/* Header */}
       <header
         className={[
-          "px-4",
-          isTop ? "bg-white" : "border-b border-slate-100 bg-white/90 backdrop-blur",
+          "sticky top-0 z-50 px-4 transition-all duration-200",
+          isTop
+            ? "bg-white"
+            : "border-b border-slate-100 bg-white/95 backdrop-blur-sm shadow-sm",
         ].join(" ")}
       >
-        <div className="mx-auto flex max-w-6xl items-center justify-between py-5">
-          <Link to="/" className="flex items-center gap-2">
-            <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-teal-600/15 ring-1 ring-teal-200">
-              <img src="/logo.svg" alt="Voice Inspector" className="h-9 w-9 object-contain" />
+        <div className="mx-auto flex max-w-6xl items-center justify-between py-4">
+          {/* Logo */}
+          <Link to="/" className="flex items-center gap-2.5">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-teal-600">
+              <svg viewBox="0 0 32 32" fill="none" className="h-5 w-5" aria-hidden="true">
+                <path
+                  d="M16 4L4 10v12l12 6 12-6V10L16 4z"
+                  stroke="white"
+                  strokeWidth="2"
+                  strokeLinejoin="round"
+                  fill="none"
+                />
+                <path d="M16 4v18M4 10l12 6 12-6" stroke="white" strokeWidth="2" strokeLinejoin="round" />
+              </svg>
             </div>
-            <div className="font-display font-bold text-slate-900">Voice Inspector</div>
+            <span className="font-display text-lg font-bold text-slate-900">InspectReady</span>
           </Link>
 
-          <nav className="hidden items-center gap-6 md:flex">
-            {navLink("/", "Home")}
-            {navLink("/pricing", "Pricing")}
-            {navLink("/faq", "FAQ")}
-            {navLink("/contact", "Contact")}
+          {/* Desktop nav */}
+          <nav className="hidden items-center gap-7 md:flex">
+            <Link to="/" className="text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors">Home</Link>
+            <Link to="/pricing" className="text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors">Pricing</Link>
+            <Link to="/faq" className="text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors">FAQ</Link>
+            <Link to="/contact" className="text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors">Contact</Link>
           </nav>
 
-          <div className="flex items-center gap-3">
+          {/* CTA */}
+          <div className="flex items-center gap-2.5">
             <Link
               to="/login"
-              className="hidden sm:inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-50"
+              className="hidden sm:inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
             >
-              Login
-            </Link>
-            <Link
-              to="/pricing"
-              className="hidden sm:inline-flex items-center justify-center rounded-xl border border-teal-200 bg-teal-50 px-4 py-2 text-sm font-semibold text-teal-800 hover:bg-teal-100"
-            >
-              Upgrade
+              Log in
             </Link>
             <Link
               to="/login"
-              className="inline-flex items-center justify-center rounded-xl bg-teal-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-teal-700"
+              className="inline-flex items-center justify-center rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-teal-700 transition-colors"
             >
-              Start free beta <ArrowRight className="ml-2 h-4 w-4" />
+              Try free <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
             </Link>
           </div>
         </div>
       </header>
 
-      <main
-        className={`transition-opacity duration-500 ${fadeIn ? "opacity-100" : "opacity-0"}`}
-        aria-busy={transitioning}
-      >
-        {children}
-      </main>
-
-      <LoadingOverlay visible={transitioning} />
+      <main>{children}</main>
 
       {/* Footer */}
-      <footer className="mt-12 border-t bg-white px-4 py-10">
-        <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-6 md:flex-row md:items-center">
-          <div>
-            <div className="font-display font-bold text-slate-900">Voice Inspector</div>
-            <div className="mt-1 text-sm text-slate-600">Ofsted inspection practice simulator.</div>
-            <div className="mt-2 text-sm text-slate-600">
-              Contact:{" "}
-              <Link className="text-teal-700 underline" to="/contact">
-                {email}
-              </Link>
+      <footer className="border-t border-slate-100 bg-slate-50 px-4 pt-10 pb-8">
+        <div className="mx-auto max-w-6xl">
+          <div className="flex flex-col gap-8 md:flex-row md:justify-between">
+            <div className="max-w-xs">
+              <div className="flex items-center gap-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-teal-600">
+                  <svg viewBox="0 0 32 32" fill="none" className="h-4 w-4" aria-hidden="true">
+                    <path d="M16 4L4 10v12l12 6 12-6V10L16 4z" stroke="white" strokeWidth="2" strokeLinejoin="round" fill="none"/>
+                    <path d="M16 4v18M4 10l12 6 12-6" stroke="white" strokeWidth="2" strokeLinejoin="round"/>
+                  </svg>
+                </div>
+                <span className="font-display font-bold text-slate-900">InspectReady</span>
+              </div>
+              <p className="mt-2 text-sm text-slate-600 leading-relaxed">
+                Realistic Ofsted inspection practice for registered managers of children's homes in England.
+              </p>
+              <p className="mt-2 text-sm text-slate-500">
+                Contact:{" "}
+                <a href={`mailto:${CONTACT_EMAIL}`} className="text-teal-700 hover:underline">
+                  {CONTACT_EMAIL}
+                </a>
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-8 sm:grid-cols-3">
+              <div>
+                <div className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">Product</div>
+                <div className="flex flex-col gap-2 text-sm">
+                  <Link to="/" className="text-slate-600 hover:text-slate-900">Home</Link>
+                  <Link to="/pricing" className="text-slate-600 hover:text-slate-900">Pricing</Link>
+                  <Link to="/login" className="text-slate-600 hover:text-slate-900">Log in</Link>
+                  <Link to="/login" className="text-slate-600 hover:text-slate-900">Sign up</Link>
+                </div>
+              </div>
+              <div>
+                <div className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">Support</div>
+                <div className="flex flex-col gap-2 text-sm">
+                  <Link to="/faq" className="text-slate-600 hover:text-slate-900">FAQ</Link>
+                  <Link to="/contact" className="text-slate-600 hover:text-slate-900">Contact</Link>
+                </div>
+              </div>
+              <div>
+                <div className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">Legal</div>
+                <div className="flex flex-col gap-2 text-sm">
+                  <Link to="/terms" className="text-slate-600 hover:text-slate-900">Terms</Link>
+                  <Link to="/privacy" className="text-slate-600 hover:text-slate-900">Privacy</Link>
+                  <Link to="/disclaimer" className="text-slate-600 hover:text-slate-900">Disclaimer</Link>
+                </div>
+              </div>
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-4 text-sm font-semibold text-slate-700">
-            <Link to="/" className="hover:text-slate-900">
-              Home
-            </Link>
-            <Link to="/pricing" className="hover:text-slate-900">
-              Pricing
-            </Link>
-            <Link to="/faq" className="hover:text-slate-900">
-              FAQ
-            </Link>
-            <Link to="/contact" className="hover:text-slate-900">
-              Contact
-            </Link>
-            <Link to="/terms" className="hover:text-slate-900">
-              Terms
-            </Link>
-            <Link to="/privacy" className="hover:text-slate-900">
-              Privacy
-            </Link>
-            <Link to="/disclaimer" className="hover:text-slate-900">
-              Disclaimer
-            </Link>
-            <Link to="/acceptable-use" className="hover:text-slate-900">
-              Acceptable Use
-            </Link>
-            <Link to="/login" className="hover:text-slate-900">
-              Login
-            </Link>
-            <Link to="/login" className="hover:text-slate-900">
-              Simulator
-            </Link>
+          <div className="mt-8 border-t border-slate-200 pt-6">
+            <p className="text-xs text-slate-500 leading-relaxed">
+              <strong>Disclaimer:</strong> InspectReady is a practice and professional development tool. It does not constitute official Ofsted guidance or legal compliance advice. All evaluations are AI-generated based on your answers only and do not reflect a full Ofsted inspection.
+            </p>
+            <p className="mt-2 text-xs text-slate-400">
+              © {new Date().getFullYear()} InspectReady. Built for registered managers of children's homes in England.
+            </p>
           </div>
-        </div>
-        <div className="mx-auto mt-6 max-w-6xl text-xs text-slate-500">
-          Based on Ofsted&apos;s Social Care Common Inspection Framework (SCCIF).
         </div>
       </footer>
     </div>

@@ -1,4 +1,3 @@
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const allowedOrigins = (Deno.env.get("ALLOWED_ORIGINS") || "")
@@ -16,12 +15,7 @@ const buildCorsHeaders = (req: Request) => {
   const allowAny = allowedOrigins.length === 0 || allowedOrigins.includes("*");
   const originAllowed = allowAny || (origin && allowedOrigins.includes(origin));
   const allowOrigin = originAllowed ? (origin || "*") : origin || allowedOrigins[0] || "*";
-
-  return {
-    ...baseCors,
-    "Access-Control-Allow-Origin": allowOrigin,
-    Vary: "Origin",
-  };
+  return { ...baseCors, "Access-Control-Allow-Origin": allowOrigin, Vary: "Origin" };
 };
 
 serve(async (req) => {
@@ -32,10 +26,7 @@ serve(async (req) => {
   }
 
   try {
-    console.log("content-type:", req.headers.get("content-type"));
     const form = await req.formData();
-    console.log("form keys:", Array.from(form.keys()));
-
     const file = form.get("file");
     if (!file || !(file instanceof Blob)) {
       return new Response(
@@ -44,45 +35,48 @@ serve(async (req) => {
       );
     }
 
-    const mimeType = file.type || "audio/webm";
-    const openaiKey = Deno.env.get("OPENAI_API_KEY");
-    if (!openaiKey) {
+    const deepgramKey = Deno.env.get("DEEPGRAM_API_KEY");
+    if (!deepgramKey) {
       return new Response(
-        JSON.stringify({ error: "OPENAI_API_KEY is not configured" }),
+        JSON.stringify({ error: "DEEPGRAM_API_KEY is not configured" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
-    const buffer = new Uint8Array(await file.arrayBuffer());
-    console.log("file size bytes:", buffer.byteLength);
-
-    const formData = new FormData();
-    const blob = new Blob([buffer], { type: mimeType });
-    formData.append("file", blob, "audio.webm");
-    formData.append("model", "whisper-1");
+    const audioBuffer = await file.arrayBuffer();
+    const mimeType = file.type || "audio/webm";
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 45000);
 
-    const response = await fetch("https://api.openai.com/v1/audio/transcriptions", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${openaiKey}` },
-      body: formData,
-      signal: controller.signal,
-    }).finally(() => clearTimeout(timeout));
+    const response = await fetch(
+      "https://api.deepgram.com/v1/listen?model=nova-2&smart_format=true&language=en-GB",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Token ${deepgramKey}`,
+          "Content-Type": mimeType,
+        },
+        body: audioBuffer,
+        signal: controller.signal,
+      },
+    ).finally(() => clearTimeout(timeout));
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("OpenAI transcription error:", response.status, errorText);
+      console.error("Deepgram error:", response.status, errorText);
       return new Response(
-        JSON.stringify({ error: `OpenAI error ${response.status}` }),
+        JSON.stringify({ error: `Deepgram error ${response.status}` }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
     const result = await response.json();
+    const transcript =
+      result?.results?.channels?.[0]?.alternatives?.[0]?.transcript ?? "";
+
     return new Response(
-      JSON.stringify({ transcript: result.text || "" }),
+      JSON.stringify({ transcript }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (error) {

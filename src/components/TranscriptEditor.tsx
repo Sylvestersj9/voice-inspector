@@ -1,13 +1,14 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Edit2, Check, X, Loader2 } from "lucide-react";
+import { Edit2, Check, X, Loader2, RefreshCw } from "lucide-react";
 
 interface TranscriptEditorProps {
   transcript: string;
   onTranscriptChange: (transcript: string) => void;
   onSubmitForEvaluation: () => void;
   onRecordAgain: () => void;
+  onRestart?: () => void;
   isLoading?: boolean;
 }
 
@@ -16,6 +17,7 @@ export function TranscriptEditor({
   onTranscriptChange,
   onSubmitForEvaluation,
   onRecordAgain,
+  onRestart,
   isLoading,
 }: TranscriptEditorProps) {
   const [isEditing, setIsEditing] = useState(false);
@@ -78,24 +80,39 @@ export function TranscriptEditor({
       )}
 
       {!isEditing && (
-        <div className="flex gap-3 justify-end border-t border-border pt-4 mt-4">
-          <Button onClick={onRecordAgain} variant="outline">
-            Record Again
-          </Button>
-          <Button
-            onClick={() => onSubmitForEvaluation()}
-            variant="default"
-            disabled={isLoading || !transcript.trim()}
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                Evaluating...
-              </>
-            ) : (
-              "Submit for Evaluation"
-            )}
-          </Button>
+        <div className="border-t border-border pt-4 mt-4 space-y-3">
+          <div className="flex gap-3 justify-end">
+            <Button onClick={onRecordAgain} variant="outline">
+              Record Again
+            </Button>
+            <Button
+              onClick={() => onSubmitForEvaluation()}
+              variant="default"
+              disabled={isLoading || !transcript.trim()}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Evaluating...
+                </>
+              ) : (
+                "Submit for Evaluation"
+              )}
+            </Button>
+          </div>
+          {onRestart && (
+            <div className="flex justify-center">
+              <Button
+                onClick={onRestart}
+                variant="ghost"
+                size="sm"
+                className="gap-2 text-muted-foreground hover:text-foreground"
+              >
+                <RefreshCw className="h-3.5 w-3.5" />
+                Restart session
+              </Button>
+            </div>
+          )}
         </div>
       )}
     </div>

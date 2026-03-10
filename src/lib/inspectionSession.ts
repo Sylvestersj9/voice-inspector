@@ -1,4 +1,4 @@
-import { EvaluationResult, JudgementBand, BankQuestion, Domain, questionBank } from "@/lib/questions";
+import { EvaluationResult, JudgementBand, BankQuestion, Domain, questionBank, DOMAIN_ORDER } from "@/lib/questions";
 
 type ConfidenceBand = "borderline" | "secure" | "strong";
 
@@ -10,14 +10,7 @@ const BAND_SCORE: Record<JudgementBand, number> = {
   Inadequate: 1,
 };
 
-const domains: Domain[] = [
-  "Safeguarding",
-  "Leadership",
-  "CarePlanning",
-  "StaffPractice",
-  "Outcomes",
-  "RiskMissingExploitation",
-];
+const domains: Domain[] = DOMAIN_ORDER;
 
 const hashSeed = (seed: string) => {
   let h = 2166136261 >>> 0;
@@ -49,14 +42,7 @@ const shuffle = <T>(arr: T[], rng: () => number) => {
 };
 
 const groupBankByDomain = (): Record<Domain, BankQuestion[]> => {
-  const grouped: Record<Domain, BankQuestion[]> = {
-    Safeguarding: [],
-    Leadership: [],
-    CarePlanning: [],
-    StaffPractice: [],
-    Outcomes: [],
-    RiskMissingExploitation: [],
-  };
+  const grouped = Object.fromEntries(DOMAIN_ORDER.map((d) => [d, []])) as Record<Domain, BankQuestion[]>;
   for (const q of questionBank) {
     grouped[q.domain]?.push(q);
   }
@@ -65,35 +51,22 @@ const groupBankByDomain = (): Record<Domain, BankQuestion[]> => {
 
 export const generateSessionQuestions = (
   sessionId: string,
-  desiredCount: 5 | 6 | 7 = 6,
+  desiredCount: number = domains.length,
 ): BankQuestion[] => {
   const rng = mulberry32(sessionId || "default");
   const grouped = groupBankByDomain();
 
-  // pick one per domain
+  // Pick one random variant per domain
   const selections: BankQuestion[] = [];
   for (const domain of domains) {
     const pool = shuffle(grouped[domain], rng);
     if (pool.length) selections.push(pool[0]);
   }
 
-  // adjust for 5 or 7
-  if (desiredCount === 5) {
+  // Drop domains randomly until we reach desiredCount
+  while (selections.length > desiredCount) {
     const dropIndex = Math.floor(rng() * selections.length);
     selections.splice(dropIndex, 1);
-  } else if (desiredCount === 7) {
-    const domainOrder = shuffle(domains, rng);
-    let added = 0;
-    for (const domain of domainOrder) {
-      if (added >= 2) break;
-      const pool = shuffle(grouped[domain], rng).filter(
-        (q) => !selections.find((s) => s.id === q.id),
-      );
-      if (pool.length) {
-        selections.push(pool[0]);
-        added += 1;
-      }
-    }
   }
 
   return shuffle(selections, rng);

@@ -1,1524 +1,937 @@
-﻿import { useState, useMemo, useEffect } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
-import { Toaster } from "@/components/ui/toaster";
-import { useToast } from "@/hooks/use-toast";
-import { EvaluationResult, getJudgementBand, BankQuestion } from "@/lib/questions";
-import { QuestionCard } from "@/components/QuestionCard";
+import { useState, useEffect, useRef } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/auth/AuthProvider";
+import {
+  questionBank,
+  DOMAIN_LABELS,
+  DOMAIN_ORDER,
+  DOMAIN_TAGS,
+  getBandColorClass,
+  type Domain,
+  type BankQuestion,
+  type JudgementBand,
+} from "@/lib/questions";
+import { computeTrialUsage, TRIAL_DAILY_LIMIT, TRIAL_TOTAL_LIMIT } from "@/lib/trial";
 import { VoiceRecorder } from "@/components/VoiceRecorder";
 import { TranscriptEditor } from "@/components/TranscriptEditor";
-import { EvaluationResults } from "@/components/EvaluationResults";
-import { ProgressIndicator } from "@/components/ProgressIndicator";
-import { InputMethodSelector } from "@/components/InputMethodSelector";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import LoadingOverlay from "@/components/LoadingOverlay";
-import { supabase } from "@/lib/supabase";
-import { bandUi } from "@/lib/evalUi";
-import { useLoading } from "@/providers/LoadingProvider";
-import { Loader2, ChevronLeft, ChevronRight, MessageCircleQuestion, Clock, Settings, RefreshCw, AlertTriangle, MessageSquare, Mail, Check } from "lucide-react";
-import { detectFollowUpNeed, FollowUpDecision, getFollowUpLabel } from "@/lib/followUpRules";
-import { evaluationSchema } from "@/lib/evaluationSchema";
-import { buildFallbackActions, buildFallbackGaps, buildFallbackStrengths, buildFollowUpFallback, nonEmptyArray } from "@/lib/evalFallbacks";
-import FinalSummaryReport from "@/components/report/FinalSummaryReport";
-import { BetaFeedback } from "@/components/BetaFeedback";
-import FeedbackButton from "@/feedback/FeedbackButton";
-import CompletionPrompt from "@/feedback/CompletionPrompt";
-import { useOnboardingChecklist } from "@/onboarding/useOnboardingChecklist";
-import { BetaBanner } from "@/components/BetaBanner";
-import { generateSessionQuestions } from "@/lib/inspectionSession";
+import { LogOut, Mic, Keyboard, ArrowRight, CheckCircle2, AlertTriangle, Loader2, FileText, RotateCcw, X, BookOpen, Target, Pause, Play, SkipForward } from "lucide-react";
 
-type Step = 
-  | "ready" 
-  | "recording"
-  | "uploading" 
-  | "transcribing" 
-  | "editing" 
-  | "evaluating" 
-  | "evaluated" 
-  | "summary";
+// ── Types ────────────────────────────────────────────────────────────────────
 
-interface QuestionResult {
+type Step = "idle" | "input" | "transcribing" | "evaluating" | "evaluated" | "completing" | "done";
+type InputMode = "voice" | "text";
+
+interface EvalResult {
+  score: number;
+  band: string;
+  summary: string;
+  strengths: string[];
+  gaps: string[];
+  developmentPoints: string[];
+  followUpQuestion: string;
+  inspectorNote: string;
+  regulatoryReference: string;
+  encouragement: string;
+}
+
+interface QuestionState {
+  question: BankQuestion;
   transcript: string;
-  evaluation: EvaluationResult;
-  followUpUsed: boolean;
-  followUpTranscript?: string;
-  followUpEvaluation?: EvaluationResult;
-  followUpDecision?: FollowUpDecision;
+  result: EvalResult | null;
 }
 
-type SubmitType = "feedback" | "contact";
-interface SendResult {
-  ok: boolean;
-  message: string;
-}
+// ── Seeded RNG (mulberry32) ───────────────────────────────────────────────────
 
-const emailAddress = "reports@ziantra.co.uk";
-const ACTIVE_SESSION_KEY = "active_session_id";
-
-async function sendFeedback(payload: Record<string, string>, type: SubmitType): Promise<SendResult> {
-  try {
-    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-feedback`, {
-      method: "POST",
-      headers: { 
-        "Content-Type": "application/json",
-        apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
-        Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-      },
-      body: JSON.stringify({ type, ...payload }),
-    });
-
-    if (!res.ok) {
-      const error = await res.json().catch(() => ({}));
-      throw new Error(error.error || "Unable to send");
-    }
-
-    return { ok: true, message: "Thanks! We've received your message." };
-  } catch (error) {
-    const subject = type === "feedback" ? "Voice Inspector feedback" : "Voice Inspector contact";
-    const body = Object.entries(payload)
-      .filter(([, value]) => value)
-      .map(([key, value]) => `${key}: ${value}`)
-      .join("\n");
-    window.location.href = `mailto:${emailAddress}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-
-    return {
-      ok: false,
-      message: error instanceof Error ? error.message : "Unable to send via the service; opened your email client instead.",
-    };
+function hashSeed(seed: string) {
+  let h = 2166136261 >>> 0;
+  for (let i = 0; i < seed.length; i++) {
+    h ^= seed.charCodeAt(i);
+    h = Math.imul(h, 16777619);
   }
+  return h >>> 0;
 }
 
-const fetchWithTimeout = async (url: string, options: RequestInit, timeoutMs: number) => {
-  const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    const res = await fetch(url, { ...options, signal: controller.signal });
-    return res;
-  } finally {
-    clearTimeout(id);
+function mulberry32(seed: string) {
+  let a = hashSeed(seed);
+  return () => {
+    a |= 0;
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// Domains always included — safeguarding is a limiting judgement, leadership is always scrutinised
+const MANDATORY_DOMAINS: Domain[] = ["ProtectionChildren", "LeadershipManagement"];
+// How many additional domains to pick per session
+const OPTIONAL_COUNT = 4;
+
+function fisherYates<T>(arr: T[], rng: () => number): T[] {
+  const result = [...arr];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
   }
-};
+  return result;
+}
 
-const normalizeList = (value: unknown, fallback: string[] = []): string[] => {
-  if (!Array.isArray(value)) return fallback;
-  const cleaned = value.map((v) => (v ?? "").toString().trim()).filter(Boolean);
-  return cleaned.length ? cleaned : fallback;
-};
+function pickSessionQuestions(sessionId: string): BankQuestion[] {
+  const rng = mulberry32(sessionId);
+  const grouped: Record<string, BankQuestion[]> = {};
+  for (const q of questionBank) {
+    if (!grouped[q.domain]) grouped[q.domain] = [];
+    grouped[q.domain].push(q);
+  }
 
-const Index = () => {
-  const navigate = useNavigate();
-  const { toast } = useToast();
-  const loading = useLoading();
-  const desiredQuestionCountEnv = Number((import.meta as { env?: Record<string, string> })?.env?.VITE_SESSION_QUESTION_COUNT);
-  const desiredQuestionCount = ((desiredQuestionCountEnv >= 5 && desiredQuestionCountEnv <= 7)
-    ? desiredQuestionCountEnv
-    : 6) as 5 | 6 | 7;
-  const [sessionQuestions, setSessionQuestions] = useState<BankQuestion[]>(() =>
-    generateSessionQuestions("preview", desiredQuestionCount),
+  // Randomly select OPTIONAL_COUNT domains from the non-mandatory pool
+  const optionalDomains = DOMAIN_ORDER.filter((d) => !MANDATORY_DOMAINS.includes(d));
+  const shuffled = fisherYates(optionalDomains, rng);
+  const selectedOptional = shuffled.slice(0, OPTIONAL_COUNT);
+
+  // Preserve DOMAIN_ORDER ordering in the final list
+  const selectedDomains = DOMAIN_ORDER.filter(
+    (d) => MANDATORY_DOMAINS.includes(d) || selectedOptional.includes(d)
   );
-  const [activeQuestionId, setActiveQuestionId] = useState<string | null>(null);
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [step, setStep] = useState<Step>("ready");
-  const [transcript, setTranscript] = useState("");
-  const [evaluation, setEvaluation] = useState<EvaluationResult | null>(null);
-  const [results, setResults] = useState<Map<number, QuestionResult>>(new Map());
-  const [completedQuestions, setCompletedQuestions] = useState<number[]>([]);
-  const [followUpCount, setFollowUpCount] = useState(0);
-  const [isFollowUp, setIsFollowUp] = useState(false);
-  const [transcriptionWarning, setTranscriptionWarning] = useState(false);
-  const [transcriptionError, setTranscriptionError] = useState<string | null>(null);
-  const [allowPlaceholder, setAllowPlaceholder] = useState(false);
-  const [contactName, setContactName] = useState("");
-  const [contactDetails, setContactDetails] = useState("");
-  const [contactMessage, setContactMessage] = useState("");
-  const [contactStatus, setContactStatus] = useState<string | null>(null);
-  const [contactSubmitting, setContactSubmitting] = useState(false);
+
+  return selectedDomains
+    .map((domain) => {
+      const pool = grouped[domain] ?? [];
+      const idx = Math.floor(rng() * pool.length);
+      return pool[idx];
+    })
+    .filter(Boolean);
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+const DISCLAIMER =
+  "This is a practice evaluation based on your answer only. It does not reflect a full Ofsted inspection or constitute legal compliance advice. All scores are AI-generated.";
+
+function BandPill({ band }: { band: string }) {
+  return (
+    <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold ${getBandColorClass(band)}`}>
+      {band}
+    </span>
+  );
+}
+
+// ── Main Component ────────────────────────────────────────────────────────────
+
+export default function Index() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  // Gate state
+  const [subscriptionStatus, setSubscriptionStatus] = useState<string | null>(null);
+  const [stripeSubscriptionId, setStripeSubscriptionId] = useState<string | null>(null);
+  const [trialInfo, setTrialInfo] = useState<ReturnType<typeof computeTrialUsage> | null>(null);
+  const [gateLoading, setGateLoading] = useState(true);
+
+  // Session state
   const [sessionId, setSessionId] = useState<string | null>(null);
-  const [sessionQuestionIds, setSessionQuestionIds] = useState<string[]>([]);
-  const [savedAnswers, setSavedAnswers] = useState<Record<string, string>>({});
-  const [storedSessionId, setStoredSessionId] = useState<string | null>(() => {
-    if (typeof window === "undefined") return null;
-    return localStorage.getItem("active_session_id");
-  });
-  const { completeItem } = useOnboardingChecklist();
-  const [markedAnswerComplete, setMarkedAnswerComplete] = useState(false);
-  const [resumeLoading, setResumeLoading] = useState(false);
+  const [questions, setQuestions] = useState<QuestionState[]>([]);
+  const [qIndex, setQIndex] = useState(0);
+  const [step, setStep] = useState<Step>("idle");
+  const [inputMode, setInputMode] = useState<InputMode>("voice");
+  const [textInput, setTextInput] = useState("");
+  const [transcript, setTranscript] = useState("");
+  const [evalResult, setEvalResult] = useState<EvalResult | null>(null);
+  const [paused, setPaused] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [reportSessionId, setReportSessionId] = useState<string | null>(null);
+  const answerAreaRef = useRef<HTMLDivElement>(null);
 
-  const activeQuestion =
-    sessionQuestions.find((q) => q.id === activeQuestionId) || null;
-
-  const normalizeLegacyBand = (band: unknown): EvaluationResult["judgementBand"] => {
-    const val = (band ?? "").toString().toLowerCase();
-    if (val.includes("outstanding")) return "Outstanding";
-    if (val.includes("good")) return "Good";
-    if (val.includes("inadequate")) return "Inadequate";
-    return "Requires improvement to be good";
-  };
-
-  const normalizeEvaluationResponse = (data: unknown) => {
-    const obj = (data && typeof data === "object") ? (data as Record<string, unknown>) : {};
-    const hasV2 =
-      typeof obj.score === "number" &&
-      typeof obj.band === "string" &&
-      Array.isArray(obj.strengths) &&
-      Array.isArray(obj.weaknesses);
-    if (hasV2) {
-      return {
-        relevance: Number((obj as { relevance?: unknown }).relevance) || 0,
-        ...obj,
-      };
-    }
-
-    const legacyStrengths = Array.isArray(obj.strengths)
-      ? (obj.strengths as unknown[]).map((s) => ({
-          claim: (s ?? "").toString(),
-          evidence_quote: (obj as { transcript?: string })?.transcript ?? "",
-          why_it_matters: "",
-        }))
-      : [];
-    const legacyWeaknesses = Array.isArray(obj.weaknesses)
-      ? (obj.weaknesses as unknown[]).map((w) => ({
-          evidence: [],
-          gap: (w ?? "").toString(),
-          risk: "",
-          what_ofsted_expected: "",
-        }))
-      : [];
-
-    const legacyFollowUps = Array.isArray(obj.follow_up_questions)
-      ? (obj.follow_up_questions as unknown[]).map((q) => ({
-          question: (q ?? "").toString(),
-          why: "",
-          what_good_looks_like: "",
-        }))
-      : [];
-
-    return {
-      score:
-        typeof obj.score === "number"
-          ? obj.score
-          : typeof obj.score4 === "number"
-            ? Math.max(0, Math.min(100, obj.score4 * 25))
-            : 0,
-      relevance: 0,
-      band: normalizeLegacyBand((obj as { overall_judgement?: unknown }).overall_judgement),
-      summary: (obj as { rationale?: unknown }).rationale?.toString?.() || "No summary provided.",
-      strengths: legacyStrengths,
-      weaknesses: legacyWeaknesses,
-      sentence_improvements: [],
-      missing_key_points: Array.isArray(obj.missing_key_points) ? obj.missing_key_points : [],
-      follow_up_questions: legacyFollowUps,
-      sentences: Array.isArray((obj as { sentences?: unknown }).sentences)
-        ? (obj as { sentences?: unknown }).sentences
-        : undefined,
-    };
-  };
-
-  const persistActiveSession = (id: string) => {
-    try {
-      localStorage.setItem(ACTIVE_SESSION_KEY, id);
-    } catch {
-      // ignore
-    }
-    setStoredSessionId(id);
-  };
-
-  const clearActiveSessionFlag = () => {
-    try {
-      localStorage.removeItem(ACTIVE_SESSION_KEY);
-    } catch {
-      // ignore
-    }
-    setStoredSessionId(null);
-  };
-
-  const clearActiveSession = () => {
-    clearActiveSessionFlag();
-    setSessionId(null);
-    setSessionQuestionIds([]);
-    setSessionQuestions(generateSessionQuestions("preview", desiredQuestionCount));
-    setSavedAnswers({});
-    setResults(new Map());
-    setCompletedQuestions([]);
-    setEvaluation(null);
-    setTranscript("");
-    setFollowUpCount(0);
-    setIsFollowUp(false);
-    setStep("ready");
-  };
-
-  const currentQuestion = sessionQuestions.find((q) => q.id === activeQuestionId) || sessionQuestions[currentQuestionIndex] || sessionQuestions[0];
-
-  const progressLabel = useMemo(() => {
-    return `Question ${currentQuestionIndex + 1} of ${sessionQuestions.length}`;
-  }, [currentQuestionIndex, sessionQuestions.length]);
+  // ── Load subscription ──────────────────────────────────────────────────────
 
   useEffect(() => {
-    if (!activeQuestionId && sessionQuestions.length) {
-      setActiveQuestionId(sessionQuestions[0].id);
-    }
-  }, [activeQuestionId, sessionQuestions]);
-
-  useEffect(() => {
-    if (sessionId || resumeLoading) return;
-    const existing = storedSessionId || (typeof window !== "undefined" ? localStorage.getItem(ACTIVE_SESSION_KEY) : null);
-    if (existing) {
-      setStoredSessionId(existing);
-      void resumeSession(existing);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sessionId, storedSessionId]);
-
-  useEffect(() => {
-    const qId = sessionQuestionIds[currentQuestionIndex];
-    const saved = qId ? savedAnswers[qId] : "";
-    if (!qId || !saved) return;
-    if (step === "ready" && !transcript) {
-      setTranscript(saved);
-      setStep("editing");
-    }
-  }, [currentQuestionIndex, sessionQuestionIds, savedAnswers, step, transcript]);
-
-  const resetForQuestion = () => {
-    setStep("ready");
-    setTranscript("");
-    setEvaluation(null);
-    setFollowUpCount(0);
-    setIsFollowUp(false);
-    setTranscriptionWarning(false);
-  };
-
-  const handleVoiceSelected = () => {
-    setStep("recording");
-  };
-
-  const requireAuth = async () => {
-    const { data, error } = await supabase.auth.getSession();
-    if (error) throw error;
-    const user = data.session?.user;
-    if (!user) {
-      const err = new Error("Not authenticated (missing session)");
-      throw err;
-    }
-    console.log("AUTH USER", user.id);
-    return user;
-  };
-
-  const ensureProfile = async (user: { id: string; email?: string | null }) => {
-    const payload = {
-      id: user.id,
-      email: user.email ?? null,
-      plan: "free",
-      status: "inactive",
-      role: "manager",
-    };
-
-    console.log("UPSERT profiles", payload);
-
-    const { data, error } = await supabase
-      .from("profiles")
-      .upsert(payload, { onConflict: "id" })
-      .select()
-      .single();
-
-    console.log("UPSERT profiles result", { data, error });
-
-    if (error) {
-      toast({ title: "Profile setup failed", description: error.message, variant: "destructive" });
-      throw error;
-    }
-
-    return data;
-  };
-
-  const handleTextSubmit = (text: string) => {
-    const trimmed = text.trim();
-    if (!trimmed) {
-      toast({ title: "Please enter a response", variant: "destructive" });
-      return;
-    }
-    setTranscript(trimmed);
-    setTranscriptionWarning(false);
-    handleSubmitForEvaluation(trimmed);
-  };
-
-  const ensureSessionAndQuestions = async (): Promise<string[] | null> => {
-    if (sessionId && sessionQuestionIds.length === sessionQuestions.length) {
-      if (storedSessionId !== sessionId) {
-        persistActiveSession(sessionId);
-      }
-      return sessionQuestionIds;
-    }
-    let user;
-    try {
-      user = await requireAuth();
-      await ensureProfile(user);
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Not authenticated (missing session)";
-      console.error(err);
-      toast({ title: "Please log in again", description: message, variant: "destructive" });
-      navigate("/login");
-      return null;
-    }
-
-    const sessionPayload = { status: "draft", title: "Inspection practice", created_by: user.id };
-    console.log("INSERTING INTO inspection_sessions (app)", sessionPayload);
-
-    const { data: session, error: sessionError } = await supabase
-      .from("inspection_sessions")
-      .insert(sessionPayload)
-      .select()
-      .single();
-
-    console.log("INSERT RESULT inspection_sessions (app)", { data: session, error: sessionError });
-
-    if (sessionError || !session) {
-      console.error(sessionError);
-      toast({ title: "Failed to start session", description: sessionError?.message, variant: "destructive" });
-      return null;
-    }
-
-    setSessionId(session.id);
-    persistActiveSession(session.id);
-    completeItem("create_session");
-    console.log("SESSION CREATED", session.id);
-
-    const generated = generateSessionQuestions(session.id, desiredQuestionCount);
-    setSessionQuestions(generated);
-
-    const questionPayload = generated.map((q, idx) => ({
-      inspection_session_id: session.id,
-      question_text: q.text,
-      domain_name: q.domain,
-      sort_order: idx,
-    }));
-
-    console.log("INSERTING INTO inspection_session_questions (app)", questionPayload);
-
-    const { data: questionRows, error: questionsError } = await supabase
-      .from("inspection_session_questions")
-      .insert(questionPayload)
-      .select();
-
-    console.log("INSERT RESULT inspection_session_questions (app)", { data: questionRows, error: questionsError });
-
-    if (questionsError || !questionRows) {
-      console.error(questionsError);
-      toast({ title: "Failed to create questions", description: questionsError?.message, variant: "destructive" });
-      return null;
-    }
-
-    const sorted = [...questionRows].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
-    const ids = sorted.map((row) => row.id);
-    setSessionQuestionIds(ids);
-    const mapped = sorted.map((row) => ({
-      id: String(row.id),
-      domain: (row as { domain_name?: string }).domain_name || "Safeguarding",
-      text: (row as { question_text?: string }).question_text || "",
-    }));
-    setSessionQuestions(mapped as BankQuestion[]);
-    setActiveQuestionId(mapped[0]?.id ?? null);
-    console.log("SESSION QUESTIONS CREATED", ids);
-
-    return ids;
-  };
-
-  const resumeSession = async (existingId: string) => {
-    setResumeLoading(true);
-    try {
-      await requireAuth();
-    } catch (err: unknown) {
-      setResumeLoading(false);
-      const message = err instanceof Error ? err.message : "Please log in again";
-      toast({ title: "Please log in again", description: message, variant: "destructive" });
-      navigate("/login");
-      return;
-    }
-
-      const { data: questions, error: qErr } = await supabase
-        .from("inspection_session_questions")
-        .select("id,sort_order,question_text,domain_name")
-        .eq("inspection_session_id", existingId)
-        .order("sort_order", { ascending: true });
-
-    if (qErr || !questions || questions.length === 0) {
-      clearActiveSession();
-      setResumeLoading(false);
-      return;
-    }
-
-    const sorted = [...questions].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
-    const ids = sorted.map((q) => q.id);
-    const mappedQuestions = sorted.map((row) => ({
-      id: String(row.id),
-      domain: (row as { domain_name?: string }).domain_name || "Safeguarding",
-      text: (row as { question_text?: string }).question_text || "",
-    }));
-    setSessionQuestions(mappedQuestions as BankQuestion[]);
-    setSessionId(existingId);
-    setSessionQuestionIds(ids);
-    persistActiveSession(existingId);
-    setActiveQuestionId(mappedQuestions[0]?.id ?? null);
-
-    const { data: answers, error: aErr } = await supabase
-      .from("inspection_answers")
-      .select("inspection_session_question_id,answer_text,transcript")
-      .in("inspection_session_question_id", ids);
-
-    if (aErr) {
-      console.error("Resume load answers error", aErr);
-    }
-
-    const map: Record<string, string> = {};
-    if (answers) {
-      answers.forEach((row: { inspection_session_question_id: string; answer_text: string | null; transcript: string | null }) => {
-        const text = (row.answer_text || row.transcript || "").toString();
-        if (text.trim()) map[row.inspection_session_question_id] = text;
-      });
-    }
-    setSavedAnswers(map);
-
-    const completed: number[] = [];
-    ids.forEach((id, idx) => {
-      if (map[id]) completed.push(idx);
-    });
-    setCompletedQuestions(completed);
-    setMarkedAnswerComplete(completed.length > 0);
-
-    const firstIncomplete = ids.findIndex((id) => !map[id]);
-    const targetIndex = firstIncomplete >= 0 ? firstIncomplete : 0;
-    setCurrentQuestionIndex(targetIndex);
-    const initialTranscript = map[ids[targetIndex]] || "";
-    setTranscript(initialTranscript);
-    setEvaluation(null);
-    setStep(initialTranscript ? "editing" : "ready");
-  };
-
-  const saveAnswerToSupabase = async (sessionQuestionId: string, text: string) => {
-    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(sessionQuestionId)) {
-      console.error("Bad inspection_session_question_id", sessionQuestionId);
-      toast({ title: "Failed to save answer", description: "Bad question id", variant: "destructive" });
-      return false;
-    }
-    try {
-      await requireAuth();
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Please log in again";
-      console.error(err);
-      toast({ title: "Please log in again", description: message, variant: "destructive" });
-      navigate("/login");
-      return false;
-    }
-
-    const payload = {
-      inspection_session_question_id: sessionQuestionId,
-      answer_text: text,
-      transcript: text,
-    };
-
-    console.log("INSERTING INTO inspection_answers (app)", payload);
-
-    const { data, error } = await supabase
-      .from("inspection_answers")
-      .insert(payload)
-      .select()
-      .single();
-
-    console.log("INSERT RESULT inspection_answers (app)", { data, error });
-
-    if (error || !data) {
-      console.error(error);
-      toast({ title: "Failed to save answer", description: error?.message, variant: "destructive" });
-      return false;
-    }
-
-    console.log("Saved answer", sessionQuestionId);
-    setSavedAnswers((prev) => ({ ...prev, [sessionQuestionId]: text }));
-    if (!markedAnswerComplete) {
-      setMarkedAnswerComplete(true);
-      completeItem("answer_questions");
-    }
-    return true;
-  };
-
-  const saveEvaluationToSupabase = async (sessionQuestionId: string, mappedEvaluation: EvaluationResult) => {
-    try {
-      await requireAuth();
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Please log in again";
-      console.error(err);
-      toast({ title: "Please log in again", description: message, variant: "destructive" });
-      navigate("/login");
-      return;
-    }
-
-    const strengths = nonEmptyArray(
-      normalizeList(mappedEvaluation.strengths as unknown, []),
-      buildFallbackStrengths(""),
-    );
-    const gaps = nonEmptyArray(
-      normalizeList(
-        (mappedEvaluation as unknown as { gaps?: unknown; weaknesses?: unknown }).gaps ??
-          (mappedEvaluation as unknown as { weaknesses?: unknown }).weaknesses,
-        [],
-      ),
-      buildFallbackGaps(""),
-    );
-    const followUps = nonEmptyArray(
-      normalizeList(
-        (mappedEvaluation as unknown as { follow_up_questions?: unknown }).follow_up_questions ??
-          mappedEvaluation.followUpQuestions,
-        [],
-      ),
-      buildFollowUpFallback(),
-    );
-    const mapped = mappedEvaluation as Partial<EvaluationResult> & { band?: unknown; score?: unknown; score4?: unknown };
-    const band = typeof mapped.band === "string" ? mapped.band : mapped.judgementBand ?? "Requires Improvement";
-    const scoreVal = typeof mapped.score === "number" ? mapped.score : mapped.score4 ?? mappedEvaluation.score;
-    const score = Number.isFinite(scoreVal) ? Number(scoreVal) : 0;
-    const strengthsStr = JSON.stringify(Array.isArray(strengths) ? strengths : []);
-    const gapsStr = JSON.stringify(Array.isArray(gaps) ? gaps : []);
-    const followUpsStr = JSON.stringify(Array.isArray(followUps) ? followUps : []);
-    const bandStr = String(band ?? "Requires Improvement");
-    const scoreInt = Number.isFinite(score) ? Math.max(0, Math.min(100, Number(score))) : 0;
-
-    const payload = {
-      inspection_session_question_id: sessionQuestionId,
-      score: scoreInt,
-      band: bandStr,
-      strengths: strengthsStr,
-      gaps: gapsStr,
-      follow_up_questions: followUpsStr,
-    };
-    console.log("EVAL PAYLOAD", payload);
-
-    console.log("INSERTING INTO inspection_evaluations (app)", payload);
-
-    const { data, error } = await supabase
-      .from("inspection_evaluations")
-      .upsert(payload, { onConflict: "inspection_session_question_id" })
-      .select()
-      .single();
-
-    console.log("INSERT RESULT inspection_evaluations (app)", { data, error });
-
-    if (error || !data) {
-      console.error(error);
-      toast({ title: "Failed to save evaluation", description: error?.message, variant: "destructive" });
-      return;
-    }
-
-    console.log("EVALUATION SAVED", sessionQuestionId);
-    completeItem("run_evaluation");
-  };
-
-  const handleRecordingComplete = async (audioBlob: Blob) => {
-    setStep("uploading");
-    try {
-      setStep("transcribing");
-      setTranscriptionError(null);
-      setAllowPlaceholder(false);
-
-      const fd = new FormData();
-      fd.append("file", audioBlob, "recording.webm");
-
-      const response = await fetchWithTimeout(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/transcribe`,
-        {
-          method: "POST",
-          headers: {
-            apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-          },
-          body: fd,
-        },
-        15000,
-      );
-
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data?.error || "Transcription failed");
-      }
-
-      const text = (data?.transcript || data?.text || "").trim();
-      if (!text) {
-        throw new Error("No speech detected. Try speaking closer to the mic for 3-5 seconds.");
-      }
-
-      setTranscript(text);
-      setTranscriptionWarning(text.length < 50);
-      setStep("editing");
-      toast({ title: "Transcription complete", description: "Review your response below." });
-    } catch (error) {
-      console.error("Transcription error:", error);
-      setTranscriptionError(error instanceof Error ? error.message : "Transcription failed");
-      setAllowPlaceholder(true);
-      setStep("ready");
-      toast({ title: "Transcription unavailable", description: "You can retry or use text input.", variant: "destructive" });
-    }
-  };
-
-  const handleSubmitForEvaluation = async (overrideTranscript?: string | null) => {
-    const raw = typeof overrideTranscript === "string" ? overrideTranscript : transcript;
-    const transcriptToUse = (raw ?? "").toString().trim();
-    if (!transcriptToUse) {
-      toast({ title: "Please record or type an answer", variant: "destructive" });
-      return;
-    }
-    const ensuredIds = await ensureSessionAndQuestions();
-    if (!ensuredIds) return;
-    const dbQuestionId = ensuredIds[currentQuestionIndex];
-    if (!dbQuestionId) {
-      toast({ title: "Unable to map question", description: "Please restart the session.", variant: "destructive" });
-      return;
-    }
-    if (!activeQuestion || activeQuestion.id !== dbQuestionId) {
-      setActiveQuestionId(dbQuestionId);
-    }
-    const questionId = dbQuestionId;
-
-    const savedAnswer = await saveAnswerToSupabase(questionId, transcriptToUse);
-    if (!savedAnswer) {
-      setStep("editing");
-      return;
-    }
-
-    setTranscript(transcriptToUse);
-    setStep("evaluating");
-    loading.show("Evaluating your response...");
-    try {
-      const plan = "free";
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/evaluate`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-          },
-          body: JSON.stringify({
-            transcript: transcriptToUse,
-            answerText: transcriptToUse,
-            question: currentQuestion.text,
-            domain: currentQuestion.domain,
-            question_area: currentQuestion.domain,
-            session_question_id: questionId,
-            plan,
-          }),
-        },
-      );
-
-        const rawData = await response.json();
-        if (rawData.error) throw new Error(rawData.error);
-
-        const normalizedData = normalizeEvaluationResponse(rawData);
-        const parsedEvaluationResult = evaluationSchema.safeParse(normalizedData);
-        if (!parsedEvaluationResult.success) {
-          console.error("Evaluation schema error", parsedEvaluationResult.error, normalizedData);
-          throw new Error("Invalid evaluation response");
-        }
-        const parsedEvaluation = parsedEvaluationResult.data;
-
-        const bandRaw = parsedEvaluation.band as EvaluationResult["judgementBand"];
-        const judgementBand =
-          bandRaw === "Requires Improvement"
-            ? ("Requires improvement to be good" as EvaluationResult["judgementBand"])
-            : bandRaw;
-
-        const score4 =
-          typeof parsedEvaluation.score4 === "number"
-            ? parsedEvaluation.score4
-            : Math.max(0, Math.min(4, Math.round(((parsedEvaluation.score ?? 0) / 25) * 10) / 10));
-
-        const riskFlags: string[] = [];
-
-        const strengthsDetailed =
-          Array.isArray(parsedEvaluation.strengths) && parsedEvaluation.strengths.length > 0
-            ? parsedEvaluation.strengths.map((s) => ({
-                evidence: s.evidence_quote ? [s.evidence_quote] : [],
-                whatWorked: s.claim,
-                whyMatters: s.why_it_matters,
-              }))
-            : [];
-
-        const strengthsNorm =
-          strengthsDetailed.length > 0
-            ? strengthsDetailed.map((s) => `${s.whatWorked} - ${s.whyMatters}`)
-            : [];
-
-        const weaknessesDetailed =
-          Array.isArray(parsedEvaluation.weaknesses) && parsedEvaluation.weaknesses.length > 0
-            ? parsedEvaluation.weaknesses.map((w) => ({
-                evidence: Array.isArray(w.evidence) ? w.evidence : [],
-                gap: w.gap,
-                risk: w.risk,
-                expected: w.what_ofsted_expected,
-              }))
-            : [];
-
-        const gapsNorm =
-          weaknessesDetailed.length > 0
-            ? weaknessesDetailed.map(
-                (w) => `${w.gap} (Risk: ${w.risk}; Expected: ${w.expected})`,
-              )
-            : [];
-
-        const followUpsNorm =
-          Array.isArray(parsedEvaluation.follow_up_questions) && parsedEvaluation.follow_up_questions.length > 0
-            ? parsedEvaluation.follow_up_questions.map((f) => f.question)
-            : [];
-
-        const recommendedNorm = normalizeList(parsedEvaluation.missing_key_points, []);
-
-        const sentenceImprovements =
-          Array.isArray(parsedEvaluation.sentence_improvements) && parsedEvaluation.sentence_improvements.length > 0
-            ? parsedEvaluation.sentence_improvements.map((s) => ({
-                sentenceId: s.sentence_id,
-                original: s.original,
-                issue: s.issue,
-                betterVersion: s.better_version,
-                synonymsOrPhrases: s.synonyms_or_phrases || [],
-                impact: s.impact,
-              }))
-            : [];
-
-        const fallbackStrengths = buildFallbackStrengths(transcriptToUse);
-        const fallbackGaps = buildFallbackGaps(transcriptToUse);
-        const fallbackFollowUps = buildFollowUpFallback();
-        const fallbackActions = buildFallbackActions();
-
-      const safeStrengths = nonEmptyArray(strengthsNorm, fallbackStrengths);
-      const safeGaps = nonEmptyArray(gapsNorm, fallbackGaps);
-      const safeFollowUps = nonEmptyArray(followUpsNorm, fallbackFollowUps);
-      const safeActions = nonEmptyArray(recommendedNorm, fallbackActions);
-
-      const mappedEvaluation: EvaluationResult = {
-          judgementBand,
-          rawBand: bandRaw,
-          score: score4,
-          rawScore100: parsedEvaluation.score,
-          relevance: parsedEvaluation.relevance,
-          score4,
-          strengths: safeStrengths,
-          strengthsStructured: strengthsDetailed,
-          gaps: safeGaps,
-          weaknesses: safeGaps,
-          weaknessesStructured: weaknessesDetailed,
-          recommendations: nonEmptyArray(parsedEvaluation.missing_key_points ?? [], safeActions),
-          recommendedActions: safeActions,
-          riskFlags,
-          followUpQuestions: safeFollowUps,
-          sentenceImprovements,
-          sentences: parsedEvaluation.sentences,
-          missingKeyPoints: parsedEvaluation.missing_key_points,
-          rawFollowUps: parsedEvaluation.follow_up_questions?.map((f) => ({
-            question: f.question,
-            why: f.why,
-            whatGoodLooksLike: f.what_good_looks_like,
-          })),
-          rawSummary: parsedEvaluation.summary,
-          debug: parsedEvaluation.debug as Record<string, unknown> | undefined,
-        };
-
-      setEvaluation(mappedEvaluation);
-
-      const followUpDecision = detectFollowUpNeed({
-        score: mappedEvaluation.score || 0,
-        transcript: transcriptToUse,
-        evaluation: mappedEvaluation,
-        domain: currentQuestion.domain,
-        attemptIndex: followUpCount,
-      });
-      
-      // Store result
-      const existingResult = results.get(currentQuestionIndex);
-      if (isFollowUp && existingResult) {
-        setResults(prev => new Map(prev).set(currentQuestionIndex, {
-          ...existingResult,
-          followUpUsed: true,
-          followUpTranscript: transcriptToUse,
-          followUpEvaluation: mappedEvaluation,
-          followUpDecision,
-        }));
-      } else {
-        setResults(prev => new Map(prev).set(currentQuestionIndex, {
-          transcript: transcriptToUse,
-          evaluation: mappedEvaluation,
-          followUpUsed: false,
-          followUpDecision,
-        }));
-      }
-      
-      if (!completedQuestions.includes(currentQuestionIndex)) {
-        setCompletedQuestions(prev => [...prev, currentQuestionIndex]);
-      }
-      
-      setStep("evaluated");
-      setIsFollowUp(false);
-      const ui = bandUi(judgementBand);
-      toast({ 
-        title: "Evaluation complete", 
-        description: `${ui.icon} ${ui.label}` 
-      });
-
-      await saveEvaluationToSupabase(questionId, mappedEvaluation);
-    } catch (error) {
-      console.error('Evaluation error:', error);
-      toast({ 
-        title: "Evaluation failed", 
-        description: error instanceof Error ? error.message : "Please try again.", 
-        variant: "destructive" 
-      });
-      setStep("editing");
-    } finally {
-      loading.hide();
-    }
-  };
-
-  const getFollowUpDecision = () => results.get(currentQuestionIndex)?.followUpDecision;
-
-  const needsFollowUp = () => {
-    const decision = getFollowUpDecision();
-    return Boolean(decision?.shouldFollowUp && followUpCount < 2);
-  };
-
-  const getFollowUpQuestion = () => {
-    const decision = getFollowUpDecision();
-    if (decision?.question) return decision.question;
-    const result = results.get(currentQuestionIndex);
-    if (!result) return "Can you give a specific recent example with outcomes?";
-    return result.evaluation.followUpQuestions[0] || "Can you give a specific recent example with outcomes?";
-  };
-
-  const startFollowUp = () => {
-    if (followUpCount >= 2) {
-      toast({ title: "Follow-up limit reached", description: "Maximum of 2 follow-ups per question." });
-      return;
-    }
-    setFollowUpCount(prev => prev + 1);
-    setIsFollowUp(true);
-    setEvaluation(null);
-    setTranscript("");
-    setTranscriptionWarning(false);
-    setStep("ready");
-    toast({ 
-      title: getFollowUpLabel(followUpCount + 1, 2), 
-      description: "Record or type your response to the follow-up question." 
-    });
-  };
-
-  const handleNextQuestion = async () => {
-    if (step !== "evaluated") {
-      toast({ title: "Finish this question first", description: "Please complete an evaluation before moving on." });
-      return;
-    }
-    if (currentQuestionIndex < sessionQuestions.length - 1) {
-      setCurrentQuestionIndex(prev => {
-        const next = prev + 1;
-        setActiveQuestionId(sessionQuestions[next]?.id ?? null);
-        return next;
-      });
-      resetForQuestion();
-    } else {
-      // Save session before showing summary
-      await saveSession();
-      setStep("summary");
-    }
-  };
-
-  const saveSession = async () => {
-    const evaluationResults = new Map<number, EvaluationResult>();
-    results.forEach((result, index) => {
-      const evalToUse = result.followUpEvaluation && result.followUpEvaluation.score > result.evaluation.score
-        ? result.followUpEvaluation
-        : result.evaluation;
-      evaluationResults.set(index, evalToUse);
-    });
-
-    const averageScore = evaluationResults.size
-      ? Array.from(evaluationResults.values()).reduce((sum, r) => sum + (r.score4 ?? r.score ?? 0), 0) / evaluationResults.size
-      : 0;
-    const overallBand = getJudgementBand(averageScore || 0);
-
-    const saveSessionLocally = () => {
-      const local = JSON.parse(localStorage.getItem("localSessions") || "[]");
-      const sessionId = `local-${Date.now()}`;
-      const answers = Array.from(results.entries()).flatMap(([qIndex, result]) => {
-        const question = sessionQuestions[qIndex];
-        const entries = [{
-          session_id: sessionId,
-          question_id: question.id,
-          question_domain: question.domain,
-          transcript: result.transcript,
-          evaluation_json: result.evaluation,
-          attempt_index: 0,
-        }];
-
-        if (result.followUpTranscript && result.followUpEvaluation) {
-          entries.push({
-            session_id: sessionId,
-            question_id: question.id,
-            question_domain: question.domain,
-            transcript: result.followUpTranscript,
-            evaluation_json: result.followUpEvaluation,
-            attempt_index: 1,
-          });
-        }
-        return entries;
-      });
-
-      const record = {
-        id: sessionId,
-        created_at: new Date().toISOString(),
-        overall_score: averageScore,
-        overall_band: overallBand,
-        answers,
-      };
-
-      const updated = [record, ...local].slice(0, 20); // keep last 20
-      localStorage.setItem("localSessions", JSON.stringify(updated));
-    };
-
-    try {
-      if (!sessionId) {
-        saveSessionLocally();
+    if (!user) return;
+    async function loadGate() {
+      setGateLoading(true);
+      const { data: sub } = await supabase
+        .from("subscriptions")
+        .select("status,stripe_subscription_id,created_at")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      const status = sub?.status ?? null;
+      const stripeId = sub?.stripe_subscription_id ?? null;
+      setSubscriptionStatus(status);
+      setStripeSubscriptionId(stripeId);
+
+      const isPaid = !!stripeId && (status === "active" || status === "trialing");
+      if (isPaid) {
+        setTrialInfo(null);
+        setGateLoading(false);
         return;
       }
-      // Session, answers, and evaluations are saved per question; just log completion.
-      console.log("SESSION COMPLETE", { sessionId, averageScore, overallBand });
-    } catch (error) {
-      console.error('Error saving session:', error);
-      // Fallback to local storage so history still works without auth/DB
-      saveSessionLocally();
+
+      const trialStart = sub?.created_at ? new Date(sub.created_at) : new Date();
+      const { data: sessions } = await supabase
+        .from("sessions")
+        .select("started_at")
+        .eq("user_id", user.id)
+        .gte("started_at", trialStart.toISOString());
+
+      setTrialInfo(computeTrialUsage(trialStart, sessions ?? []));
+      setGateLoading(false);
     }
-  };
 
-  const handlePrevQuestion = () => {
-    if (currentQuestionIndex > 0) {
-      setCurrentQuestionIndex(prev => {
-        const next = prev - 1;
-        setActiveQuestionId(sessionQuestions[next]?.id ?? null);
-        return next;
-      });
-      resetForQuestion();
-    }
-  };
+    loadGate();
+  }, [user]);
 
-  const handleViewSummary = () => {
-    completeItem("review_summary");
-    clearActiveSessionFlag();
-    setStep("summary");
-  };
+  const isPaidSubscriber = !!stripeSubscriptionId && (subscriptionStatus === "active" || subscriptionStatus === "trialing");
 
-  const handleStartOver = () => {
-    clearActiveSession();
-    setCurrentQuestionIndex(0);
-    resetForQuestion();
-    setResults(new Map());
-    setCompletedQuestions([]);
-  };
+  const canStart = (() => {
+    if (gateLoading) return false;
+    if (isPaidSubscriber) return true;
+    if (!trialInfo) return true;
+    if (trialInfo.expired) return false;
+    if (trialInfo.remainingTotal <= 0) return false;
+    if (trialInfo.remainingToday <= 0) return false;
+    return true;
+  })();
 
-  const handleExitSession = () => {
-    clearActiveSession();
-    navigate("/app");
-  };
+  // ── Start session ──────────────────────────────────────────────────────────
 
-  const handleRecordAgain = () => {
-    setStep("ready");
-    setTranscript("");
-  };
-
-  // Get step status message
-  const getStepMessage = () => {
-    switch (step) {
-      case "ready": return isFollowUp ? "Choose how to respond to the follow-up" : "Choose how you'd like to respond";
-      case "recording": return "Recording your response...";
-      case "uploading": return "Uploading audio...";
-      case "transcribing": return "Transcribing your response...";
-      case "editing": return "Review and edit your response before evaluation";
-      case "evaluating": return "Evaluating your answer against Ofsted criteria...";
-      case "evaluated": return "Evaluation complete";
-      default: return "";
-    }
-  };
-
-  const handleContactSubmit = async () => {
-    if (!contactMessage.trim()) {
-      setContactStatus("Please add a message so we can respond.");
+  const startSession = async () => {
+    if (!user) return;
+    if (!canStart) {
+      navigate("/app/paywall");
       return;
     }
-    setContactSubmitting(true);
-    setContactStatus(null);
-    const result = await sendFeedback(
-      {
-        name: contactName.trim(),
-        details: contactDetails.trim(),
-        message: contactMessage.trim(),
-      },
-      "contact",
-    );
-    setContactStatus(result.message);
-    if (result.ok) {
-      setContactMessage("");
+    setError(null);
+
+    // Ensure public.users row exists (in case trigger didn't fire at signup)
+    await supabase
+      .from("users")
+      .upsert({ id: user.id }, { onConflict: "id" });
+
+    // Create session row
+    const { data: sess, error: sErr } = await supabase
+      .from("sessions")
+      .insert({ user_id: user.id })
+      .select("id")
+      .single();
+
+    if (sErr || !sess) {
+      setError("Failed to start session: " + (sErr?.message ?? "Unknown error"));
+      return;
     }
-    setContactSubmitting(false);
-  };
 
-  const contactCard = (
-    <div className="card-elevated p-6 space-y-4">
-      <div className="flex items-center gap-2">
-        <Mail className="h-5 w-5 text-primary" />
-        <h2 className="font-display text-xl font-semibold text-foreground">Contact us</h2>
-      </div>
-      <p className="text-sm text-muted-foreground">
-        Quick questions or demo requests? Use this form and we'll reply from {emailAddress}.
-      </p>
-      <div className="space-y-3">
-        <Input placeholder="Name (optional)" value={contactName} onChange={(e) => setContactName(e.target.value)} />
-        <Input
-          placeholder="How can we reach you? (optional email/phone)"
-          value={contactDetails}
-          onChange={(e) => setContactDetails(e.target.value)}
-        />
-        <Textarea
-          value={contactMessage}
-          onChange={(e) => setContactMessage(e.target.value)}
-          placeholder="Your message"
-          className="min-h-[120px]"
-        />
-        <Button onClick={handleContactSubmit} disabled={contactSubmitting} className="w-full gap-2">
-          {contactSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-          Send message
-        </Button>
-        {contactStatus && <p className="text-sm text-muted-foreground">{contactStatus}</p>}
-      </div>
-    </div>
-  );
+    const sid = sess.id;
+    setSessionId(sid);
 
-  const handleLogout = async () => {
-    loading.show("Logging you out...");
-    try {
-      await supabase.auth.signOut();
-    } catch (error) {
-      console.error("Logout error:", error);
-    } finally {
-      loading.hide();
-      toast({ title: "Logged out successfully" });
-      navigate("/login", { replace: true, state: { toast: "Logged out successfully" } });
-    }
-  };
-
-  const handlePracticeAgain = () => {
-    clearActiveSession();
-    setCurrentQuestionIndex(0);
-    setResults(new Map());
-    setCompletedQuestions([]);
-    setEvaluation(null);
+    const picked = pickSessionQuestions(sid);
+    setQuestions(picked.map((q) => ({ question: q, transcript: "", result: null })));
+    setQIndex(0);
+    setStep("input");
     setTranscript("");
-    setFollowUpCount(0);
-    setIsFollowUp(false);
-    setStep("ready");
-    setTranscriptionWarning(false);
-    setTranscriptionError(null);
+    setTextInput("");
+    setEvalResult(null);
   };
 
-  const AppNav = () => {
-    const linkBase =
-      "text-sm font-medium px-3 py-2 rounded-lg transition hover:text-slate-900 hover:bg-slate-100";
-    return (
-      <>
-        <div className="sticky top-0 z-20 bg-white/80 backdrop-blur border-b border-slate-200">
-          <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-            <div className="flex items-center gap-2">
-              <div className="text-base font-bold text-black font-display">Voice Inspector</div>
-              <span className="rounded-full bg-teal-50 px-2 py-0.5 text-xs font-semibold text-teal-700 ring-1 ring-teal-100">
-                Beta
-              </span>
+  // ── Transcribe audio ───────────────────────────────────────────────────────
+
+  const handleRecordingComplete = async (blob: Blob) => {
+    setStep("transcribing");
+    setError(null);
+    try {
+      const formData = new FormData();
+      formData.append("file", blob, "recording.webm");
+      const { data: { session: authSession } } = await supabase.auth.getSession();
+      const token = authSession?.access_token ?? "";
+
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/transcribe`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          apikey: import.meta.env.VITE_SUPABASE_ANON_KEY ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? "",
+        },
+        body: formData,
+      });
+
+      const json = await res.json();
+      const text = json?.transcript || json?.text || "";
+      if (!text) throw new Error("No transcript returned");
+      setTranscript(text);
+      setStep("input"); // show editing step
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Transcription failed. Please try again or use text input.");
+      setStep("input");
+    }
+  };
+
+  // ── Evaluate answer ────────────────────────────────────────────────────────
+
+  const evaluate = async (answerText: string) => {
+    if (!sessionId || !user) return;
+    const q = questions[qIndex];
+    if (!q) return;
+
+    setStep("evaluating");
+    setError(null);
+
+    try {
+      const { data, error: fnErr } = await supabase.functions.invoke("evaluate", {
+        body: {
+          question: q.question.text,
+          answerText,
+          domain: q.question.domain,
+          hint: q.question.hint,
+        },
+      });
+
+      if (fnErr) throw fnErr;
+
+      const result: EvalResult = {
+        score: data?.score ?? 1,
+        band: data?.band ?? "Inadequate",
+        summary: data?.summary ?? "",
+        strengths: Array.isArray(data?.strengths) ? data.strengths : [],
+        gaps: Array.isArray(data?.gaps) ? data.gaps : [],
+        developmentPoints: Array.isArray(data?.developmentPoints) ? data.developmentPoints : [],
+        followUpQuestion: data?.followUpQuestion ?? "",
+        inspectorNote: data?.inspectorNote ?? "",
+        regulatoryReference: data?.regulatoryReference ?? "",
+        encouragement: data?.encouragement ?? "",
+      };
+
+      // Save to DB
+      await supabase.from("responses").insert({
+        session_id: sessionId,
+        domain: q.question.domain,
+        question_text: q.question.text,
+        answer_text: answerText,
+        score: result.score,
+        band: result.band,
+        feedback_json: result,
+      });
+
+      // Update question state
+      setQuestions((prev) => {
+        const next = [...prev];
+        next[qIndex] = { ...next[qIndex], transcript: answerText, result };
+        return next;
+      });
+      setEvalResult(result);
+      setStep("evaluated");
+      answerAreaRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Evaluation failed. Please try again.");
+      setStep("input");
+    }
+  };
+
+  const handleTextSubmit = () => {
+    const text = textInput.trim();
+    if (!text) return;
+    setTranscript(text);
+    evaluate(text);
+  };
+
+  const handleTranscriptSubmit = () => {
+    evaluate(transcript);
+  };
+
+  // ── Navigate questions ────────────────────────────────────────────────────
+
+  const goNext = async () => {
+    const isLast = qIndex === questions.length - 1;
+    if (isLast) {
+      await completeSession();
+    } else {
+      setQIndex((i) => i + 1);
+      setStep("input");
+      setTranscript("");
+      setTextInput("");
+      setEvalResult(null);
+      setError(null);
+    }
+  };
+
+  const skipQuestion = async () => {
+    const isLast = qIndex === questions.length - 1;
+    if (isLast) {
+      await completeSession();
+    } else {
+      setQIndex((i) => i + 1);
+      setStep("input");
+      setTranscript("");
+      setTextInput("");
+      setEvalResult(null);
+      setError(null);
+    }
+  };
+
+  // ── Complete session ───────────────────────────────────────────────────────
+
+  const completeSession = async () => {
+    if (!sessionId || !user) return;
+    setStep("completing");
+
+    try {
+      const { data } = await supabase.functions.invoke("generate-report", {
+        body: { sessionId },
+      });
+
+      // generate-report updates the sessions table internally
+      void data; // suppress lint
+      setReportSessionId(sessionId);
+      setStep("done");
+    } catch {
+      // Even on failure, mark as done and go to report page (report will show raw responses)
+      setReportSessionId(sessionId);
+      setStep("done");
+    } finally {
+      if (trialInfo && !isPaidSubscriber) {
+        const usedTotal = trialInfo.usedTotal + 1;
+        const usedToday = trialInfo.usedToday + 1;
+        const remainingTotal = Math.max(0, TRIAL_TOTAL_LIMIT - usedTotal);
+        const remainingToday = Math.max(0, TRIAL_DAILY_LIMIT - usedToday);
+        setTrialInfo({
+          ...trialInfo,
+          usedTotal,
+          usedToday,
+          remainingTotal,
+          remainingToday,
+        });
+      }
+    }
+  };
+
+  // ── Sign out ───────────────────────────────────────────────────────────────
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    navigate("/login?loggedOut=true", { replace: true });
+  };
+
+  const restartSession = async () => {
+    if (!window.confirm("Start a new session? Your current progress will not be saved.")) return;
+    setReportSessionId(null);
+    setStep("idle");
+    await startSession();
+  };
+
+  const stopSession = () => {
+    if (!window.confirm("Stop this session and return to the dashboard?")) return;
+    navigate("/app/dashboard");
+  };
+
+  // ── Render ────────────────────────────────────────────────────────────────
+
+  const currentQ = questions[qIndex];
+  const domainLabel = currentQ ? DOMAIN_LABELS[currentQ.question.domain as Domain] : "";
+  const domainTag = currentQ ? DOMAIN_TAGS[currentQ.question.domain as Domain] : "";
+  const isLimitingDomain = domainTag === "LIMITING JUDGEMENT";
+  const completedCount = questions.filter((q) => q.result !== null).length;
+
+  return (
+    <div className="min-h-screen bg-slate-50">
+      {/* Nav */}
+      <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur-sm">
+        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-teal-600">
+              <svg viewBox="0 0 32 32" fill="none" className="h-4 w-4" aria-hidden="true">
+                <path d="M16 4L4 10v12l12 6 12-6V10L16 4z" stroke="white" strokeWidth="2" strokeLinejoin="round" fill="none" />
+                <path d="M16 4v18M4 10l12 6 12-6" stroke="white" strokeWidth="2" strokeLinejoin="round" />
+              </svg>
             </div>
-            <div className="flex items-center gap-2">
-              <NavLink
-                to="/app"
-                className={({ isActive }) =>
-                  [linkBase, isActive ? "text-slate-900 bg-slate-100" : "text-slate-600"].join(" ")
-                }
+            <span className="font-display font-bold text-slate-900">InspectReady</span>
+          </div>
+          <nav className="hidden items-center gap-1 sm:flex">
+            <Link to="/app" className="rounded-lg px-3 py-2 text-sm font-medium text-slate-900 bg-slate-100">
+              Practice
+            </Link>
+            <Link to="/app/dashboard" className="rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors">
+              Dashboard
+            </Link>
+            {subscriptionStatus !== "active" && (
+              <Link
+                to="/pricing"
+                className="rounded-lg px-3 py-2 text-sm font-semibold text-teal-700 hover:bg-teal-50 transition-colors"
               >
-                Simulator
-              </NavLink>
-              <NavLink
-                to="/app/sessions"
-                className={({ isActive }) =>
-                  [linkBase, isActive ? "text-slate-900 bg-slate-100" : "text-slate-600"].join(" ")
-                }
+                Subscribe
+              </Link>
+            )}
+          </nav>
+          <div className="flex items-center gap-2">
+            {step !== "idle" && step !== "done" && (
+              <>
+                <button
+                  onClick={() => completedCount >= 5 && setShowReportModal(true)}
+                  disabled={completedCount < 5}
+                  title={completedCount < 5 ? `Available after answering 5 questions (${completedCount}/5 answered)` : "Generate your report now"}
+                  className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+                    completedCount >= 5
+                      ? "border-teal-300 text-teal-700 hover:bg-teal-50"
+                      : "border-slate-200 text-slate-300 cursor-not-allowed"
+                  }`}
+                >
+                  <FileText className="h-4 w-4" />
+                  <span className="hidden sm:inline">Generate Report</span>
+                </button>
+                <button
+                  onClick={() => setPaused((p) => !p)}
+                  title={paused ? "Resume session" : "Pause session"}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+                >
+                  {paused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
+                  <span className="hidden sm:inline">{paused ? "Resume" : "Pause"}</span>
+                </button>
+                <button
+                  onClick={restartSession}
+                  title="Restart session"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                  <span className="hidden sm:inline">Restart</span>
+                </button>
+                <button
+                  onClick={stopSession}
+                  title="Stop session"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
+                >
+                  <X className="h-4 w-4" />
+                  <span className="hidden sm:inline">Stop</span>
+                </button>
+              </>
+            )}
+            <button
+              onClick={handleSignOut}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+            >
+              <LogOut className="h-4 w-4" />
+              <span className="hidden sm:inline">Sign out</span>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <main className="mx-auto max-w-5xl px-4 py-8">
+        {/* ── Idle: start screen ─────────────────────────────────────────── */}
+        {step === "idle" && (
+          <div className="flex flex-col items-center justify-center min-h-[60vh] text-center gap-6">
+            {gateLoading ? (
+              <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
+            ) : !canStart ? (
+              <div className="max-w-md">
+                <div className="flex h-16 w-16 mx-auto items-center justify-center rounded-full bg-amber-50 ring-2 ring-amber-200">
+                  <AlertTriangle className="h-8 w-8 text-amber-600" />
+                </div>
+                <h1 className="mt-4 font-display text-2xl font-bold text-slate-900">
+                  {trialInfo?.expired ? "Free trial ended" : "Trial limit reached"}
+                </h1>
+                <p className="mt-2 text-slate-600">
+                  Free trial includes 3 days with up to 5 sessions per day (15 total). Subscribe for unlimited sessions and full reports.
+                </p>
+                <Link
+                  to="/app/paywall"
+                  className="mt-5 inline-flex items-center gap-2 rounded-xl bg-teal-600 px-6 py-3 text-sm font-semibold text-white hover:bg-teal-700 transition-colors"
+                >
+                  Subscribe — £29/month <ArrowRight className="h-4 w-4" />
+                </Link>
+                <p className="mt-3 text-xs text-slate-400">
+                  <Link to="/app/dashboard" className="hover:underline">Back to dashboard</Link>
+                </p>
+              </div>
+            ) : (
+              <div className="max-w-md">
+                <div className="flex h-16 w-16 mx-auto items-center justify-center rounded-full bg-teal-50 ring-2 ring-teal-200">
+                  <svg viewBox="0 0 32 32" fill="none" className="h-8 w-8" aria-hidden="true">
+                    <path d="M16 4L4 10v12l12 6 12-6V10L16 4z" stroke="#0D9488" strokeWidth="2" strokeLinejoin="round" fill="none" />
+                    <path d="M16 4v18M4 10l12 6 12-6" stroke="#0D9488" strokeWidth="2" strokeLinejoin="round" />
+                  </svg>
+                </div>
+                <h1 className="mt-4 font-display text-2xl font-bold text-slate-900">Ready to practise?</h1>
+                <p className="mt-2 text-slate-600">
+                  You'll answer questions across 6 Quality Standards — safeguarding and leadership are always included, the rest are randomly selected, just like a real Ofsted visit.
+                </p>
+                <div className="mt-3 flex justify-center gap-2 text-xs text-slate-500 flex-wrap">
+                  <span className="inline-flex items-center gap-1"><CheckCircle2 className="h-3.5 w-3.5 text-teal-600" /> 6 questions</span>
+                  <span className="inline-flex items-center gap-1"><CheckCircle2 className="h-3.5 w-3.5 text-teal-600" /> Voice or text</span>
+                  <span className="inline-flex items-center gap-1"><CheckCircle2 className="h-3.5 w-3.5 text-teal-600" /> Full Ofsted-style report</span>
+                </div>
+                {trialInfo && !isPaidSubscriber && (
+                  <div className="mt-3 inline-flex items-center rounded-full bg-amber-50 border border-amber-200 px-3 py-1 text-xs font-semibold text-amber-700">
+                    Free trial: {trialInfo.remainingToday} left today · {trialInfo.remainingTotal} total left
+                  </div>
+                )}
+                {error && (
+                  <p className="mt-3 text-sm text-red-600">{error}</p>
+                )}
+                <button
+                  onClick={startSession}
+                  className="mt-6 inline-flex items-center gap-2 rounded-xl bg-teal-600 px-7 py-3.5 text-base font-semibold text-white shadow-sm hover:bg-teal-700 transition-colors"
+                >
+                  Start session <ArrowRight className="h-4 w-4" />
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── Active session ─────────────────────────────────────────────── */}
+        {step !== "idle" && step !== "done" && currentQ && (
+          <div className="space-y-6 relative">
+            {/* Pause overlay */}
+            {paused && (
+              <div className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-slate-900/50 backdrop-blur-sm min-h-[60vh]">
+                <div className="bg-white rounded-2xl p-8 text-center max-w-sm mx-4 shadow-xl">
+                  <div className="flex h-14 w-14 mx-auto items-center justify-center rounded-full bg-slate-100">
+                    <Pause className="h-6 w-6 text-slate-600" />
+                  </div>
+                  <h2 className="mt-4 font-display text-xl font-bold text-slate-900">Session paused</h2>
+                  <p className="mt-2 text-sm text-slate-500">
+                    Your answered questions are saved. Take a break and resume when you're ready.
+                  </p>
+                  <div className="mt-6 flex flex-col gap-2">
+                    <button
+                      onClick={() => setPaused(false)}
+                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-teal-600 px-6 py-3 text-sm font-semibold text-white hover:bg-teal-700 transition-colors"
+                    >
+                      <Play className="h-4 w-4" /> Resume session
+                    </button>
+                    <button
+                      onClick={stopSession}
+                      className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-6 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+                    >
+                      Exit to dashboard
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+            {/* Progress */}
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-slate-500">
+                  Question {qIndex + 1} of {questions.length}
+                </p>
+                <h2 className="font-display text-lg font-bold text-slate-900">{domainLabel}</h2>
+              </div>
+              <div className="flex items-center gap-2">
+                {isLimitingDomain && (
+                  <span className="rounded-full bg-red-50 border border-red-200 px-2.5 py-0.5 text-xs font-bold text-red-700">
+                    LIMITING JUDGEMENT
+                  </span>
+                )}
+                <span className="text-sm text-slate-500">{completedCount}/{questions.length} answered</span>
+              </div>
+            </div>
+
+            {/* Progress bar */}
+            <div className="h-1.5 rounded-full bg-slate-200">
+              <div
+                className="h-1.5 rounded-full bg-teal-500 transition-all"
+                style={{ width: `${((qIndex) / questions.length) * 100}%` }}
+              />
+            </div>
+
+            {/* Question card */}
+            <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+              <div className="mb-2">
+                <span className="text-xs font-semibold uppercase tracking-wider text-teal-700">{domainTag}</span>
+              </div>
+              <p className="font-display text-lg font-semibold text-slate-900 leading-snug">
+                {currentQ.question.text}
+              </p>
+              {currentQ.question.hint && (
+                <details className="mt-3">
+                  <summary className="cursor-pointer text-xs font-semibold text-slate-500 hover:text-slate-700">
+                    Inspector hint ▸
+                  </summary>
+                  <p className="mt-2 text-sm leading-relaxed text-slate-600 italic">{currentQ.question.hint}</p>
+                </details>
+              )}
+            </div>
+
+            {/* Input area */}
+            <div ref={answerAreaRef}>
+              {step === "input" && !transcript && (
+                <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm space-y-5">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setInputMode("voice")}
+                        className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${inputMode === "voice" ? "bg-teal-600 text-white" : "border border-slate-200 text-slate-600 hover:bg-slate-50"}`}
+                      >
+                        <Mic className="h-4 w-4" /> Voice
+                      </button>
+                      <button
+                        onClick={() => setInputMode("text")}
+                        className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${inputMode === "text" ? "bg-teal-600 text-white" : "border border-slate-200 text-slate-600 hover:bg-slate-50"}`}
+                      >
+                        <Keyboard className="h-4 w-4" /> Text
+                      </button>
+                    </div>
+                    <button
+                      onClick={skipQuestion}
+                      title="Skip this question"
+                      className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-500 hover:bg-slate-50 transition-colors"
+                    >
+                      <SkipForward className="h-3.5 w-3.5" /> Skip question
+                    </button>
+                  </div>
+
+                  {inputMode === "voice" ? (
+                    <div>
+                      <p className="text-sm text-slate-500 mb-3">Click the microphone and speak your answer. Recording will be transcribed automatically.</p>
+                      <VoiceRecorder onRecordingComplete={handleRecordingComplete} />
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <textarea
+                        value={textInput}
+                        onChange={(e) => setTextInput(e.target.value)}
+                        placeholder="Type your answer here…"
+                        rows={6}
+                        className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-800 outline-none focus:ring-2 focus:ring-teal-600 resize-none"
+                      />
+                      <button
+                        onClick={handleTextSubmit}
+                        disabled={!textInput.trim()}
+                        className="inline-flex items-center gap-2 rounded-xl bg-teal-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-teal-700 transition-colors disabled:opacity-50"
+                      >
+                        Submit answer <ArrowRight className="h-4 w-4" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Transcribing */}
+              {step === "transcribing" && (
+                <div className="rounded-xl border border-slate-200 bg-white p-8 shadow-sm flex flex-col items-center gap-3">
+                  <Loader2 className="h-7 w-7 animate-spin text-teal-600" />
+                  <p className="text-sm text-slate-600">Transcribing your recording…</p>
+                </div>
+              )}
+
+              {/* Transcript editing (after voice transcription) */}
+              {step === "input" && transcript && (
+                <TranscriptEditor
+                  transcript={transcript}
+                  onTranscriptChange={setTranscript}
+                  onSubmitForEvaluation={handleTranscriptSubmit}
+                  onRecordAgain={() => { setTranscript(""); setTextInput(""); }}
+                  isLoading={false}
+                />
+              )}
+
+              {/* Evaluating */}
+              {step === "evaluating" && (
+                <div className="rounded-xl border border-slate-200 bg-white p-8 shadow-sm flex flex-col items-center gap-3">
+                  <Loader2 className="h-7 w-7 animate-spin text-teal-600" />
+                  <p className="text-sm text-slate-600">Evaluating your answer…</p>
+                </div>
+              )}
+
+              {/* Error */}
+              {error && step === "input" && (
+                <div className="rounded-xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">
+                  {error}
+                </div>
+              )}
+
+              {/* Evaluated: results */}
+              {step === "evaluated" && evalResult && (
+                <div className="space-y-4">
+                  {/* Score card */}
+                  <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                    <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
+                      <h3 className="font-display text-lg font-bold text-slate-900">Evaluation</h3>
+                      <BandPill band={evalResult.band} />
+                    </div>
+                    <p className="text-sm leading-relaxed text-slate-700">{evalResult.summary}</p>
+
+                    {evalResult.strengths.length > 0 && (
+                      <div className="mt-4">
+                        <p className="text-xs font-semibold uppercase tracking-wider text-teal-700 mb-2">Strengths</p>
+                        <ul className="space-y-1.5">
+                          {evalResult.strengths.map((s, i) => (
+                            <li key={i} className="flex items-start gap-2 text-sm text-slate-700">
+                              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-teal-500" />
+                              {s}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {evalResult.gaps.length > 0 && (
+                      <div className="mt-4">
+                        <p className="text-xs font-semibold uppercase tracking-wider text-amber-700 mb-2">Areas for improvement</p>
+                        <ul className="space-y-1.5">
+                          {evalResult.gaps.map((g, i) => (
+                            <li key={i} className="flex items-start gap-2 text-sm text-slate-700">
+                              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
+                              {g}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {evalResult.developmentPoints.length > 0 && (
+                      <div className="mt-4">
+                        <p className="text-xs font-semibold uppercase tracking-wider text-purple-700 mb-2">Development points</p>
+                        <ul className="space-y-1.5">
+                          {evalResult.developmentPoints.map((p, i) => (
+                            <li key={i} className="flex items-start gap-2 text-sm text-slate-700">
+                              <Target className="mt-0.5 h-4 w-4 shrink-0 text-purple-500" />
+                              {p}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {evalResult.followUpQuestion && (
+                      <div className="mt-4 rounded-lg bg-slate-50 border border-slate-200 px-4 py-3">
+                        <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Inspector's follow-up</p>
+                        <p className="text-sm italic text-slate-700">"{evalResult.followUpQuestion}"</p>
+                      </div>
+                    )}
+
+                    {evalResult.inspectorNote && (
+                      <div className="mt-3 rounded-lg bg-blue-50 border border-blue-100 px-4 py-3">
+                        <p className="text-xs font-semibold uppercase tracking-wider text-blue-600 mb-1">Inspector's note</p>
+                        <p className="text-sm text-blue-800">{evalResult.inspectorNote}</p>
+                      </div>
+                    )}
+
+                    {evalResult.regulatoryReference && (
+                      <div className="mt-3 flex items-start gap-2">
+                        <BookOpen className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-400" />
+                        <p className="text-xs text-slate-400 italic">{evalResult.regulatoryReference}</p>
+                      </div>
+                    )}
+
+                    {evalResult.encouragement && (
+                      <div className="mt-4 rounded-lg bg-teal-50 border border-teal-200 px-4 py-3 flex items-start gap-2">
+                        <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-teal-600" />
+                        <p className="text-sm text-teal-800 font-medium">{evalResult.encouragement}</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Mandatory disclaimer */}
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 px-5 py-3 text-xs text-amber-800">
+                    <strong>Important:</strong> {DISCLAIMER}
+                  </div>
+
+                  {/* Next button */}
+                  <div className="flex justify-end">
+                    <button
+                      onClick={goNext}
+                      className="inline-flex items-center gap-2 rounded-xl bg-teal-600 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-teal-700 transition-colors"
+                    >
+                      {qIndex === questions.length - 1 ? (
+                        <>Generate report <FileText className="h-4 w-4" /></>
+                      ) : (
+                        <>Next question <ArrowRight className="h-4 w-4" /></>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Completing */}
+              {step === "completing" && (
+                <div className="rounded-xl border border-slate-200 bg-white p-8 shadow-sm flex flex-col items-center gap-3">
+                  <Loader2 className="h-7 w-7 animate-spin text-teal-600" />
+                  <p className="text-sm text-slate-600">Generating your full inspection report…</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ── Done ──────────────────────────────────────────────────────────── */}
+        {step === "done" && (
+          <div className="flex flex-col items-center justify-center min-h-[60vh] text-center gap-6">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-teal-50 ring-2 ring-teal-200">
+              <CheckCircle2 className="h-8 w-8 text-teal-600" />
+            </div>
+            <div>
+              <h2 className="font-display text-2xl font-bold text-slate-900">Session complete</h2>
+              <p className="mt-2 text-slate-600">Your full inspection report is ready.</p>
+            </div>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <Link
+                to={`/app/report/${reportSessionId}`}
+                className="inline-flex items-center gap-2 rounded-xl bg-teal-600 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-teal-700 transition-colors"
               >
-                My sessions
-              </NavLink>
-              <NavLink
+                <FileText className="h-4 w-4" />
+                View full report
+              </Link>
+              <Link
                 to="/app/dashboard"
-                className={({ isActive }) =>
-                  [linkBase, isActive ? "text-slate-900 bg-slate-100" : "text-slate-600"].join(" ")
-                }
+                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-6 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
               >
                 Dashboard
-              </NavLink>
+              </Link>
             </div>
-            <div className="flex items-center gap-3">
-              <BetaFeedback />
-              {sessionId && (
-                <Button variant="outline" size="sm" onClick={handleExitSession} className="border-slate-200">
-                  Exit session
-                </Button>
-              )}
+            {!isPaidSubscriber && trialInfo && (
+              <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                <div className="font-semibold">Free trial: {trialInfo.remainingTotal} sessions left</div>
+                <div className="mt-1 text-amber-800">
+                  Subscribe for unlimited sessions, full reports, and no daily limits.
+                </div>
+                <div className="mt-3">
+                  <Link
+                    to="/app/paywall"
+                    className="inline-flex items-center gap-2 rounded-lg bg-amber-600 px-4 py-2 text-xs font-semibold text-white hover:bg-amber-700 transition-colors"
+                  >
+                    Unlock unlimited sessions <ArrowRight className="h-3.5 w-3.5" />
+                  </Link>
+                </div>
+              </div>
+            )}
+            <p className="text-xs text-slate-400 max-w-md">{DISCLAIMER}</p>
+          </div>
+        )}
+      </main>
+
+      {/* Generate Report Now — confirmation modal */}
+      {showReportModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm px-4">
+          <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-teal-50 mb-4">
+              <FileText className="h-6 w-6 text-teal-600" />
+            </div>
+            <h2 className="font-display text-xl font-bold text-slate-900 mb-2">Generate report now?</h2>
+            <p className="text-sm text-slate-600 leading-relaxed mb-2">
+              You have answered <strong>{completedCount}</strong> of <strong>{questions.length}</strong> questions in this session.
+            </p>
+            <p className="text-sm text-slate-500 leading-relaxed mb-6">
+              You need a minimum of 5 answers to generate a report. You can generate now based on these {completedCount} answers, or continue for a more complete assessment. Any Quality Standards not covered will be clearly noted in the report.
+            </p>
+            <div className="flex flex-col gap-2">
               <button
-                onClick={handleLogout}
-                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-teal-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-700"
+                onClick={async () => {
+                  setShowReportModal(false);
+                  await completeSession();
+                }}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-teal-600 px-6 py-3 text-sm font-semibold text-white hover:bg-teal-700 transition-colors"
               >
-                Logout
+                <FileText className="h-4 w-4" /> Generate Report Now
+              </button>
+              <button
+                onClick={() => setShowReportModal(false)}
+                className="inline-flex items-center justify-center rounded-xl border border-slate-200 px-6 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+              >
+                Continue Session
               </button>
             </div>
           </div>
         </div>
-        <BetaBanner />
-      </>
-    );
-  };
-
-  if (step === "summary") {
-    const evaluationResults = new Map<number, EvaluationResult>();
-    const formatDomain = (d: string) => d.replace(/([A-Z])/g, " $1").replace(/^\s/, "");
-    const questions = sessionQuestions.map((q, idx) => ({
-      id: String(q.id ?? idx + 1),
-      domain: q.domain,
-      title: formatDomain(q.domain),
-      question: q.text,
-    }));
-
-    const answers: { question_id: string; text?: string }[] = [];
-    const evaluationsForReport: {
-      question_id?: string;
-      score?: number | null;
-      band?: string | null;
-      strengths?: string[] | null;
-      gaps?: string[] | null;
-      recommendations?: string[] | null;
-      follow_up_questions?: string[] | null;
-    }[] = [];
-
-    results.forEach((result, index) => {
-      const evalToUse = result.followUpEvaluation && result.followUpEvaluation.score > result.evaluation.score
-        ? result.followUpEvaluation
-        : result.evaluation;
-      evaluationResults.set(index, evalToUse);
-
-      const question = sessionQuestions[index];
-      const chosenTranscript = result.followUpTranscript ?? result.transcript;
-
-      answers.push({
-        question_id: String(question.id),
-        text: chosenTranscript,
-      });
-
-      const scoreValue = (evalToUse.score4 ?? evalToUse.score ?? 0) * 25;
-
-      evaluationsForReport.push({
-        question_id: String(question.id),
-        score: scoreValue,
-        band: evalToUse.judgementBand,
-        strengths: evalToUse.strengths ?? [],
-        gaps: (evalToUse.gaps ?? evalToUse.weaknesses) ?? [],
-        recommendations: evalToUse.recommendations ?? evalToUse.recommendedActions ?? [],
-        follow_up_questions: evalToUse.followUpQuestions ?? [],
-      });
-    });
-
-    return (
-      <div className="min-h-screen gradient-hero py-12 px-4">
-        <div className="container max-w-4xl mx-auto space-y-8">
-          <FinalSummaryReport
-            questions={questions}
-            answers={answers}
-            evaluations={evaluationsForReport}
-            onPracticeAgain={handlePracticeAgain}
-          />
-          <CompletionPrompt sessionId={sessionId} userId={null} />
-          <div className="mt-8">{contactCard}</div>
-        </div>
-        <Toaster />
-      </div>
-    );
-  }
-
-  const showGlobalLoading =
-      step === "uploading" || step === "transcribing";
-
-  return (
-    <div className="min-h-screen gradient-hero py-8 px-4">
-      <AppNav />
-      <FeedbackButton
-        sessionId={sessionId || undefined}
-        userId={undefined}
-        onSent={() => completeItem("send_feedback")}
-      />
-      {showGlobalLoading && <LoadingOverlay message="Processing..." />}
-      <div className="mx-auto mb-3 flex max-w-5xl justify-end gap-2">
-        {storedSessionId && (!sessionId || sessionId !== storedSessionId) && (
-          <Button variant="outline" size="sm" onClick={() => storedSessionId && resumeSession(storedSessionId)} disabled={resumeLoading}>
-            {resumeLoading ? "Resuming..." : "Resume previous session"}
-          </Button>
-        )}
-        <Button variant="outline" size="sm" onClick={handleStartOver}>
-          Start new session
-        </Button>
-      </div>
-      <div className="mb-3">
-        <div className="mx-auto flex max-w-5xl items-center justify-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-1.5 text-sm font-semibold text-emerald-800 shadow-sm">
-          <span className="h-2 w-2 rounded-full bg-emerald-600 inline-block" />
-          <span>Open access beta - no account or billing required while we collect feedback.</span>
-        </div>
-      </div>
-      <div className="container max-w-4xl mx-auto">
-        {/* Header */}
-        <header className="text-center mb-8 animate-fade-in-up">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-accent text-accent-foreground text-sm font-medium mb-4">
-            Children's Home Inspection Practice
-          </div>
-          <h1 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-2">
-            Ofsted Inspection Simulator
-          </h1>
-          <p className="text-muted-foreground max-w-xl mx-auto">
-            Practice your responses to key SCCIF inspection questions and receive AI-powered feedback
-          </p>
-          <p className="text-xs text-muted-foreground max-w-xl mx-auto flex items-center justify-center gap-2 mt-2">
-            <AlertTriangle className="h-3 w-3" />
-            Do not include names or identifying details about children, staff, or locations.
-          </p>
-        </header>
-
-        {/* Progress */}
-        <ProgressIndicator 
-          currentQuestionIndex={currentQuestionIndex} 
-          completedQuestions={completedQuestions}
-          questions={sessionQuestions}
-        />
-
-        {/* Question Navigation */}
-        <div className="flex items-center justify-between mb-4">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handlePrevQuestion}
-            disabled={currentQuestionIndex === 0}
-            className="gap-1"
-          >
-            <ChevronLeft className="h-4 w-4" />
-            Previous
-          </Button>
-          <span className="text-sm text-muted-foreground">{progressLabel}</span>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleNextQuestion}
-            disabled={step !== "evaluated"}
-            className="gap-1"
-          >
-            Next
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
-
-        {/* Current Question */}
-        <QuestionCard 
-          question={currentQuestion} 
-          currentIndex={currentQuestionIndex} 
-          totalQuestions={sessionQuestions.length} 
-        />
-
-        {/* Follow-up indicator */}
-        {isFollowUp && evaluation === null && (
-          <div className="card-elevated mb-6 p-4 border-l-4 border-l-primary">
-            <div className="flex items-start gap-3">
-              <MessageCircleQuestion className="h-5 w-5 text-primary mt-0.5" />
-              <div>
-                <p className="font-medium text-foreground mb-1">
-                  {getFollowUpLabel(followUpCount, 2)}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  {getFollowUpQuestion()}
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Transcription Warning */}
-        {transcriptionWarning && step === "editing" && (
-          <div className="card-elevated mb-4 p-4 border-l-4 border-l-warning">
-            <div className="flex items-center gap-3">
-              <AlertTriangle className="h-5 w-5 text-warning" />
-              <div className="flex-1">
-                <p className="text-sm text-foreground">Transcription may be incomplete; retry recommended.</p>
-              </div>
-              <Button variant="outline" size="sm" onClick={handleRecordAgain} className="gap-1">
-                <RefreshCw className="h-4 w-4" />
-                Retry
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {/* Step Status */}
-        {step !== "ready" && step !== "evaluated" && step !== "recording" && (
-          <div className="text-center mb-4">
-            <p className="text-sm text-muted-foreground">{getStepMessage()}</p>
-          </div>
-        )}
-
-        {/* Step: Choose Input Method */}
-        {step === "ready" && (
-          <div className="space-y-4">
-            {transcriptionError && (
-              <div className="card-elevated border border-destructive/50 p-4">
-                <p className="text-sm text-destructive mb-2">Transcription failed: {transcriptionError}</p>
-                {allowPlaceholder && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setTranscript("Transcription unavailable; please type your response below.");
-                      setTranscriptionWarning(false);
-                      setStep("editing");
-                      setAllowPlaceholder(false);
-                      setTranscriptionError(null);
-                    }}
-                  >
-                    Use placeholder and continue
-                  </Button>
-                )}
-              </div>
-            )}
-            <div className="card-elevated animate-fade-in-up">
-              <InputMethodSelector
-                onVoiceSelected={handleVoiceSelected}
-                onTextSubmit={handleTextSubmit}
-              />
-            </div>
-            <p className="text-xs text-muted-foreground text-center">
-              Questions? Email{" "}
-              <a className="text-primary underline" href="mailto:reports@ziantra.co.uk">
-                reports@ziantra.co.uk
-              </a>
-            </p>
-          </div>
-        )}
-
-        {/* Step: Voice Recording */}
-        {(step === "recording" || step === "uploading" || step === "transcribing") && (
-          <div className="card-elevated animate-fade-in-up">
-            {step === "uploading" || step === "transcribing" ? (
-              <div className="flex flex-col items-center gap-4 p-12">
-                <Loader2 className="h-12 w-12 animate-spin text-primary" />
-                <div className="text-center">
-                  <p className="font-medium text-foreground mb-1">
-                    {step === "uploading" ? "Uploading audio..." : "Transcribing your response..."}
-                  </p>
-                  <p className="text-sm text-muted-foreground">This may take a few moments</p>
-                </div>
-              </div>
-            ) : (
-              <div>
-                <div className="flex justify-end p-4 pb-0">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setStep("ready")}
-                    className="text-muted-foreground"
-                  >
-                    Back to options
-                  </Button>
-                </div>
-                <VoiceRecorder onRecordingComplete={handleRecordingComplete} />
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Step: Transcript Review */}
-        {(step === "editing" || step === "evaluating") && (
-          <TranscriptEditor
-            transcript={transcript}
-            onTranscriptChange={setTranscript}
-            onSubmitForEvaluation={handleSubmitForEvaluation}
-            onRecordAgain={handleRecordAgain}
-            isLoading={step === "evaluating"}
-          />
-        )}
-
-        {/* Step: Evaluation Results */}
-        {step === "evaluated" && evaluation && (
-          <div className="space-y-6">
-          <EvaluationResults
-            result={evaluation}
-            transcript={transcript}
-            onNextQuestion={handleNextQuestion}
-            isLastQuestion={currentQuestionIndex === sessionQuestions.length - 1}
-            onViewSummary={handleViewSummary}
-            onExitSession={handleExitSession}
-          />
-            
-            {/* Follow-up option */}
-            {needsFollowUp() && (
-              <div className="card-elevated p-6 border-l-4 border-l-warning">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <MessageCircleQuestion className="h-5 w-5 text-warning" />
-                      <h3 className="font-display text-lg font-semibold text-foreground">
-                        Improve Your Score
-                      </h3>
-                    </div>
-                    <p className="text-sm text-muted-foreground mb-3">
-                      Your judgement was {evaluation.judgementBand}. You can answer one follow-up question to potentially improve your evaluation.
-                    </p>
-                    {getFollowUpQuestion() && (
-                      <p className="text-foreground font-medium">
-                        "{getFollowUpQuestion()}"
-                      </p>
-                    )}
-                  </div>
-                  <Button onClick={startFollowUp} variant="default">
-                    Answer Follow-up
-                  </Button>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        <div className="mt-10 space-y-4">
-          {/* Full-width contact form */}
-          {contactCard}
-          {/* Compact email preference card */}
-          <div className="card-elevated p-6 space-y-3 max-w-xl mx-auto text-center">
-            <h3 className="font-display text-lg font-semibold text-foreground">Prefer email?</h3>
-            <p className="text-sm text-muted-foreground">
-              Reach us anytime at{" "}
-              <a className="text-primary underline" href={`mailto:${emailAddress}`}>
-                {emailAddress}
-              </a>
-              . Include context from your session if helpful (no names or identifying details).
-            </p>
-          </div>
-        </div>
-
-        {/* Footer */}
-        <footer className="mt-12 text-center text-sm text-muted-foreground">
-          <p>Based on Ofsted's Social Care Common Inspection Framework (SCCIF)</p>
-        </footer>
-      </div>
-      <Toaster />
+      )}
     </div>
   );
-};
-
-export default Index;
+}

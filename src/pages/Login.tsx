@@ -5,6 +5,12 @@ import { useLoading } from "@/providers/LoadingProvider";
 
 type Mode = "signin" | "signup";
 
+const ROLES = [
+  "Registered Manager",
+  "Deputy Manager",
+  "Responsible Individual",
+] as const;
+
 export default function Login() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
@@ -12,6 +18,9 @@ export default function Login() {
   const [mode, setMode] = useState<Mode>("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
+  const [role, setRole] = useState<string>("");
+  const [homeName, setHomeName] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -37,23 +46,10 @@ export default function Login() {
     };
   }, [navigate]);
 
-  const signInWithGoogle = async () => {
+  const switchMode = (next: Mode) => {
+    setMode(next);
     setError(null);
     setMessage(null);
-    setBusy(true);
-    loading.show("Signing you in...");
-    try {
-      const params = new URLSearchParams({
-        provider: "google",
-        redirect_uri: window.location.origin,
-      });
-      window.location.href = `/~oauth/initiate?${params.toString()}`;
-    } catch (e: unknown) {
-      const message = e instanceof Error ? e.message : "Google sign-in failed.";
-      setError(message);
-      loading.hide();
-      setBusy(false);
-    }
   };
 
   const submitEmail = async () => {
@@ -64,6 +60,12 @@ export default function Login() {
     if (!password) return setError("Please enter your password.");
     if (password.length < 6) return setError("Password must be at least 6 characters.");
 
+    if (mode === "signup") {
+      if (!name.trim()) return setError("Please enter your name.");
+      if (!role) return setError("Please select your role.");
+      if (!homeName.trim()) return setError("Please enter your home name.");
+    }
+
     setBusy(true);
     loading.show(mode === "signin" ? "Signing you in..." : "Creating your account...");
     try {
@@ -71,18 +73,30 @@ export default function Login() {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
       } else {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
-          options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+          options: {
+            emailRedirectTo: `${window.location.origin}/auth/callback`,
+            data: { name: name.trim() },
+          },
         });
         if (error) throw error;
 
-        setMessage("Account created. If email confirmation is enabled, check your inbox to finish signup.");
+        // If we have a session (email confirmation disabled), update profile immediately
+        if (data.session) {
+          await supabase
+            .from("users")
+            .update({ role, home_name: homeName.trim() })
+            .eq("id", data.session.user.id);
+          // onAuthStateChange will navigate to /app
+        } else {
+          setMessage("Account created! Check your inbox to confirm your email, then sign in.");
+        }
       }
     } catch (e: unknown) {
-      const message = e instanceof Error ? e.message : "Authentication failed.";
-      setError(message);
+      const msg = e instanceof Error ? e.message : "Authentication failed.";
+      setError(msg);
     } finally {
       loading.hide();
       setBusy(false);
@@ -92,10 +106,16 @@ export default function Login() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-teal-50/60 to-white">
       <div className="mx-auto flex min-h-screen max-w-6xl flex-col items-center px-4 py-12">
+        {/* Logo */}
         <div className="flex w-full max-w-xl justify-start">
-          <a href="/" className="inline-flex items-center gap-3 rounded-xl bg-white/80 px-3 py-2 text-slate-900 shadow-sm ring-1 ring-slate-200 transition hover:-translate-y-0.5 hover:shadow-md">
-            <img src="/logo.svg" alt="Voice Inspector" className="h-10 w-10" />
-            <span className="font-display text-lg font-semibold">Voice Inspector</span>
+          <a href="/" className="inline-flex items-center gap-2.5 rounded-xl bg-white/80 px-3 py-2 text-slate-900 shadow-sm ring-1 ring-slate-200 transition hover:-translate-y-0.5 hover:shadow-md">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-teal-600">
+              <svg viewBox="0 0 32 32" fill="none" className="h-5 w-5" aria-hidden="true">
+                <path d="M16 4L4 10v12l12 6 12-6V10L16 4z" stroke="white" strokeWidth="2" strokeLinejoin="round" fill="none" />
+                <path d="M16 4v18M4 10l12 6 12-6" stroke="white" strokeWidth="2" strokeLinejoin="round" />
+              </svg>
+            </div>
+            <span className="font-display text-lg font-semibold">InspectReady</span>
           </a>
         </div>
 
@@ -104,10 +124,16 @@ export default function Login() {
             <div className="absolute inset-y-0 left-0 w-1.5 bg-gradient-to-b from-teal-500 to-emerald-400" />
             <div className="relative p-8 sm:p-10">
               <div className="text-center">
-                <p className="text-sm font-semibold uppercase tracking-[0.08em] text-teal-700">Welcome</p>
-                <h1 className="mt-2 font-display text-3xl font-bold text-slate-900">Welcome Back</h1>
+                <p className="text-sm font-semibold uppercase tracking-[0.08em] text-teal-700">
+                  {mode === "signin" ? "Welcome back" : "Get started free"}
+                </p>
+                <h1 className="mt-2 font-display text-3xl font-bold text-slate-900">
+                  {mode === "signin" ? "Sign in to InspectReady" : "Create your account"}
+                </h1>
                 <p className="mt-2 text-sm text-slate-600">
-                  We've missed you, let's start building something great together, shall we?
+                  {mode === "signin"
+                    ? "Continue your inspection preparation."
+                    : "Start your free trial — no card required."}
                 </p>
               </div>
 
@@ -122,60 +148,58 @@ export default function Login() {
                 </div>
               )}
 
-              <div className="mt-6 space-y-4">
-                <button
-                  onClick={signInWithGoogle}
-                  disabled={busy}
-                  className="flex w-full items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-900 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md disabled:opacity-60"
-                >
-                  <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-white">
-                    <svg viewBox="0 0 48 48" className="h-6 w-6" aria-hidden="true">
-                      <path
-                        fill="#EA4335"
-                        d="M24 9.5c3.3 0 6.2 1.1 8.5 3.3l6.3-6.3C34.2 2.7 29.5 1 24 1 14.6 1 6.6 6.8 3.2 15.1l7.5 5.8C12.6 14.7 17.8 9.5 24 9.5z"
-                      />
-                      <path
-                        fill="#4285F4"
-                        d="M46.5 24.5c0-1.6-.1-3.2-.4-4.7H24v9.1h12.6c-.5 2.6-2 4.8-4.3 6.3l6.9 5.3c4-3.7 6.3-9 6.3-16z"
-                      />
-                      <path
-                        fill="#FBBC05"
-                        d="M10.7 28.9c-.5-1.6-.8-3.2-.8-4.9s.3-3.3.8-4.9l-7.5-5.8C1.1 16.1 0 19.9 0 24s1.1 7.9 3.2 10.7l7.5-5.8z"
-                      />
-                      <path
-                        fill="#34A853"
-                        d="M24 47c5.5 0 10.1-1.8 13.5-4.8l-6.9-5.3c-1.9 1.3-4.4 2.1-6.6 2.1-6.2 0-11.4-5.2-12.7-12l-7.5 5.8C6.6 41.2 14.6 47 24 47z"
-                      />
-                      <path fill="none" d="M0 0h48v48H0z" />
-                    </svg>
-                  </span>
-                  <span>{busy ? "Please wait..." : "Continue with Google"}</span>
-                </button>
-
-                <div className="flex items-center gap-3 text-xs uppercase tracking-[0.08em] text-slate-400">
-                  <div className="h-px flex-1 bg-slate-200" />
-                  <span>Or</span>
-                  <div className="h-px flex-1 bg-slate-200" />
-                </div>
-
-                <div className="space-y-3">
-                  <input
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Email address"
-                    type="email"
-                    autoComplete="email"
-                    className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-teal-600"
-                  />
-                  <div className="space-y-2">
+              <div className="mt-6 space-y-3">
+                {/* Signup-only fields */}
+                {mode === "signup" && (
+                  <>
                     <input
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Password"
-                      type="password"
-                      autoComplete={mode === "signin" ? "current-password" : "new-password"}
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="Your full name"
+                      type="text"
+                      autoComplete="name"
                       className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-teal-600"
                     />
+                    <select
+                      value={role}
+                      onChange={(e) => setRole(e.target.value)}
+                      className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-teal-600 bg-white"
+                    >
+                      <option value="">Your role…</option>
+                      {ROLES.map((r) => (
+                        <option key={r} value={r}>{r}</option>
+                      ))}
+                    </select>
+                    <input
+                      value={homeName}
+                      onChange={(e) => setHomeName(e.target.value)}
+                      placeholder="Home name (e.g. Meadow View House)"
+                      type="text"
+                      className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-teal-600"
+                    />
+                  </>
+                )}
+
+                {/* Email + password */}
+                <input
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Email address"
+                  type="email"
+                  autoComplete="email"
+                  className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-teal-600"
+                />
+
+                <div className="space-y-1">
+                  <input
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Password"
+                    type="password"
+                    autoComplete={mode === "signin" ? "current-password" : "new-password"}
+                    className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-teal-600"
+                  />
+                  {mode === "signin" && (
                     <div className="flex justify-end">
                       <button
                         type="button"
@@ -192,10 +216,10 @@ export default function Login() {
                             await supabase.auth.resetPasswordForEmail(email.trim(), {
                               redirectTo: `${window.location.origin}/auth/callback`,
                             });
-                            setMessage("Reset link sent. Check your inbox to continue.");
+                            setMessage("Reset link sent. Check your inbox.");
                           } catch (e: unknown) {
-                            const message = e instanceof Error ? e.message : "Unable to send reset link right now.";
-                            setError(message);
+                            const msg = e instanceof Error ? e.message : "Unable to send reset link.";
+                            setError(msg);
                           } finally {
                             loading.hide();
                             setBusy(false);
@@ -206,26 +230,34 @@ export default function Login() {
                         Forgot password?
                       </button>
                     </div>
-                  </div>
-
-                  <button
-                    onClick={submitEmail}
-                    disabled={busy}
-                    className="w-full rounded-xl bg-teal-600 py-3 text-sm font-semibold text-white shadow-sm ring-1 ring-teal-100 transition hover:-translate-y-0.5 hover:bg-teal-700 hover:shadow-md disabled:opacity-60"
-                  >
-                    {busy ? "Please wait..." : mode === "signin" ? "Sign In" : "Create Account"}
-                  </button>
+                  )}
                 </div>
+
+                <button
+                  onClick={submitEmail}
+                  disabled={busy}
+                  className="w-full rounded-xl bg-teal-600 py-3 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-teal-700 hover:shadow-md disabled:opacity-60"
+                >
+                  {busy
+                    ? "Please wait..."
+                    : mode === "signin"
+                    ? "Sign in"
+                    : "Start free trial"}
+                </button>
               </div>
 
               <div className="mt-8 border-t pt-5 text-center text-xs text-slate-500">
-                <div>By continuing, you agree to our Terms of Service and Privacy Policy.</div>
+                {mode === "signup" && (
+                  <p className="mb-2">By creating an account you agree to our Terms of Service and Privacy Policy.</p>
+                )}
                 <button
                   type="button"
-                  onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
-                  className="mt-2 font-semibold text-teal-700 hover:text-teal-800"
+                  onClick={() => switchMode(mode === "signin" ? "signup" : "signin")}
+                  className="font-semibold text-teal-700 hover:text-teal-800"
                 >
-                  {mode === "signin" ? "Need an account? Click here" : "Already have an account? Sign in"}
+                  {mode === "signin"
+                    ? "No account yet? Start your free trial"
+                    : "Already have an account? Sign in"}
                 </button>
               </div>
             </div>

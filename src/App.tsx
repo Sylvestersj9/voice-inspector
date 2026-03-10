@@ -5,7 +5,7 @@ import RequireAuth from "./auth/RequireAuth";
 const Login = lazy(() => import("./pages/Login"));
 const AuthCallback = lazy(() => import("./pages/AuthCallback"));
 const Index = lazy(() => import("./pages/Index"));
-const Landing = lazy(() => import("./pages/marketing/Landing"));
+const Home = lazy(() => import("./pages/Home"));
 const Pricing = lazy(() => import("./pages/marketing/Pricing"));
 const FAQ = lazy(() => import("./pages/marketing/FAQ"));
 const Contact = lazy(() => import("./pages/Contact"));
@@ -13,8 +13,9 @@ const Terms = lazy(() => import("./pages/legal/Terms"));
 const Privacy = lazy(() => import("./pages/legal/Privacy"));
 const Disclaimer = lazy(() => import("./pages/legal/Disclaimer"));
 const AcceptableUse = lazy(() => import("./pages/legal/AcceptableUse"));
-const Sessions = lazy(() => import("./pages/Sessions"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Report = lazy(() => import("./pages/app/Report"));
+const Paywall = lazy(() => import("./pages/app/Paywall"));
 
 export default function App() {
   return (
@@ -22,7 +23,7 @@ export default function App() {
       <Suspense fallback={<div />}>
         <Routes>
           {/* Public */}
-          <Route path="/" element={<Landing />} />
+          <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/pricing" element={<Pricing />} />
@@ -33,7 +34,7 @@ export default function App() {
           <Route path="/disclaimer" element={<Disclaimer />} />
           <Route path="/acceptable-use" element={<AcceptableUse />} />
 
-          {/* Protected ƒ?" REAL APP */}
+          {/* Protected app */}
           <Route
             path="/app"
             element={
@@ -43,18 +44,26 @@ export default function App() {
             }
           />
           <Route
-            path="/app/sessions"
-            element={
-              <RequireAuth>
-                <Sessions />
-              </RequireAuth>
-            }
-          />
-          <Route
             path="/app/dashboard"
             element={
               <RequireAuth>
                 <Dashboard />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/app/report/:sessionId"
+            element={
+              <RequireAuth>
+                <Report />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/app/paywall"
+            element={
+              <RequireAuth>
+                <Paywall />
               </RequireAuth>
             }
           />

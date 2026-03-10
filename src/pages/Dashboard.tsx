@@ -1,353 +1,295 @@
 import { useEffect, useState } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
-import { Button } from "@/components/ui/button";
-import { toast } from "@/components/ui/use-toast";
-import { buildDashboardModel, type DashboardModel } from "@/lib/dashboardModel";
-import { BetaFeedback } from "@/components/BetaFeedback";
-import FeedbackButton from "@/feedback/FeedbackButton";
-import { OnboardingChecklist } from "@/onboarding/OnboardingChecklist";
-import { useOnboardingChecklist } from "@/onboarding/useOnboardingChecklist";
-import { BetaBanner } from "@/components/BetaBanner";
+import { useAuth } from "@/auth/AuthProvider";
+import { getBandColorClass } from "@/lib/questions";
+import { computeTrialUsage } from "@/lib/trial";
+import { ArrowRight, PlayCircle, FileText, LogOut } from "lucide-react";
+
+type UserProfile = {
+  name: string | null;
+  role: string | null;
+  home_name: string | null;
+};
+
+type Subscription = {
+  status: string;
+  stripe_subscription_id: string | null;
+  created_at: string | null;
+};
 
 type SessionRow = {
   id: string;
-  created_at: string;
+  started_at: string;
+  completed_at: string | null;
+  overall_band: string | null;
+  overall_score: number | null;
 };
 
-type QuestionRow = {
-  id: string;
-  domain_name: string | null;
-};
-
-type EvalRow = {
-  inspection_session_question_id: string;
-  score: number | null;
-  band: string | null;
-  strengths: string | null;
-  gaps: string | null;
-};
-
-const scoreToBand = (score: number) => {
-  if (score >= 85) return "Outstanding";
-  if (score >= 70) return "Good";
-  if (score >= 50) return "Requires improvement to be good";
-  return "Inadequate";
-};
-
-const parseArray = (raw: string | null) => {
-  if (!raw) return [] as string[];
-  try {
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed.map((v) => String(v)) : [];
-  } catch {
-    return [];
+function statusLabel(sub: Subscription | null, trialInfo: ReturnType<typeof computeTrialUsage> | null) {
+  if (!sub) return { text: "Free trial", colour: "bg-teal-50 text-teal-700" };
+  const isPaid = !!sub.stripe_subscription_id && (sub.status === "active" || sub.status === "trialing");
+  if (isPaid) return { text: "Active subscription", colour: "bg-emerald-50 text-emerald-700" };
+  if (trialInfo) {
+    if (trialInfo.expired) return { text: "Trial ended", colour: "bg-amber-50 text-amber-700" };
+    return { text: `Trial: ${trialInfo.remainingToday} left today`, colour: "bg-amber-50 text-amber-700" };
   }
-};
+  switch (sub.status) {
+    case "active": return { text: "Active subscription", colour: "bg-emerald-50 text-emerald-700" };
+    case "past_due": return { text: "Payment overdue", colour: "bg-red-50 text-red-700" };
+    case "cancelled": return { text: "Subscription cancelled", colour: "bg-slate-100 text-slate-600" };
+    default: return { text: sub.status, colour: "bg-slate-100 text-slate-600" };
+  }
+}
 
-const linkBase =
-  "text-sm font-medium px-3 py-2 rounded-lg transition hover:text-slate-900 hover:bg-slate-100";
+function canStartSession(sub: Subscription | null, trialInfo: ReturnType<typeof computeTrialUsage> | null): boolean {
+  if (!sub) return true;
+  const isPaid = !!sub.stripe_subscription_id && (sub.status === "active" || sub.status === "trialing");
+  if (isPaid) return true;
+  if (!trialInfo) return true;
+  if (trialInfo.expired) return false;
+  if (trialInfo.remainingTotal <= 0) return false;
+  if (trialInfo.remainingToday <= 0) return false;
+  return true;
+}
 
 export default function Dashboard() {
+  const { user } = useAuth();
   const navigate = useNavigate();
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [subscription, setSubscription] = useState<Subscription | null>(null);
+  const [trialInfo, setTrialInfo] = useState<ReturnType<typeof computeTrialUsage> | null>(null);
+  const [sessions, setSessions] = useState<SessionRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [dashboardModel, setDashboardModel] = useState<DashboardModel | null>(null);
-  const { completeItem, reset, state } = useOnboardingChecklist();
 
   useEffect(() => {
-    let cancelled = false;
-    async function loadData() {
+    if (!user) return;
+    async function load() {
       setLoading(true);
-      const { data: auth } = await supabase.auth.getUser();
-      if (!auth?.user) {
-        toast({ title: "Please log in again", description: "Your session expired." });
-        navigate("/login", { replace: true });
-        return;
+      const [{ data: prof }, { data: sub }, { data: sess }] = await Promise.all([
+        supabase.from("users").select("name,role,home_name").eq("id", user!.id).single(),
+        supabase.from("subscriptions").select("status,stripe_subscription_id,created_at").eq("user_id", user!.id).maybeSingle(),
+        supabase
+          .from("sessions")
+          .select("id,started_at,completed_at,overall_band,overall_score")
+          .eq("user_id", user!.id)
+          .order("started_at", { ascending: false })
+          .limit(20),
+      ]);
+      setProfile(prof ?? null);
+      setSubscription(sub ?? null);
+      setSessions(sess ?? []);
+
+      const status = sub?.status ?? null;
+      const stripeId = sub?.stripe_subscription_id ?? null;
+      const isPaid = !!stripeId && (status === "active" || status === "trialing");
+      if (!isPaid) {
+        const trialStart = sub?.created_at ? new Date(sub.created_at) : new Date();
+        const { data: trialSessions } = await supabase
+          .from("sessions")
+          .select("started_at")
+          .eq("user_id", user!.id)
+          .gte("started_at", trialStart.toISOString());
+        setTrialInfo(computeTrialUsage(trialStart, trialSessions ?? []));
+      } else {
+        setTrialInfo(null);
       }
-
-      const { data: sessionsWithEvals, error: sessErr } = await supabase
-        .from("inspection_sessions")
-        .select("id, created_at, inspection_session_questions(id, inspection_evaluations(id))")
-        .eq("created_by", auth.user.id)
-        .order("created_at", { ascending: false })
-        .limit(10);
-
-      if (cancelled) return;
-      if (sessErr) {
-        console.error("Load sessions error:", sessErr);
-        toast({ title: "Could not load sessions", description: sessErr.message });
-      }
-
-      const chosen =
-        Array.isArray(sessionsWithEvals)
-          ? sessionsWithEvals.find(
-              (s: unknown) =>
-                s &&
-                typeof s === "object" &&
-                Array.isArray((s as { inspection_session_questions?: unknown }).inspection_session_questions) &&
-                (s as { inspection_session_questions: unknown[] }).inspection_session_questions.some(
-                  (q: unknown) =>
-                    q &&
-                    typeof q === "object" &&
-                    Array.isArray((q as { inspection_evaluations?: unknown }).inspection_evaluations) &&
-                    (q as { inspection_evaluations: unknown[] }).inspection_evaluations.length > 0,
-                ),
-            )
-          : null;
-
-      if (!chosen) {
-        setDashboardModel(null);
-        setLoading(false);
-        return;
-      }
-
-      const sessionMeta: SessionRow = { id: chosen.id, created_at: chosen.created_at };
-
-      const { data: questions, error: qErr } = await supabase
-        .from("inspection_session_questions")
-        .select("id,domain_name")
-        .eq("inspection_session_id", sessionMeta.id);
-
-      if (cancelled) return;
-      if (qErr || !questions) {
-        setDashboardModel(null);
-        setLoading(false);
-        return;
-      }
-
-      const qMap: Record<string, string> = {};
-      (questions as QuestionRow[]).forEach((q) => {
-        qMap[q.id] = q.domain_name || "General";
-      });
-      const questionIds = (questions as QuestionRow[]).map((q) => q.id);
-
-      const { data: evals, error: eErr } = await supabase
-        .from("inspection_evaluations")
-        .select("inspection_session_question_id,score,band,strengths,gaps")
-        .in("inspection_session_question_id", questionIds);
-
-      if (cancelled) return;
-      if (eErr) {
-        console.error("Load evaluations error:", eErr);
-        toast({ title: "Could not load evaluations", description: eErr.message });
-      }
-      if (eErr || !evals || (evals as EvalRow[]).length === 0) {
-        setDashboardModel({
-          totalQuestions: questionIds.length,
-          evaluatedCount: 0,
-          averageScore: 0,
-          averageScorePercent: 0,
-          band: scoreToBand(0),
-          strongestDomain: "Not enough data yet",
-          weakestDomain: "Not enough data yet",
-          domainStats: [],
-          strengthThemes: [],
-          improvementActions: [],
-          sessionCreatedAt: sessionMeta.created_at,
-        });
-        setLoading(false);
-        return;
-      }
-
-      const model = buildDashboardModel({
-        questions: (questions as QuestionRow[]).map((q) => ({ id: q.id, domain: q.domain_name || "General" })),
-        evaluations: (evals as EvalRow[]).map((ev) => ({
-          inspection_session_question_id: ev.inspection_session_question_id,
-          score: typeof ev.score === "number" && Number.isFinite(ev.score) ? ev.score : 0,
-          strengths: parseArray(ev.strengths),
-          gaps: parseArray(ev.gaps),
-        })),
-        sessionCreatedAt: sessionMeta.created_at,
-      });
-
-      setDashboardModel(model);
       setLoading(false);
     }
+    load();
+  }, [user]);
 
-    loadData();
-    return () => {
-      cancelled = true;
-    };
-  }, [navigate]);
-
-  const AppNav = () => {
-    return (
-      <>
-        <div className="sticky top-0 z-20 bg-white/80 backdrop-blur border-b border-slate-200">
-          <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-            <div className="flex items-center gap-2">
-              <div className="text-base font-bold text-black font-display">Voice Inspector</div>
-              <span className="rounded-full bg-teal-50 px-2 py-0.5 text-xs font-semibold text-teal-700 ring-1 ring-teal-100">
-                Beta
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <NavLink
-                to="/app"
-                className={({ isActive }) =>
-                  [linkBase, isActive ? "text-slate-900 bg-slate-100" : "text-slate-600"].join(" ")
-                }
-              >
-                Simulator
-              </NavLink>
-              <NavLink
-                to="/app/sessions"
-                className={({ isActive }) =>
-                  [linkBase, isActive ? "text-slate-900 bg-slate-100" : "text-slate-600"].join(" ")
-                }
-              >
-                My sessions
-              </NavLink>
-              <NavLink
-                to="/app/dashboard"
-                className={({ isActive }) =>
-                  [linkBase, isActive ? "text-slate-900 bg-slate-100" : "text-slate-600"].join(" ")
-                }
-              >
-                Dashboard
-              </NavLink>
-            </div>
-            <div className="flex items-center gap-3">
-              <BetaFeedback />
-              <button
-                onClick={async () => {
-                  await supabase.auth.signOut();
-                  toast({ title: "Logged out successfully" });
-                  navigate("/login", { replace: true, state: { toast: "Logged out successfully" } });
-                }}
-                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-teal-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-700"
-              >
-                Logout
-              </button>
-            </div>
-          </div>
-        </div>
-        <BetaBanner />
-      </>
-    );
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    navigate("/login?loggedOut=true", { replace: true });
   };
 
-  const renderBars = () => {
-    if (!dashboardModel || dashboardModel.domainStats.length === 0) {
-      return <div className="text-sm text-slate-600">No evaluations yet. Complete a session to see scores by domain.</div>;
+  const startSession = () => {
+    if (!canStartSession(subscription, trialInfo)) {
+      navigate("/app/paywall");
+      return;
     }
-    return (
-      <div className="space-y-3">
-        {dashboardModel.domainStats.map((d) => (
-          <div key={d.domain}>
-            <div className="flex items-center justify-between text-sm text-slate-700">
-              <span>{d.domain}</span>
-              <span className="font-semibold text-slate-900">{d.average.toFixed(1)}</span>
-            </div>
-            <div className="mt-1 h-2 rounded-full bg-slate-100">
-              <div
-                className="h-2 rounded-full bg-[#0D9488]"
-                style={{ width: `${Math.max(0, Math.min(100, d.average))}%` }}
-              />
-            </div>
-          </div>
-        ))}
-      </div>
-    );
+    navigate("/app");
   };
+
+  const displayName = profile?.name || user?.email?.split("@")[0] || "Manager";
+  const sub = subscription;
+  const badge = statusLabel(sub, trialInfo);
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <AppNav />
-      <FeedbackButton onSent={() => completeItem("send_feedback")} />
-      <div className="mx-auto max-w-6xl px-4 py-6 space-y-6">
-        <div>
-          <h1 className="text-2xl font-semibold text-slate-900">Performance overview</h1>
-          <p className="text-sm text-slate-600">Summary of your inspection practice</p>
+      {/* Nav */}
+      <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur-sm">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-teal-600">
+              <svg viewBox="0 0 32 32" fill="none" className="h-4 w-4" aria-hidden="true">
+                <path d="M16 4L4 10v12l12 6 12-6V10L16 4z" stroke="white" strokeWidth="2" strokeLinejoin="round" fill="none" />
+                <path d="M16 4v18M4 10l12 6 12-6" stroke="white" strokeWidth="2" strokeLinejoin="round" />
+              </svg>
+            </div>
+            <span className="font-display font-bold text-slate-900">InspectReady</span>
+          </div>
+          <nav className="hidden items-center gap-1 sm:flex">
+            <Link to="/app" className="rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors">
+              Practice
+            </Link>
+            <Link to="/app/dashboard" className="rounded-lg px-3 py-2 text-sm font-medium text-slate-900 bg-slate-100">
+              Dashboard
+            </Link>
+            {sub?.status !== "active" && (
+              <Link
+                to="/pricing"
+                className="rounded-lg px-3 py-2 text-sm font-semibold text-teal-700 hover:bg-teal-50 transition-colors"
+              >
+                Subscribe
+              </Link>
+            )}
+          </nav>
+          <button
+            onClick={handleSignOut}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+          >
+            <LogOut className="h-4 w-4" />
+            <span className="hidden sm:inline">Sign out</span>
+          </button>
         </div>
+      </header>
 
-        <div className="flex justify-end">
-          <Button variant="outline" size="sm" onClick={reset}>
-            {state.dismissed ? "Show checklist" : "Reset checklist"}
-          </Button>
-        </div>
-
-        <div className="max-w-lg">
-          <OnboardingChecklist />
-        </div>
-
-        {loading ? (
-          <div className="text-sm text-slate-600">Loading dashboard…</div>
-        ) : !dashboardModel ? (
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-600">
-            <div className="text-base font-semibold text-slate-900">No evaluations yet</div>
-            <div className="mt-1 text-sm text-slate-600">
-              Complete an evaluation in the simulator to see your performance overview.
+      <main className="mx-auto max-w-6xl px-4 py-8 space-y-8">
+        {/* Welcome */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h1 className="font-display text-2xl font-bold text-slate-900">
+              Welcome back, {displayName}
+            </h1>
+            {profile?.home_name && (
+              <p className="mt-0.5 text-sm text-slate-500">{profile.home_name}</p>
+            )}
+            <div className={`mt-2 inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${badge.colour}`}>
+              {badge.text}
             </div>
           </div>
-        ) : (
-          <>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-              <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                <div className="text-xs font-semibold text-slate-600">Overall score</div>
-                <div className="mt-2 flex items-center gap-2">
-                  <div className="text-2xl font-semibold text-slate-900">{dashboardModel.averageScore.toFixed(1)}</div>
-                  <span className="inline-flex items-center rounded-full bg-[#0D9488] px-2 py-1 text-xs font-semibold text-white">
-                    {dashboardModel.band}
-                  </span>
-                </div>
-              </div>
-              <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                <div className="text-xs font-semibold text-slate-600">Coverage</div>
-                <div className="mt-2 text-xl font-semibold text-slate-900">
-                  {dashboardModel.evaluatedCount} / {dashboardModel.totalQuestions || 0}
-                </div>
-                <div className="text-xs text-slate-600">Latest session: {new Date(dashboardModel.sessionCreatedAt).toLocaleDateString()}</div>
-              </div>
-              <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                <div className="text-xs font-semibold text-slate-600">Strongest domain</div>
-                <div className="mt-2 text-xl font-semibold text-slate-900">{dashboardModel.strongestDomain}</div>
-              </div>
-              <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                <div className="text-xs font-semibold text-slate-600">Priority improvement</div>
-                <div className="mt-2 text-xl font-semibold text-slate-900">{dashboardModel.weakestDomain}</div>
-              </div>
-            </div>
+          <div className="flex gap-2">
+            {!canStartSession(sub, trialInfo) && (
+              <Link
+                to="/pricing"
+                className="inline-flex items-center justify-center rounded-xl border border-teal-600 px-4 py-2.5 text-sm font-semibold text-teal-600 hover:bg-teal-50 transition-colors"
+              >
+                Upgrade — £29/mo
+              </Link>
+            )}
+            <button
+              onClick={startSession}
+              className="inline-flex items-center justify-center rounded-xl bg-teal-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-teal-700 transition-colors"
+            >
+              <PlayCircle className="mr-2 h-4 w-4" />
+              Start new session
+            </button>
+          </div>
+        </div>
 
-            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-sm font-semibold text-slate-900">Scores by domain</div>
-                  <div className="text-xs text-slate-600">Latest evaluated session</div>
-                </div>
-              </div>
-              <div className="mt-4">{renderBars()}</div>
-            </div>
-
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm space-y-2">
-                <div className="text-sm font-semibold text-slate-900">Key strengths</div>
-                {dashboardModel.strengthThemes.length ? (
-                  <ul className="list-disc pl-5 text-sm text-slate-800 space-y-1">
-                    {dashboardModel.strengthThemes.slice(0, 3).map((s, i) => (
-                      <li key={i}>{s}</li>
-                    ))}
-                  </ul>
-                ) : (
-                  <div className="text-sm text-slate-600">No strengths identified yet.</div>
-                )}
-              </div>
-              <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm space-y-2">
-                <div className="text-sm font-semibold text-slate-900">Priority improvements</div>
-                {dashboardModel.improvementActions.length ? (
-                  <ul className="list-disc pl-5 text-sm text-slate-800 space-y-1">
-                    {dashboardModel.improvementActions.slice(0, 3).map((s, i) => (
-                      <li key={i}>{s}</li>
-                    ))}
-                  </ul>
-                ) : (
-                  <div className="text-sm text-slate-600">No improvement actions identified yet.</div>
-                )}
-              </div>
-            </div>
-          </>
+        {/* Trial / upgrade nudge */}
+        {trialInfo && !canStartSession(sub, trialInfo) && (
+          <div className="rounded-xl border border-amber-200 bg-amber-50 px-5 py-4">
+            <p className="text-sm font-semibold text-amber-900">Free trial limit reached.</p>
+            <p className="mt-1 text-sm text-amber-800">Trial includes 3 days with up to 5 sessions per day (15 total).</p>
+            <p className="mt-1 text-sm text-amber-800">
+              Subscribe for unlimited sessions and full inspection reports.
+            </p>
+            <Link
+              to="/pricing"
+              className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-700 transition-colors"
+            >
+              Subscribe now <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
         )}
-      </div>
+
+        {/* Session history */}
+        <div>
+          <h2 className="font-display text-lg font-bold text-slate-900 mb-4">Session history</h2>
+          {loading ? (
+            <div className="rounded-xl border border-slate-200 bg-white p-6 text-sm text-slate-500">Loading sessions…</div>
+          ) : sessions.length === 0 ? (
+            <div className="rounded-xl border border-slate-200 bg-white p-8 text-center">
+              <PlayCircle className="mx-auto h-10 w-10 text-slate-300" />
+              <p className="mt-3 font-semibold text-slate-700">No sessions yet</p>
+              <p className="mt-1 text-sm text-slate-500">Start your first practice session to see your history here.</p>
+              <button
+                onClick={startSession}
+                className="mt-4 inline-flex items-center gap-2 rounded-xl bg-teal-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-teal-700 transition-colors"
+              >
+                Start first session <ArrowRight className="h-4 w-4" />
+              </button>
+            </div>
+          ) : (
+            <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-slate-100 bg-slate-50">
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Date</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Overall band</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Status</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-500">Report</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {sessions.map((s) => {
+                    const date = new Date(s.started_at).toLocaleDateString("en-GB", {
+                      day: "numeric", month: "short", year: "numeric",
+                    });
+                    const completed = !!s.completed_at;
+                    return (
+                      <tr key={s.id} className="hover:bg-slate-50 transition-colors">
+                        <td className="px-4 py-3 font-medium text-slate-800">{date}</td>
+                        <td className="px-4 py-3">
+                          {s.overall_band ? (
+                            <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold ${getBandColorClass(s.overall_band)}`}>
+                              {s.overall_band}
+                            </span>
+                          ) : (
+                            <span className="text-slate-400">—</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={`text-xs font-medium ${completed ? "text-teal-700" : "text-amber-600"}`}>
+                            {completed ? "Complete" : "In progress"}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          {completed ? (
+                            <Link
+                              to={`/app/report/${s.id}`}
+                              className="inline-flex items-center gap-1.5 rounded-lg bg-teal-50 px-3 py-1.5 text-xs font-semibold text-teal-700 hover:bg-teal-100 transition-colors"
+                            >
+                              <FileText className="h-3.5 w-3.5" />
+                              View report
+                            </Link>
+                          ) : (
+                            <Link
+                              to="/app"
+                              className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-200 transition-colors"
+                            >
+                              Continue
+                            </Link>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        {/* Disclaimer */}
+        <p className="text-xs text-slate-400 leading-relaxed">
+          InspectReady is a practice and professional development tool. It does not constitute official Ofsted guidance or legal compliance advice.
+          All evaluations are AI-generated based on your answers only and do not reflect a full Ofsted inspection.
+        </p>
+      </main>
     </div>
   );
 }
