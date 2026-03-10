@@ -64,6 +64,8 @@ export default function Profile() {
 
   const [pwSending, setPwSending] = useState(false);
   const [pwSent, setPwSent] = useState(false);
+  const [portalLoading, setPortalLoading] = useState(false);
+  const [portalErr, setPortalErr] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -137,6 +139,31 @@ export default function Profile() {
     });
     setPwSending(false);
     setPwSent(true);
+  };
+
+  const handleBillingPortal = async () => {
+    setPortalLoading(true);
+    setPortalErr(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      const res = await fetch(`${supabaseUrl}/functions/v1/billing-portal`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${session?.access_token}`,
+          apikey: anonKey,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ returnUrl: `${window.location.origin}/app/profile` }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Could not open billing portal.");
+      window.location.href = data.url;
+    } catch (e) {
+      setPortalErr(e instanceof Error ? e.message : "Unable to open billing portal.");
+      setPortalLoading(false);
+    }
   };
 
   const handleSignOut = async () => {
@@ -216,7 +243,19 @@ export default function Profile() {
                 <p className="text-sm text-slate-500">£29/month · unlimited sessions</p>
               )}
             </div>
-            {!isPaid(subscription) && (
+            {isPaid(subscription) ? (
+              <div className="space-y-2">
+                <button
+                  onClick={handleBillingPortal}
+                  disabled={portalLoading}
+                  className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60 transition-colors"
+                >
+                  {portalLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+                  Manage subscription
+                </button>
+                {portalErr && <p className="text-xs text-red-600">{portalErr}</p>}
+              </div>
+            ) : (
               <Link
                 to="/app/paywall"
                 className="inline-flex items-center rounded-xl bg-teal-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-teal-700 transition-colors"

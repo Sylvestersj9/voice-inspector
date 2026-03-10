@@ -17,11 +17,11 @@ const SOLO_FEATURES = [
 
 const TEAM_FEATURES = [
   "Everything in Solo",
-  "Up to 5 team members",
-  "Shared session history across the team",
+  "Accounts for up to 5 staff",
   "Designated account contact",
   "Priority email support",
-  "Onboarding call included",
+  "Personal onboarding call",
+  "Manual setup within 24 hours",
 ];
 
 export default function Pricing() {
@@ -137,14 +137,19 @@ export default function Pricing() {
                 </span>
               </div>
 
-              <div className="inline-flex items-center rounded-full bg-teal-600 px-3 py-0.5 text-xs font-bold text-white">
-                Team
+              <div className="flex items-center gap-2">
+                <div className="inline-flex items-center rounded-full bg-teal-600 px-3 py-0.5 text-xs font-bold text-white">
+                  Team
+                </div>
+                <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-700">
+                  Manual setup
+                </span>
               </div>
               <div className="mt-3 flex items-baseline gap-1">
                 <span className="text-4xl font-bold text-slate-900">£69</span>
                 <span className="text-slate-500">/month</span>
               </div>
-              <p className="mt-1 text-sm text-slate-500">Up to 5 users. One home or several.</p>
+              <p className="mt-1 text-sm text-slate-500">Up to 5 staff. We set it up for you.</p>
 
               <ul className="mt-7 space-y-3">
                 {TEAM_FEATURES.map((f) => (

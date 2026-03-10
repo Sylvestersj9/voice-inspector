@@ -7,7 +7,10 @@ export default function AuthCallback() {
     // Listen for auth state — Supabase automatically exchanges the PKCE code
     // from the URL query params during client init and fires SIGNED_IN.
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session) {
+      if (event === "PASSWORD_RECOVERY") {
+        // Redirect to the dedicated reset-password page — session is available there
+        window.location.href = "/reset-password";
+      } else if (session) {
         window.location.href = "/app";
       } else if (event === "SIGNED_OUT") {
         window.location.href = "/login";
@@ -20,7 +23,8 @@ export default function AuthCallback() {
         window.location.href = "/login";
         return;
       }
-      if (data.session) {
+      // Only redirect to app if not a recovery session (recovery is handled above by event)
+      if (data.session && data.session.user.aud === "authenticated") {
         window.location.href = "/app";
       }
     });
