@@ -118,6 +118,63 @@ export default function About() {
         </div>
       </section>
 
+      {/* ── Who It's For ─────────────────────────────────────────────────────── */}
+      <section className="px-4 py-16 bg-slate-50 border-t border-slate-100">
+        <div className="mx-auto max-w-4xl">
+          <div className="inline-flex items-center rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-teal-700 ring-1 ring-teal-100 mb-4">
+            Who it's for
+          </div>
+          <h2 className="font-display text-2xl font-bold text-slate-900 md:text-3xl mb-3">
+            Built for the whole team, not just the manager
+          </h2>
+          <p className="text-slate-600 leading-relaxed max-w-2xl mb-10">
+            MockOfsted supports leaders, deputies, and teams across UK children's homes, supported living, and youth accommodation services.
+          </p>
+
+          <div className="grid gap-8 md:grid-cols-2">
+            {/* Perfect for */}
+            <div className="rounded-2xl bg-white border border-slate-200 p-6 shadow-sm">
+              <p className="font-semibold text-slate-900 mb-4">Perfect for</p>
+              <ul className="space-y-3">
+                {[
+                  "Small independent providers (2–20 beds) — no enterprise pricing",
+                  "Single homes or small groups (2–5 sites)",
+                  "Residential care & supported living with young people",
+                  "Anyone facing Ofsted pressure who needs realistic practice",
+                ].map((item) => (
+                  <li key={item} className="flex items-start gap-3 text-sm text-slate-600">
+                    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-teal-50 text-teal-600 text-xs font-bold">✓</span>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Why it fits */}
+            <div className="rounded-2xl bg-white border border-slate-200 p-6 shadow-sm">
+              <p className="font-semibold text-slate-900 mb-4">Why it fits small providers</p>
+              <ul className="space-y-3">
+                {[
+                  "No IT team required — zero setup, works in your browser",
+                  "Instant access — no training, no onboarding calls",
+                  "Affordable vs £2,000+ mock inspections",
+                  "Practice anywhere — mobile voice or text, anytime",
+                ].map((item) => (
+                  <li key={item} className="flex items-start gap-3 text-sm text-slate-600">
+                    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-50 text-amber-600 text-xs font-bold">→</span>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          <p className="mt-8 text-sm font-medium text-slate-700 text-center">
+            Built for busy managers who need results — not consultants.
+          </p>
+        </div>
+      </section>
+
       {/* ── Features grid ────────────────────────────────────────────────────── */}
       <section className="px-4 py-16 bg-slate-50 border-y border-slate-100">
         <div className="mx-auto max-w-4xl">
