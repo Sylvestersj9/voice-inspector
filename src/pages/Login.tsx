@@ -67,7 +67,7 @@ export default function Login() {
     setBusy(true);
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: `${window.location.origin}/app` },
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
     });
     if (error) {
       setError(error.message);
@@ -110,6 +110,18 @@ export default function Login() {
             .from("users")
             .update({ role, home_name: homeName.trim() })
             .eq("id", data.session.user.id);
+          // Fire welcome email (non-blocking — ignore failures)
+          const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+          const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+          fetch(`${supabaseUrl}/functions/v1/welcome-email`, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${data.session.access_token}`,
+              apikey: anonKey,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ user_id: data.session.user.id, name: name.trim() }),
+          }).catch(() => { /* best-effort */ });
         } else {
           setMessage("Account created! Check your inbox to confirm your email, then sign in.");
         }
