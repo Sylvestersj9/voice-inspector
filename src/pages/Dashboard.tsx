@@ -225,7 +225,7 @@ export default function Dashboard() {
   };
 
   const displayName =
-    profile?.name || user?.email?.split("@")[0] || "Manager";
+    profile?.name || user?.email?.split("@")[0] || "there";
   const homeName = profile?.home_name ?? "";
   const paid = isPaidSub(subscription);
   const canStart = canStartSession(subscription, trialInfo);

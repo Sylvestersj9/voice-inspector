@@ -38,7 +38,7 @@ const testimonials = [
   },
   {
     quote: "We went from Good to Outstanding. MockOfsted was part of that journey — it kept us sharp and honest about our evidence.",
-    name: "Registered Manager",
+    name: "Home Leader",
     location: "Birmingham",
   },
 ];
@@ -125,7 +125,7 @@ export default function About() {
             Who it's for
           </div>
           <h2 className="font-display text-2xl font-bold text-slate-900 md:text-3xl mb-3">
-            Built for the whole team, not just the manager
+            Built for the whole team, not just one role
           </h2>
           <p className="text-slate-600 leading-relaxed max-w-2xl mb-10">
             MockOfsted supports leaders, deputies, and teams across UK children's homes, supported living, and youth accommodation services.
@@ -170,7 +170,7 @@ export default function About() {
           </div>
 
           <p className="mt-8 text-sm font-medium text-slate-700 text-center">
-            Built for busy managers who need results — not consultants.
+            Built for busy care leaders who need results — not consultants.
           </p>
         </div>
       </section>

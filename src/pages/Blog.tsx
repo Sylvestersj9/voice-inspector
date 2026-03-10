@@ -183,7 +183,7 @@ export default function Blog() {
       />
       <link rel="canonical" href="https://mockofsted.co.uk/blog" />
       <meta property="og:title" content="MockOfsted Blog — Ofsted & SCCIF Updates" />
-      <meta property="og:description" content="Weekly inspection updates sourced from GOV.UK / Ofsted RSS. SCCIF guidance for registered managers." />
+      <meta property="og:description" content="Weekly inspection updates sourced from GOV.UK / Ofsted RSS. SCCIF guidance for care leaders." />
       <meta property="og:type" content="website" />
       <meta property="og:url" content="https://mockofsted.co.uk/blog" />
 
@@ -198,7 +198,7 @@ export default function Blog() {
             Ofsted &amp; SCCIF Updates for Children's Homes
           </h1>
           <p className="mt-4 text-lg text-slate-600 max-w-2xl mx-auto leading-relaxed">
-            Practical inspection intelligence for registered managers — sourced weekly from
+            Practical inspection intelligence for care leaders — sourced weekly from
             GOV.UK and Ofsted, summarised for practice relevance.
           </p>
           <div className="mt-3 flex items-center justify-center gap-1.5 text-xs text-slate-400">

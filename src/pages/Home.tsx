@@ -50,7 +50,7 @@ export default function Landing() {
               Residential care leaders deserve inspection confidence
             </h2>
             <p className="mt-2 text-slate-600">
-              Registered Managers, Deputies, RIs — most have no structured way to rehearse
+              Care leaders, deputies, RIs — most have no structured way to rehearse
               before the day.
             </p>
           </div>
@@ -245,7 +245,7 @@ export default function Landing() {
                 Latest SCCIF &amp; Ofsted Updates
               </h2>
               <p className="mt-1 text-sm text-slate-600">
-                Auto-updated every Sunday. Sourced and summarised for registered managers.
+                Auto-updated every Sunday. Sourced and summarised for care leaders.
               </p>
             </div>
             <Link
@@ -297,7 +297,7 @@ export default function Landing() {
                 <span className="text-4xl font-bold text-slate-900">£29</span>
                 <span className="text-slate-500">/month</span>
               </div>
-              <p className="mt-1 text-sm text-slate-500">One manager · unlimited sessions</p>
+              <p className="mt-1 text-sm text-slate-500">One user · unlimited sessions</p>
               <ul className="mt-5 space-y-2 text-sm text-slate-700">
                 {[
                   "All 9 Quality Standards",
@@ -336,7 +336,7 @@ export default function Landing() {
                 {[
                   "Everything in Solo",
                   "5 individual staff accounts",
-                  "Manager dashboard — team results",
+                  "Team dashboard — shared results",
                   "Shared session history",
                   "Priority support",
                   "3-day free trial included",

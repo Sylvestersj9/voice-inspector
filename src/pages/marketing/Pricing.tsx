@@ -17,9 +17,9 @@ const SOLO_FEATURES = [
 
 const TEAM_FEATURES = [
   "Everything in Solo",
-  "Up to 5 registered managers",
+  "Up to 5 team members",
   "Shared session history across the team",
-  "Designated account manager",
+  "Designated account contact",
   "Priority email support",
   "Onboarding call included",
 ];
@@ -102,7 +102,7 @@ export default function Pricing() {
                 <span className="text-4xl font-bold text-slate-900">£29</span>
                 <span className="text-slate-500">/month</span>
               </div>
-              <p className="mt-1 text-sm text-slate-500">Per registered manager. Cancel any time.</p>
+              <p className="mt-1 text-sm text-slate-500">Per user. Cancel any time.</p>
 
               <ul className="mt-7 space-y-3">
                 {SOLO_FEATURES.map((f) => (
@@ -144,7 +144,7 @@ export default function Pricing() {
                 <span className="text-4xl font-bold text-slate-900">£69</span>
                 <span className="text-slate-500">/month</span>
               </div>
-              <p className="mt-1 text-sm text-slate-500">Up to 5 managers. One home or several.</p>
+              <p className="mt-1 text-sm text-slate-500">Up to 5 users. One home or several.</p>
 
               <ul className="mt-7 space-y-3">
                 {TEAM_FEATURES.map((f) => (

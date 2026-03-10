@@ -476,7 +476,7 @@ export default function Report() {
                       {/* Full answer */}
                       {r.answer_text && (
                         <div className="mb-4 rounded-lg bg-white border border-slate-200 px-4 py-3">
-                          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Manager's answer</p>
+                          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Your answer</p>
                           <p className="text-sm text-slate-700 leading-relaxed">{r.answer_text}</p>
                         </div>
                       )}
