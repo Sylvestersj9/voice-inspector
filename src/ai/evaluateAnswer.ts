@@ -62,7 +62,15 @@ export async function evaluateAnswer(input: EvaluateAnswerInput): Promise<Inspec
 
   console.log("INSERTING INTO inspection_evaluations", payload);
 
-  const { data: row, error } = await (supabase as any)
+  type UpsertResult = { data: unknown; error: { message?: string } | null };
+  type TableClient = {
+    upsert: (value: unknown, options: { onConflict: string }) => {
+      select: (columns: string) => { single: () => Promise<UpsertResult> };
+    };
+  };
+  type SupabaseClientLike = { from: (table: string) => TableClient };
+
+  const { data: row, error } = await (supabase as unknown as SupabaseClientLike)
     .from("inspection_evaluations")
     .upsert(payload, { onConflict: "inspection_session_question_id" })
     .select("*")

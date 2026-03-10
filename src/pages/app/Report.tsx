@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/auth/AuthProvider";
+import { exportReportPdf } from "@/reports/exportReportPdf";
 import { getBandColorClass } from "@/lib/questions";
 import {
   ArrowLeft, Printer, AlertTriangle, CheckCircle2, Target,
@@ -203,7 +204,11 @@ export default function Report() {
   const toggleCheck = (id: string) => {
     setCheckedItems((prev) => {
       const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
       return next;
     });
   };
@@ -251,6 +256,16 @@ export default function Report() {
   const sessionType = header?.sessionType ?? (responses.length >= 9 ? "Full Session" : "Partial Session");
   const totalChecked = checkedItems.size;
 
+  const handleExportPdf = async () => {
+    if (!session) return;
+    await exportReportPdf({
+      sessionId: session.id,
+      report: report ?? {},
+      responses,
+      header,
+    });
+  };
+
   return (
     <>
       {/* Print styles */}
@@ -285,10 +300,10 @@ export default function Report() {
               <span className="font-display font-bold text-slate-900">InspectReady</span>
             </div>
             <button
-              onClick={() => window.print()}
+              onClick={handleExportPdf}
               className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
             >
-              <Printer className="h-4 w-4" /> Print / Save PDF
+              <Printer className="h-4 w-4" /> Export PDF
             </button>
           </div>
         </header>

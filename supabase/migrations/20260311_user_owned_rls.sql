@@ -15,18 +15,21 @@ drop policy if exists reports_read_write on public.inspection_reports;
 -- User-owned policies
 
 -- inspection_sessions
+drop policy if exists sessions_select_own on public.inspection_sessions;
 create policy sessions_select_own
 on public.inspection_sessions
 for select
 to public
 using (created_by = auth.uid());
 
+drop policy if exists sessions_insert_own on public.inspection_sessions;
 create policy sessions_insert_own
 on public.inspection_sessions
 for insert
 to public
 with check (created_by = auth.uid());
 
+drop policy if exists sessions_update_own on public.inspection_sessions;
 create policy sessions_update_own
 on public.inspection_sessions
 for update
@@ -34,6 +37,7 @@ to public
 using (created_by = auth.uid())
 with check (created_by = auth.uid());
 
+drop policy if exists sessions_delete_own on public.inspection_sessions;
 create policy sessions_delete_own
 on public.inspection_sessions
 for delete
@@ -41,6 +45,7 @@ to public
 using (created_by = auth.uid());
 
 -- inspection_session_questions (via session ownership)
+drop policy if exists session_questions_select_own on public.inspection_session_questions;
 create policy session_questions_select_own
 on public.inspection_session_questions
 for select
@@ -51,6 +56,7 @@ using (
   )
 );
 
+drop policy if exists session_questions_insert_own on public.inspection_session_questions;
 create policy session_questions_insert_own
 on public.inspection_session_questions
 for insert
@@ -61,6 +67,7 @@ with check (
   )
 );
 
+drop policy if exists session_questions_update_own on public.inspection_session_questions;
 create policy session_questions_update_own
 on public.inspection_session_questions
 for update
@@ -76,6 +83,7 @@ with check (
   )
 );
 
+drop policy if exists session_questions_delete_own on public.inspection_session_questions;
 create policy session_questions_delete_own
 on public.inspection_session_questions
 for delete

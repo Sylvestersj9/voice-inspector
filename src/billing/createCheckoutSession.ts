@@ -1,4 +1,4 @@
-// @ts-nocheck — Stripe runs server-side only; excluded from client build
+// Stripe runs server-side only; excluded from client build.
 import Stripe from "stripe";
 import { PLANS, type PlanName } from "./plans";
 import { supabase } from "@/lib/supabase";

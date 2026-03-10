@@ -1,4 +1,7 @@
-// @ts-nocheck — runs in Deno edge function context, not browser
+// Runs in Deno edge function context, not browser.
+declare const Deno: {
+  env: { get: (key: string) => string | undefined };
+};
 import Stripe from "stripe";
 import { supabase } from "@/lib/supabase";
 import { logAudit } from "@/audit/logAudit";

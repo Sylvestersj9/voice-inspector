@@ -12,14 +12,17 @@ create table if not exists public.users (
 
 alter table public.users enable row level security;
 
+drop policy if exists "Users can view own profile" on public.users;
 create policy "Users can view own profile"
   on public.users for select
   using (auth.uid() = id);
 
+drop policy if exists "Users can update own profile" on public.users;
 create policy "Users can update own profile"
   on public.users for update
   using (auth.uid() = id);
 
+drop policy if exists "Users can insert own profile" on public.users;
 create policy "Users can insert own profile"
   on public.users for insert
   with check (auth.uid() = id);
@@ -40,11 +43,13 @@ create unique index if not exists subscriptions_user_id_idx on public.subscripti
 
 alter table public.subscriptions enable row level security;
 
+drop policy if exists "Users can view own subscription" on public.subscriptions;
 create policy "Users can view own subscription"
   on public.subscriptions for select
   using (auth.uid() = user_id);
 
 -- Service role (Edge Functions) can do everything
+drop policy if exists "Service role full access on subscriptions" on public.subscriptions;
 create policy "Service role full access on subscriptions"
   on public.subscriptions for all
   using (true)
@@ -63,14 +68,17 @@ create table if not exists public.sessions (
 
 alter table public.sessions enable row level security;
 
+drop policy if exists "Users can view own sessions" on public.sessions;
 create policy "Users can view own sessions"
   on public.sessions for select
   using (auth.uid() = user_id);
 
+drop policy if exists "Users can insert own sessions" on public.sessions;
 create policy "Users can insert own sessions"
   on public.sessions for insert
   with check (auth.uid() = user_id);
 
+drop policy if exists "Users can update own sessions" on public.sessions;
 create policy "Users can update own sessions"
   on public.sessions for update
   using (auth.uid() = user_id);
@@ -90,6 +98,7 @@ create table if not exists public.responses (
 
 alter table public.responses enable row level security;
 
+drop policy if exists "Users can view own responses" on public.responses;
 create policy "Users can view own responses"
   on public.responses for select
   using (
@@ -99,6 +108,7 @@ create policy "Users can view own responses"
     )
   );
 
+drop policy if exists "Users can insert own responses" on public.responses;
 create policy "Users can insert own responses"
   on public.responses for insert
   with check (
@@ -108,6 +118,7 @@ create policy "Users can insert own responses"
     )
   );
 
+drop policy if exists "Users can update own responses" on public.responses;
 create policy "Users can update own responses"
   on public.responses for update
   using (

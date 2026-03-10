@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // Thin wrapper: re-exports the auto-generated typed client so every file
 // that imports from "@/lib/supabase" shares the same GoTrueClient instance.
 // We cast to `any` so that files referencing tables not yet in the generated

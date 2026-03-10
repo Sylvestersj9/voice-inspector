@@ -139,11 +139,21 @@ export default function InspectionReport() {
           .eq("inspection_session_questions.inspection_session_id", inspectionId);
 
         if (evalErr) throw evalErr;
-        const normalized = (evals || []).map((e: any) => ({
+        type EvalRow = {
+          gaps: string[] | null;
+          follow_up_questions: string[] | null;
+          band: string | null;
+          inspection_session_questions:
+            | { domain_name?: string | null }
+            | Array<{ domain_name?: string | null }>
+            | null;
+        };
+
+        const normalized = (evals as EvalRow[] || []).map((e) => ({
           ...e,
           inspection_session_questions: Array.isArray(e.inspection_session_questions)
             ? e.inspection_session_questions[0] ?? {}
-            : e.inspection_session_questions,
+            : e.inspection_session_questions ?? {},
         }));
         const auto = generateActionsFromEvaluations(normalized);
         const saved = await saveActionPlan(inspectionId, auto);

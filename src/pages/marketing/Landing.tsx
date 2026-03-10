@@ -32,7 +32,7 @@ export default function Landing() {
               See pricing
             </Link>
           </div>
-          <p className="mt-3 text-sm text-slate-500">3-day free trial. Unlimited practice. No card upfront. No commitment.</p>
+          <p className="mt-3 text-sm text-slate-500">3-day free trial. Up to 5 sessions per day (15 total). No card upfront.</p>
         </div>
       </section>
 
@@ -225,7 +225,7 @@ export default function Landing() {
                   "Follow-up question and inspector note",
                   "Full inspection report after each session",
                   "Session history",
-                  "3-day free trial — no card upfront",
+                  "3-day free trial — up to 5 sessions per day (15 total)",
                 ].map((f) => (
                   <li key={f} className="flex items-center gap-2.5">
                     <CheckCircle2 className="h-4 w-4 text-teal-600 shrink-0" />
@@ -240,7 +240,7 @@ export default function Landing() {
               >
                 Start free trial <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
-              <p className="mt-3 text-xs text-slate-500">3-day free trial. No card upfront. No commitment.</p>
+              <p className="mt-3 text-xs text-slate-500">3-day free trial. Up to 5 sessions per day (15 total). No card upfront.</p>
             </div>
 
             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-8">
@@ -257,7 +257,7 @@ export default function Landing() {
                   "Provisional grade and domain breakdown",
                   "Strengths and priority actions",
                   "Practice by voice or text",
-                  "Unlimited practice during trial",
+                  "Unlimited practice after subscribing",
                 ].map((f) => (
                   <li key={f} className="flex items-start gap-2">
                     <CheckCircle2 className="mt-0.5 h-4 w-4 text-teal-600 shrink-0" />

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/auth/AuthProvider";
 import {
@@ -13,6 +13,7 @@ import {
   type JudgementBand,
 } from "@/lib/questions";
 import { computeTrialUsage, TRIAL_DAILY_LIMIT, TRIAL_TOTAL_LIMIT } from "@/lib/trial";
+import ConfettiBurst from "@/components/ConfettiBurst";
 import { VoiceRecorder } from "@/components/VoiceRecorder";
 import { TranscriptEditor } from "@/components/TranscriptEditor";
 import { LogOut, Mic, Keyboard, ArrowRight, CheckCircle2, AlertTriangle, Loader2, FileText, RotateCcw, X, BookOpen, Target, Pause, Play, SkipForward } from "lucide-react";
@@ -122,12 +123,15 @@ function BandPill({ band }: { band: string }) {
 export default function Index() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   // Gate state
   const [subscriptionStatus, setSubscriptionStatus] = useState<string | null>(null);
   const [stripeSubscriptionId, setStripeSubscriptionId] = useState<string | null>(null);
   const [trialInfo, setTrialInfo] = useState<ReturnType<typeof computeTrialUsage> | null>(null);
   const [gateLoading, setGateLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
+  const [justSubscribed, setJustSubscribed] = useState(false);
 
   // Session state
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -146,9 +150,8 @@ export default function Index() {
 
   // ── Load subscription ──────────────────────────────────────────────────────
 
-  useEffect(() => {
+  const loadGate = async () => {
     if (!user) return;
-    async function loadGate() {
       setGateLoading(true);
       const { data: sub } = await supabase
         .from("subscriptions")
@@ -161,7 +164,7 @@ export default function Index() {
       setSubscriptionStatus(status);
       setStripeSubscriptionId(stripeId);
 
-      const isPaid = !!stripeId && (status === "active" || status === "trialing");
+      const isPaid = status === "active" || (!!stripeId && status === "trialing");
       if (isPaid) {
         setTrialInfo(null);
         setGateLoading(false);
@@ -177,12 +180,16 @@ export default function Index() {
 
       setTrialInfo(computeTrialUsage(trialStart, sessions ?? []));
       setGateLoading(false);
-    }
+  };
 
+  useEffect(() => {
+    if (!user) return;
     loadGate();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
-  const isPaidSubscriber = !!stripeSubscriptionId && (subscriptionStatus === "active" || subscriptionStatus === "trialing");
+  const isPaidSubscriber = subscriptionStatus === "active"
+    || (!!stripeSubscriptionId && subscriptionStatus === "trialing");
 
   const canStart = (() => {
     if (gateLoading) return false;
@@ -193,6 +200,34 @@ export default function Index() {
     if (trialInfo.remainingToday <= 0) return false;
     return true;
   })();
+
+  const checkoutSuccess = searchParams.get("checkout") === "success";
+
+  useEffect(() => {
+    if (!checkoutSuccess || !user) return;
+    async function syncAndReload() {
+      setSyncing(true);
+      try {
+        const { data: { session: authSession } } = await supabase.auth.getSession();
+        const token = authSession?.access_token ?? "";
+        await supabase.functions.invoke("sync-subscription", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        await new Promise((r) => setTimeout(r, 500));
+        await loadGate();
+        setJustSubscribed(true);
+      } finally {
+        setSyncing(false);
+        setSearchParams((prev) => {
+          const next = new URLSearchParams(prev);
+          next.delete("checkout");
+          return next;
+        });
+      }
+    }
+    syncAndReload();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [checkoutSuccess, user]);
 
   // ── Start session ──────────────────────────────────────────────────────────
 
@@ -217,7 +252,12 @@ export default function Index() {
       .single();
 
     if (sErr || !sess) {
-      setError("Failed to start session: " + (sErr?.message ?? "Unknown error"));
+      const msg = sErr?.message ?? "Unknown error";
+      if (msg.toLowerCase().includes("row-level security")) {
+        setError("Trial limit reached. Free trial includes 3 days with up to 5 sessions per day (15 total).");
+      } else {
+        setError("Failed to start session: " + msg);
+      }
       return;
     }
 
@@ -515,9 +555,17 @@ export default function Index() {
       <main className="mx-auto max-w-5xl px-4 py-8">
         {/* ── Idle: start screen ─────────────────────────────────────────── */}
         {step === "idle" && (
-          <div className="flex flex-col items-center justify-center min-h-[60vh] text-center gap-6">
+          <div className="flex flex-col items-center justify-center min-h-[60vh] text-center gap-6 relative">
+            <ConfettiBurst active={justSubscribed} />
             {gateLoading ? (
               <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
+            ) : syncing ? (
+              <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                <div className="flex items-center gap-3">
+                  <Loader2 className="h-4 w-4 animate-spin text-teal-600" />
+                  <span className="text-sm text-slate-600">Confirming your subscription…</span>
+                </div>
+              </div>
             ) : !canStart ? (
               <div className="max-w-md">
                 <div className="flex h-16 w-16 mx-auto items-center justify-center rounded-full bg-amber-50 ring-2 ring-amber-200">
@@ -547,7 +595,9 @@ export default function Index() {
                     <path d="M16 4v18M4 10l12 6 12-6" stroke="#0D9488" strokeWidth="2" strokeLinejoin="round" />
                   </svg>
                 </div>
-                <h1 className="mt-4 font-display text-2xl font-bold text-slate-900">Ready to practise?</h1>
+                <h1 className="mt-4 font-display text-2xl font-bold text-slate-900">
+                  {justSubscribed ? "Subscription confirmed — unlimited access" : "Ready to practise?"}
+                </h1>
                 <p className="mt-2 text-slate-600">
                   You'll answer questions across 6 Quality Standards — safeguarding and leadership are always included, the rest are randomly selected, just like a real Ofsted visit.
                 </p>

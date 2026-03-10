@@ -119,11 +119,9 @@ export default function Pricing() {
                 </p>
               ) : null}
 
-              {!user && (
-                <p className="mt-3 text-center text-xs text-slate-500">
-                  Free trial includes 3 days with up to 5 sessions per day (15 total). Subscribe for unlimited sessions.
-                </p>
-              )}
+              <p className="mt-3 text-center text-xs text-slate-500">
+                Free trial includes 3 days with up to 5 sessions per day (15 total). Subscribe for unlimited sessions.
+              </p>
             </div>
 
             <div className="mt-6 rounded-xl bg-slate-50 border border-slate-200 px-5 py-4 text-sm text-slate-600 text-center">

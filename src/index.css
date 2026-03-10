@@ -127,6 +127,28 @@
 }
 
 @layer utilities {
+  /* Confetti burst */
+  .confetti-piece {
+    position: absolute;
+    top: -10px;
+    opacity: 0;
+    border-radius: 2px;
+    animation-name: confetti-fall;
+    animation-timing-function: ease-in;
+    animation-fill-mode: forwards;
+  }
+
+  @keyframes confetti-fall {
+    0% {
+      transform: translateY(-10px) rotate(0deg);
+      opacity: 1;
+    }
+    100% {
+      transform: translateY(260px) rotate(280deg);
+      opacity: 0;
+    }
+  }
+
   /* Recording pulse animation */
   @keyframes recording-pulse {
     0%, 100% {
