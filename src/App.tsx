@@ -119,12 +119,15 @@ export default function App() {
           <AppRoutes />
         </Suspense>
         <CookieConsent />
-        {/* SENTRY TEST — remove after confirming */}
+        {/* SENTRY TEST — remove after click-verification */}
         <button
-          onClick={() => Sentry.captureException(new Error("LAUNCH-READY TEST"))}
-          style={{ position: "fixed", bottom: 8, right: 8, zIndex: 9999, fontSize: 10, opacity: 0.4, padding: "2px 6px", background: "#e11d48", color: "#fff", borderRadius: 4, border: "none", cursor: "pointer" }}
+          className="fixed bottom-4 right-4 z-50 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg hover:bg-red-600 transition-all"
+          onClick={() => {
+            Sentry.captureException(new Error("MANUAL LAUNCH-READY TEST"));
+            alert("Sentry test fired! Check sentry.io Issues.");
+          }}
         >
-          Sentry test
+          Test Sentry
         </button>
       </BrowserRouter>
     </ErrorBoundary>
