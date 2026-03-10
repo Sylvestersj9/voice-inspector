@@ -13,7 +13,7 @@ export default function Terms() {
               Terms of Use & Conditions
             </h1>
             <p className="mt-3 text-slate-600">
-              Comprehensive terms for using Voice Inspector. Please read carefully before using the service.
+              Comprehensive terms for using MockOfsted. Please read carefully before using the service.
             </p>
           </div>
 
@@ -25,14 +25,14 @@ export default function Terms() {
               <Section title="1. Introduction">
                 <ul className="list-disc space-y-2 pl-5 text-sm text-slate-700">
                   <li>These Terms of Use form a binding agreement between you and Ziantra Ltd (“we”, “us”, “our”).</li>
-                  <li>By accessing or using Voice Inspector, you confirm you accept these terms. If you do not agree, do not use the service.</li>
-                  <li>Definitions: “Service” means the Voice Inspector SaaS platform; “Content” means prompts, outputs, and materials made available by the Service; “You” or “User” means the organisation or individual using the Service.</li>
+                  <li>By accessing or using MockOfsted, you confirm you accept these terms. If you do not agree, do not use the service.</li>
+                  <li>Definitions: “Service” means the MockOfsted SaaS platform; “Content” means prompts, outputs, and materials made available by the Service; “You” or “User” means the organisation or individual using the Service.</li>
                 </ul>
               </Section>
 
               <Section title="2. Description of the Service">
                 <p className="text-sm text-slate-700">
-                  Voice Inspector is an AI-assisted practice, simulation, and evaluation platform for Ofsted-style inspection questions. It is provided solely for training, preparation, and support. It does not replace professional advice or regulatory processes.
+                  MockOfsted is an AI-assisted practice, simulation, and evaluation platform for Ofsted-style inspection questions. It is provided solely for training, preparation, and support. It does not replace professional advice or regulatory processes.
                 </p>
               </Section>
 

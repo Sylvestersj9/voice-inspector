@@ -102,7 +102,7 @@ export default function FAQ() {
           </div>
 
           <div className="mt-10 space-y-3">
-            <FaqItem q="What is Voice Inspector?" a="A practice simulator for inspection-style questions. Answer by voice or text, then get feedback tied to what you actually said." />
+            <FaqItem q="What is MockOfsted?" a="A practice simulator for inspection-style questions. Answer by voice or text, then get feedback tied to what you actually said." />
             <FaqItem q="Who is it for?" a="Residential care leaders and key staff preparing for inspection: Registered Managers, Responsible Individuals, Service Managers, Team Leaders, and supervisors." />
             <FaqItem q="Do I need an account?" a="You can explore the product, but an account is needed to save reports and keep session history." />
             <FaqItem q="Does it cover supported living?" a="Yes. Sessions include both children's home standards and supported living standards." />

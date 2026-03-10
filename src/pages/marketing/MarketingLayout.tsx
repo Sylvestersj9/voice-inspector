@@ -4,7 +4,7 @@ import { ArrowRight } from "lucide-react";
 
 type Props = { children: React.ReactNode };
 
-const CONTACT_EMAIL = "hello@inspectready.co.uk";
+const CONTACT_EMAIL = "hello@mockofsted.co.uk";
 
 export default function MarketingLayout({ children }: Props) {
   const location = useLocation();
@@ -49,13 +49,12 @@ export default function MarketingLayout({ children }: Props) {
                 <path d="M16 4v18M4 10l12 6 12-6" stroke="white" strokeWidth="2" strokeLinejoin="round" />
               </svg>
             </div>
-            <span className="font-display text-lg font-bold text-slate-900">InspectReady</span>
+            <span className="font-display text-lg font-bold text-slate-900">MockOfsted</span>
           </Link>
 
           {/* Desktop nav */}
           <nav className="hidden items-center gap-7 md:flex">
             <Link to="/" className="text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors">Home</Link>
-            <Link to="/tools" className="text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors">Free Tools</Link>
             <Link to="/pricing" className="text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors">Pricing</Link>
             <Link to="/about" className="text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors">About</Link>
             <Link to="/blog" className="text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors">Blog</Link>
@@ -94,7 +93,7 @@ export default function MarketingLayout({ children }: Props) {
                     <path d="M16 4v18M4 10l12 6 12-6" stroke="white" strokeWidth="2" strokeLinejoin="round"/>
                   </svg>
                 </div>
-                <span className="font-display font-bold text-slate-900">InspectReady</span>
+                <span className="font-display font-bold text-slate-900">MockOfsted</span>
               </div>
               <p className="mt-2 text-sm text-slate-600 leading-relaxed">
                 Realistic Ofsted inspection practice for registered managers of children's homes in England.
@@ -112,7 +111,6 @@ export default function MarketingLayout({ children }: Props) {
                 <div className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">Product</div>
                 <div className="flex flex-col gap-2 text-sm">
                   <Link to="/" className="text-slate-600 hover:text-slate-900">Home</Link>
-                  <Link to="/tools" className="text-slate-600 hover:text-slate-900">Free Tools</Link>
                   <Link to="/pricing" className="text-slate-600 hover:text-slate-900">Pricing</Link>
                   <Link to="/login" className="text-slate-600 hover:text-slate-900">Log in</Link>
                   <Link to="/login" className="text-slate-600 hover:text-slate-900">Sign up</Link>
@@ -140,10 +138,10 @@ export default function MarketingLayout({ children }: Props) {
 
           <div className="mt-8 border-t border-slate-200 pt-6">
             <p className="text-xs text-slate-500 leading-relaxed">
-              <strong>Disclaimer:</strong> InspectReady is a practice and professional development tool. It does not constitute official Ofsted guidance or legal compliance advice. All evaluations are AI-generated based on your answers only and do not reflect a full Ofsted inspection.
+              <strong>Disclaimer:</strong> MockOfsted is a practice and professional development tool. It does not constitute official Ofsted guidance or legal compliance advice. All evaluations are AI-generated based on your answers only and do not reflect a full Ofsted inspection.
             </p>
             <p className="mt-2 text-xs text-slate-400">
-              © {new Date().getFullYear()} InspectReady. Built for registered managers of children's homes in England.
+              © {new Date().getFullYear()} MockOfsted. Built for registered managers of children's homes in England.
             </p>
           </div>
         </div>

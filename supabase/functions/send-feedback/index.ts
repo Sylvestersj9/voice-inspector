@@ -20,7 +20,7 @@ const supabaseAdmin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
 const TO_EMAIL = "janvesylvester@gmail.com";
 
 // Keep this as Resend sandbox sender for now
-const FROM_EMAIL = "Voice Inspector <onboarding@resend.dev>";
+const FROM_EMAIL = "MockOfsted <onboarding@resend.dev>";
 
 function json(body: unknown, status = 200, headers: HeadersInit = {}) {
   return new Response(JSON.stringify(body), {
@@ -111,7 +111,7 @@ serve(async (req) => {
       console.error("feedback insert error:", insErr);
     }
 
-    const subject = type === "contact" ? "Voice Inspector contact" : "Voice Inspector feedback";
+    const subject = type === "contact" ? "MockOfsted contact" : "MockOfsted feedback";
 
     const body = [
       `Type: ${type}`,

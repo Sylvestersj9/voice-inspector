@@ -68,7 +68,7 @@ All in `supabase/functions/`:
 
 ### Database schema (MVP tables)
 
-Migration: `supabase/migrations/20260309_inspectready_schema.sql`
+Migration: `supabase/migrations/20260309_mockofsted_schema.sql`
 
 - `public.users` — mirrors `auth.users`, stores `name`, `role`, `home_name`
 - `public.subscriptions` — `status` (active/trialing/cancelled/past_due), `stripe_subscription_id`; auto-created by trigger on signup
@@ -182,9 +182,9 @@ Fix:
 
 ### 10) Migration hygiene + push history
 - Duplicate migration versions existed. Renamed `20251216_user_owned_rls.sql` → `20260311_user_owned_rls.sql` to avoid conflicts.
-- Made `20260309_inspectready_schema.sql` idempotent by adding `drop policy if exists` before policy creation.
+- Made `20260309_mockofsted_schema.sql` idempotent by adding `drop policy if exists` before policy creation.
 - Successfully ran `supabase db push` for:
-  - `20260309_inspectready_schema.sql`
+  - `20260309_mockofsted_schema.sql`
   - `20260310_trial_limits.sql`
   - `20260311_user_owned_rls.sql`
 
@@ -213,7 +213,7 @@ Fix:
 - Replaced `src/reports/exportReportPdf.ts` with a new A4 jsPDF 3.x implementation.
 - Added optional `jspdf-autotable` usage via a runtime loader; if unavailable, falls back to basic text table rendering (no new deps).
 - New PDF structure:
-  - Cover page with InspectReady title, home name, date, and overall band color.
+  - Cover page with MockOfsted title, home name, date, and overall band color.
   - Executive Summary page (summary narrative, closing verdict, readiness, strengths, actions).
   - Domain Breakdown table with pagination, wrapping, and inspector note truncation to 200 words.
   - Final Action Plan page with numbered items and Next Steps.
@@ -247,7 +247,7 @@ Fix:
   - Embedded interactive tools: QS Readiness Quiz (9 self-score questions → band result), Domain Question Generator (select QS → 10 questions + CSV download link), Monthly Prep Calendar (4-week rotation).
   - Footer CTA: "Unlimited AI practice → Try 3-day free"
 - **New `src/pages/About.tsx`**:
-  - Sections: My Story (youth work → RM → InspectReady origin), Validated (10+ homes beta, all 9 QS, SCCIF-native), Tech (UK data, voice/text, scoring, privacy), Contact.
+  - Sections: My Story (youth work → RM → MockOfsted origin), Validated (10+ homes beta, all 9 QS, SCCIF-native), Tech (UK data, voice/text, scoring, privacy), Contact.
   - Honest disclaimer panel in amber.
 - **New `src/pages/Blog.tsx`**:
   - Hero: "Ofsted Insights for Children's Home Managers"
@@ -257,6 +257,37 @@ Fix:
 - **Updated `src/pages/marketing/MarketingLayout.tsx`**: Nav adds "Free Tools", "About", "Blog". Footer adds "Company" column with About/Blog/FAQ/Contact; "Product" column adds "Free Tools".
 - **New `public/tools/question-bank.csv`**: 18 rows — 2 questions per domain across all 9 QS with hint column. Served statically.
 - `bun run typecheck` → clean. No new lint errors.
+
+### 17) Tools page — fully public, client-side, no login
+- **Rebuilt `src/pages/marketing/Tools.tsx`** — 4 working tools, zero login redirects, all client-side.
+- **New `src/lib/quizScoring.ts`**: `computeScore()`, `exportQuizPdf()`, `exportCalendarPdf()`, `exportAuditPdf()` — all pure jsPDF 3.x, no html2canvas.
+- **New `src/lib/geminiPrompt.ts`**: `buildGapPrompt()`, `callGemini()`, `getGapAnalysis()` — Gemini 1.5 Flash via `VITE_GEMINI_KEY`; falls back to static gap report if key absent.
+- **`VITE_GEMINI_KEY` added to `.env`** (Gemini 1.5 Flash free tier).
+
+**Tool 1 — QS Readiness Quiz:**
+  - 9-domain checkbox grid: Documentation complete / Audited this quarter / Staff trained (27 checks total).
+  - Live % score bar (green >80%, amber 60-80%, red <60%) + per-domain mini bars.
+  - localStorage persistence (`ir_quiz_state`).
+  - "Generate gaps report" → Gemini Flash analysis (or static fallback) + "Export PDF" (jsPDF with domain bars, gap list, CTA).
+
+**Tool 2 — Mock Inspector Demo:**
+  - 3 fixed SCCIF questions (QS7, QS8, QS1) in a tab interface.
+  - Static heuristic feedback by word count (Band 1–4 + strength/gap/follow-up).
+  - No API calls, no login, no data stored.
+
+**Tool 3 — 12-Week Prep Calendar:**
+  - Date picker (defaults to next Monday).
+  - 12-week rotation table (QS7 appears twice — limiting judgement priority).
+  - "Export PDF" → jsPDF table with date ranges, domain focus, session goals.
+
+**Tool 4 — SCCIF Audit Checklist:**
+  - All 9 QS sections with 4-6 evidence items each (44 items total).
+  - Live % score bar. "Export PDF" + "Print" buttons.
+  - QS7 section highlighted red throughout.
+
+**Home.tsx:** Card 2 updated from "Domain Question Generator → /tools#generator" to "Mock Inspector Demo → /tools#mock".
+**Tools tab nav** uses hash (`/tools#quiz`, `#mock`, `#calendar`, `#checklist`) — hash restored on load for deep links from Home.
+`bun run build` → clean, 1.95s. `bun run typecheck` → clean.
 
 ## Operational Notes
 

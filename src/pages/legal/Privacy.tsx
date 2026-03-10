@@ -10,7 +10,7 @@ export default function Privacy() {
               Privacy Policy
             </div>
             <h1 className="mt-4 font-display text-3xl font-bold text-slate-900 md:text-4xl">Privacy Policy</h1>
-            <p className="mt-3 text-slate-600">How we collect, use, and protect your data when using Voice Inspector.</p>
+            <p className="mt-3 text-slate-600">How we collect, use, and protect your data when using MockOfsted.</p>
           </div>
 
           <div className="rounded-[28px] border bg-white p-6 shadow-sm ring-2 ring-teal-200">
@@ -20,7 +20,7 @@ export default function Privacy() {
               </div>
               <Section title="1. Introduction & Scope">
                 <p className="text-sm text-slate-700">
-                  This Privacy Policy explains how Ziantra Ltd (“we”, “us”) processes personal data when you use Voice Inspector. It applies to all users of the Service.
+                  This Privacy Policy explains how Ziantra Ltd (“we”, “us”) processes personal data when you use MockOfsted. It applies to all users of the Service.
                 </p>
               </Section>
 

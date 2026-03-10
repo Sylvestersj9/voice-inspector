@@ -34,7 +34,7 @@ async function sendFeedback(payload: Record<string, string>, type: SubmitType): 
     return { ok: true, message: "Thanks! We've received your message." };
   } catch (error) {
     // Fallback: open mail client so the user can still send
-    const subject = type === "feedback" ? "Voice Inspector feedback" : "Voice Inspector contact";
+    const subject = type === "feedback" ? "MockOfsted feedback" : "MockOfsted contact";
     const body = Object.entries(payload)
       .filter(([, value]) => value)
       .map(([key, value]) => `${key}: ${value}`)

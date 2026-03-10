@@ -73,7 +73,7 @@ export default function Paywall() {
                 <path d="M16 4v18M4 10l12 6 12-6" stroke="white" strokeWidth="2" strokeLinejoin="round" />
               </svg>
             </div>
-            <span className="font-display font-bold text-slate-900">InspectReady</span>
+            <span className="font-display font-bold text-slate-900">MockOfsted</span>
           </div>
           <div className="w-20" /> {/* spacer */}
         </div>
@@ -137,7 +137,7 @@ export default function Paywall() {
           </div>
 
           <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 px-5 py-3 text-xs text-amber-800">
-            <strong>Reminder:</strong> InspectReady is a practice tool and does not constitute official Ofsted guidance. Feedback is based on your responses.
+            <strong>Reminder:</strong> MockOfsted is a practice tool and does not constitute official Ofsted guidance. Feedback is based on your responses.
           </div>
         </div>
       </main>

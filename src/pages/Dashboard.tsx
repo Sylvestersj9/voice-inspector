@@ -259,7 +259,7 @@ export default function Dashboard() {
               </svg>
             </div>
             <span className="font-display font-bold text-slate-900">
-              InspectReady
+              MockOfsted
             </span>
           </div>
           <nav className="hidden items-center gap-1 sm:flex">
@@ -486,7 +486,7 @@ export default function Dashboard() {
 
         {/* Disclaimer */}
         <p className="text-xs text-slate-400 leading-relaxed">
-          InspectReady is a practice and professional development tool. It does
+          MockOfsted is a practice and professional development tool. It does
           not constitute official Ofsted guidance or legal compliance advice.
           All evaluations are AI-generated based on your answers only and do not
           reflect a full Ofsted inspection.

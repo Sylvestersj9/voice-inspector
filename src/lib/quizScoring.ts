@@ -107,7 +107,7 @@ export function buildStaticGapReport(result: QuizResult): string {
   lines.push("");
   lines.push("Recommendation: Address QS7 (Protection of Children) gaps first — this is the limiting judgement. Inadequate here overrides all other grades.");
   lines.push("");
-  lines.push("Next step: Run a full InspectReady simulator session to practise answering in each gap area.");
+  lines.push("Next step: Run a full MockOfsted simulator session to practise answering in each gap area.");
   return lines.join("\n");
 }
 
@@ -146,7 +146,7 @@ export async function exportQuizPdf(
   doc.setTextColor("#ffffff");
   doc.setFontSize(14);
   doc.setFont("helvetica", "bold");
-  doc.text("InspectReady — SCCIF Readiness Report", 14, 13);
+  doc.text("MockOfsted — SCCIF Readiness Report", 14, 13);
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
   doc.text(`${date}${homeName ? `  ·  ${homeName}` : ""}`, 14, 23);
@@ -272,9 +272,9 @@ export async function exportQuizPdf(
   doc.text("Ready to practise answering your gaps out loud?", 105, y + 8, { align: "center" });
   doc.setFontSize(8.5);
   doc.setFont("helvetica", "normal");
-  doc.text("inspectready.co.uk  —  AI simulator · 3-day free trial · no card required", 105, y + 16, { align: "center" });
+  doc.text("mockofsted.co.uk  —  AI simulator · 3-day free trial · no card required", 105, y + 16, { align: "center" });
 
-  doc.save("inspectready-sccif-readiness-report.pdf");
+  doc.save("mockofsted-sccif-readiness-report.pdf");
 }
 
 // ── Prep calendar PDF ─────────────────────────────────────────────────────────
@@ -304,7 +304,7 @@ export async function exportCalendarPdf(startDate: Date, homeName?: string): Pro
   doc.setTextColor("#ffffff");
   doc.setFontSize(14);
   doc.setFont("helvetica", "bold");
-  doc.text("InspectReady — 12-Week Prep Calendar", 14, 13);
+  doc.text("MockOfsted — 12-Week Prep Calendar", 14, 13);
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
   doc.text(`Starting: ${date}${homeName ? `  ·  ${homeName}` : ""}`, 14, 23);
@@ -365,12 +365,12 @@ export async function exportCalendarPdf(startDate: Date, homeName?: string): Pro
   doc.setFontSize(10);
   doc.setFont("helvetica", "bold");
   doc.setTextColor("#ffffff");
-  doc.text("Run each week's session at inspectready.co.uk", 105, y + 9, { align: "center" });
+  doc.text("Run each week's session at mockofsted.co.uk", 105, y + 9, { align: "center" });
   doc.setFontSize(8.5);
   doc.setFont("helvetica", "normal");
   doc.text("3-day free trial · no card required · voice or text responses", 105, y + 17, { align: "center" });
 
-  doc.save("inspectready-12-week-prep-calendar.pdf");
+  doc.save("mockofsted-12-week-prep-calendar.pdf");
 }
 
 // ── Audit checklist PDF ───────────────────────────────────────────────────────
@@ -483,7 +483,7 @@ export async function exportAuditPdf(
   doc.setTextColor("#ffffff");
   doc.setFontSize(14);
   doc.setFont("helvetica", "bold");
-  doc.text("InspectReady — SCCIF Pre-Inspection Audit Checklist", 14, 13);
+  doc.text("MockOfsted — SCCIF Pre-Inspection Audit Checklist", 14, 13);
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
   doc.text(`${date}${homeName ? `  ·  ${homeName}` : ""}  ·  Print and complete or use as self-audit`, 14, 23);
@@ -541,7 +541,7 @@ export async function exportAuditPdf(
   doc.text("Practise your answers to every item above", 105, y + 9, { align: "center" });
   doc.setFontSize(8.5);
   doc.setFont("helvetica", "normal");
-  doc.text("inspectready.co.uk  —  AI simulator · 3-day free trial · no card required", 105, y + 17, { align: "center" });
+  doc.text("mockofsted.co.uk  —  AI simulator · 3-day free trial · no card required", 105, y + 17, { align: "center" });
 
-  doc.save("inspectready-sccif-audit-checklist.pdf");
+  doc.save("mockofsted-sccif-audit-checklist.pdf");
 }

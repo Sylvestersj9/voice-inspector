@@ -190,7 +190,7 @@ ${reportSchema}`;
       managerRole,
       date: sessionDate,
       time: sessionTime,
-      inspector: "AI Inspector (InspectReady)",
+      inspector: "AI Inspector (MockOfsted)",
       sessionType: isFullSession ? "Full Session" : "Partial Session",
       questionsAnswered: responses.length,
       totalQS: 9,

@@ -115,7 +115,7 @@ export default function Login() {
                 <path d="M16 4v18M4 10l12 6 12-6" stroke="white" strokeWidth="2" strokeLinejoin="round" />
               </svg>
             </div>
-            <span className="font-display text-lg font-semibold">InspectReady</span>
+            <span className="font-display text-lg font-semibold">MockOfsted</span>
           </a>
         </div>
 
@@ -128,7 +128,7 @@ export default function Login() {
                   {mode === "signin" ? "Welcome back" : "Get started free"}
                 </p>
                 <h1 className="mt-2 font-display text-3xl font-bold text-slate-900">
-                  {mode === "signin" ? "Sign in to InspectReady" : "Create your account"}
+                  {mode === "signin" ? "Sign in to MockOfsted" : "Create your account"}
                 </h1>
                 <p className="mt-2 text-sm text-slate-600">
                   {mode === "signin"

@@ -569,7 +569,7 @@ export default function Index() {
                 <path d="M16 4v18M4 10l12 6 12-6" stroke="white" strokeWidth="2" strokeLinejoin="round" />
               </svg>
             </div>
-            <span className="font-display font-bold text-slate-900">InspectReady</span>
+            <span className="font-display font-bold text-slate-900">MockOfsted</span>
           </div>
           <nav className="hidden items-center gap-1 sm:flex">
             <Link to="/app" className="rounded-lg px-3 py-2 text-sm font-medium text-slate-900 bg-slate-100">

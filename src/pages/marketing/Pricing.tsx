@@ -1,9 +1,28 @@
-import { ArrowRight, CheckCircle2 } from "lucide-react";
+import { ArrowRight, CheckCircle2, Star } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import MarketingLayout from "./MarketingLayout";
 import { useAuth } from "@/auth/AuthProvider";
 import { supabase } from "@/lib/supabase";
 import { useState } from "react";
+
+const SOLO_FEATURES = [
+  "All 9 Quality Standards",
+  "Unlimited practice sessions",
+  "Voice or text responses",
+  "Scored feedback on every answer",
+  "Full inspection report after each session",
+  "Session history",
+  "3-day free trial — up to 5 sessions/day (15 total)",
+];
+
+const TEAM_FEATURES = [
+  "Everything in Solo",
+  "Up to 5 registered managers",
+  "Shared session history across the team",
+  "Designated account manager",
+  "Priority email support",
+  "Onboarding call included",
+];
 
 export default function Pricing() {
   const { user } = useAuth();
@@ -68,36 +87,25 @@ export default function Pricing() {
               Simple, honest pricing
             </h1>
             <p className="mt-3 text-slate-600">
-              One plan. Full access to all core standards. Cancel any time.
+              Start free. Subscribe when you're ready. Cancel any time.
             </p>
           </div>
 
-          {/* Pricing card */}
-          <div className="mx-auto mt-10 max-w-md">
-            <div className="rounded-2xl border-2 border-teal-600 bg-white p-8 shadow-lg">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="inline-flex items-center rounded-full bg-teal-600 px-3 py-0.5 text-xs font-bold text-white">
-                    Individual
-                  </div>
-                  <div className="mt-3 flex items-baseline gap-1">
-                    <span className="text-4xl font-bold text-slate-900">£29</span>
-                    <span className="text-slate-500">/month</span>
-                  </div>
-                  <p className="mt-1 text-sm text-slate-500">Cancel any time</p>
-                </div>
+          {/* Pricing cards */}
+          <div className="mx-auto mt-10 grid max-w-4xl gap-6 md:grid-cols-2">
+            {/* Solo */}
+            <div className="relative rounded-2xl border-2 border-slate-200 bg-white p-8 shadow-sm">
+              <div className="inline-flex items-center rounded-full bg-slate-100 px-3 py-0.5 text-xs font-bold text-slate-700">
+                Solo
               </div>
+              <div className="mt-3 flex items-baseline gap-1">
+                <span className="text-4xl font-bold text-slate-900">£29</span>
+                <span className="text-slate-500">/month</span>
+              </div>
+              <p className="mt-1 text-sm text-slate-500">Per registered manager. Cancel any time.</p>
 
               <ul className="mt-7 space-y-3">
-                {[
-                  "All core standards",
-                  "Unlimited practice sessions",
-                  "Voice or text responses",
-                  "Scored feedback on every answer",
-                  "Full inspection report after each session",
-                  "Session history",
-                  "3-day free trial — up to 5 sessions per day (15 total)",
-                ].map((f) => (
+                {SOLO_FEATURES.map((f) => (
                   <li key={f} className="flex items-start gap-2.5 text-sm text-slate-700">
                     <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-teal-600" />
                     {f}
@@ -114,28 +122,62 @@ export default function Pricing() {
                 {!busy && <ArrowRight className="ml-2 h-4 w-4" />}
               </button>
               {error ? (
-                <p className="mt-3 text-center text-xs text-red-700">
-                  {error}
-                </p>
+                <p className="mt-3 text-center text-xs text-red-700">{error}</p>
               ) : null}
-
               <p className="mt-3 text-center text-xs text-slate-500">
-                Free trial includes 3 days with up to 5 sessions per day (15 total). Subscribe for unlimited sessions.
+                Free trial: 3 days, up to 15 sessions total.
               </p>
             </div>
 
-            <div className="mt-6 rounded-xl bg-slate-50 border border-slate-200 px-5 py-4 text-sm text-slate-600 text-center">
-              Prices exclude VAT where applicable. For multi-home or organisational licensing,{" "}
-              <Link to="/contact" className="text-teal-700 hover:underline font-medium">
-                contact us
+            {/* Team — Most Popular */}
+            <div className="relative rounded-2xl border-2 border-teal-600 bg-white p-8 shadow-lg">
+              <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
+                <span className="inline-flex items-center gap-1 rounded-full bg-teal-600 px-3 py-1 text-xs font-bold text-white shadow">
+                  <Star className="h-3 w-3 fill-white" /> Most Popular
+                </span>
+              </div>
+
+              <div className="inline-flex items-center rounded-full bg-teal-600 px-3 py-0.5 text-xs font-bold text-white">
+                Team
+              </div>
+              <div className="mt-3 flex items-baseline gap-1">
+                <span className="text-4xl font-bold text-slate-900">£69</span>
+                <span className="text-slate-500">/month</span>
+              </div>
+              <p className="mt-1 text-sm text-slate-500">Up to 5 managers. One home or several.</p>
+
+              <ul className="mt-7 space-y-3">
+                {TEAM_FEATURES.map((f) => (
+                  <li key={f} className="flex items-start gap-2.5 text-sm text-slate-700">
+                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-teal-600" />
+                    {f}
+                  </li>
+                ))}
+              </ul>
+
+              <Link
+                to="/contact"
+                className="mt-8 inline-flex w-full items-center justify-center rounded-xl bg-slate-900 py-3.5 text-sm font-semibold text-white shadow-sm hover:bg-slate-800 transition-colors"
+              >
+                Contact us <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
-              .
+              <p className="mt-3 text-center text-xs text-slate-500">
+                We'll set up your team within 24 hours.
+              </p>
             </div>
           </div>
 
+          <div className="mx-auto mt-6 max-w-4xl rounded-xl bg-slate-50 border border-slate-200 px-5 py-4 text-sm text-slate-600 text-center">
+            Prices exclude VAT where applicable. For multi-home or organisational licensing,{" "}
+            <Link to="/contact" className="text-teal-700 hover:underline font-medium">
+              contact us
+            </Link>
+            .
+          </div>
+
           {/* Disclaimer */}
-          <div className="mx-auto mt-10 max-w-2xl rounded-xl bg-amber-50 border border-amber-200 px-5 py-4 text-sm text-amber-800 text-center">
-            <strong>Disclaimer:</strong> InspectReady is a practice and professional development tool. It does not constitute official Ofsted guidance or legal compliance advice. All evaluations are AI-generated based on your answers only and do not reflect a full Ofsted inspection.
+          <div className="mx-auto mt-6 max-w-4xl rounded-xl bg-amber-50 border border-amber-200 px-5 py-4 text-sm text-amber-800 text-center">
+            <strong>Disclaimer:</strong> MockOfsted is a practice and professional development tool. It does not constitute official Ofsted guidance or legal compliance advice. All evaluations are AI-generated based on your answers only and do not reflect a full Ofsted inspection.
           </div>
         </div>
       </div>

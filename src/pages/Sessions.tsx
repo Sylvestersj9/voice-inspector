@@ -256,7 +256,7 @@ export default function Sessions() {
         <div className="sticky top-0 z-20 bg-white/80 backdrop-blur border-b border-slate-200">
           <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
             <div className="flex items-center gap-2">
-              <div className="text-base font-bold text-black font-display">Voice Inspector</div>
+              <div className="text-base font-bold text-black font-display">MockOfsted</div>
               <span className="rounded-full bg-teal-50 px-2 py-0.5 text-xs font-semibold text-teal-700 ring-1 ring-teal-100">
                 Beta
               </span>

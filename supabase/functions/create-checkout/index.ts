@@ -65,7 +65,7 @@ serve(async (req: Request) => {
     }
 
     const body = await req.json().catch(() => ({}));
-    const returnUrl = String(body?.returnUrl ?? "").trim() || `${Deno.env.get("SITE_URL") ?? "https://inspectready.co.uk"}/app/dashboard`;
+    const returnUrl = String(body?.returnUrl ?? "").trim() || `${Deno.env.get("SITE_URL") ?? "https://mockofsted.co.uk"}/app/dashboard`;
 
     const session = await stripe.checkout.sessions.create({
       customer: customerId,

@@ -142,7 +142,7 @@ export async function exportReportPdf(params: NewParams | LegacyParams) {
     // Cover page
     doc.setFontSize(22);
     doc.setTextColor(TEAL);
-    doc.text("InspectReady Practice Report", margin, 40);
+    doc.text("MockOfsted Practice Report", margin, 40);
     doc.setFontSize(12);
     doc.setTextColor(60, 60, 60);
     doc.text(`Home: ${params.homeName || "N/A"}`, margin, 55);
@@ -183,7 +183,7 @@ export async function exportReportPdf(params: NewParams | LegacyParams) {
     y = margin + 12;
     y = addParagraph(params.report.recommended_actions || "", y, pageWidth - margin * 2);
 
-    doc.save(`inspectready-${params.inspectionSessionId}.pdf`);
+    doc.save(`mockofsted-${params.inspectionSessionId}.pdf`);
     return;
   }
 
@@ -197,7 +197,7 @@ export async function exportReportPdf(params: NewParams | LegacyParams) {
   // Cover page
   doc.setFontSize(22);
   doc.setTextColor(TEAL);
-  doc.text("InspectReady Practice Report", margin, 40);
+  doc.text("MockOfsted Practice Report", margin, 40);
 
   doc.setFontSize(12);
   doc.setTextColor(60, 60, 60);
@@ -342,5 +342,5 @@ export async function exportReportPdf(params: NewParams | LegacyParams) {
     addParagraph("Subscribe for unlimited sessions and continue building inspection readiness.", y, pageWidth - margin * 2);
   }
 
-  doc.save(`inspectready-${params.sessionId}.pdf`);
+  doc.save(`mockofsted-${params.sessionId}.pdf`);
 }

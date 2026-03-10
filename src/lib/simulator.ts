@@ -10,7 +10,7 @@ const DEFAULT_POLL_MS = 800;
 const DEFAULT_TIMEOUT_MS = 20000;
 
 export function getPauseKey(sessionId: string) {
-  return `inspectready:paused:${sessionId}`;
+  return `mockofsted:paused:${sessionId}`;
 }
 
 export function loadPaused(sessionId: string) {

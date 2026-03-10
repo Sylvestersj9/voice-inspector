@@ -20,7 +20,7 @@ function Header() {
         background: "#ffffff",
       }}
     >
-      <div style={{ fontWeight: 800 }}>Voice Inspector</div>
+      <div style={{ fontWeight: 800 }}>MockOfsted</div>
       <nav style={{ display: "flex", gap: 12 }}>
         <Link to="/app" style={{ textDecoration: "none", color: "#0f172a" }}>
           Dashboard

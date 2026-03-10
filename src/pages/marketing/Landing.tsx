@@ -15,7 +15,7 @@ export default function Landing() {
             Practice your Ofsted inspection <span className="text-teal-600">before the inspector arrives.</span>
           </h1>
           <p className="mt-5 text-lg leading-relaxed text-slate-600 max-w-2xl mx-auto">
-            InspectReady simulates real inspection conversations across children's homes and supported living standards.
+            MockOfsted simulates real inspection conversations across children's homes and supported living standards.
             Answer by voice or text, receive professional feedback, full report — in minutes.
           </p>
           <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">

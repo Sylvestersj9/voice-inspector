@@ -1,4 +1,4 @@
-// InspectReady — Fit Person Interview Question Bank
+// MockOfsted — Fit Person Interview Question Bank
 // For managers registering a new children's home or supported accommodation
 // 8 question areas, 3 variants each, 1 randomly selected per session
 

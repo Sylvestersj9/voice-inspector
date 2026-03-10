@@ -66,10 +66,10 @@ export default function AuthLoopPanel() {
       <div className="flex h-full flex-col justify-between p-8 text-white">
         <div className="flex items-center gap-3">
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/15 ring-1 ring-white/20 overflow-hidden">
-            <img src="/logo.svg" alt="Voice Inspector" className="h-full w-full object-contain" />
+            <img src="/logo.svg" alt="MockOfsted" className="h-full w-full object-contain" />
           </div>
           <div>
-            <div className="text-sm font-semibold leading-5 text-white">Voice Inspector</div>
+            <div className="text-sm font-semibold leading-5 text-white">MockOfsted</div>
             <div className="text-xs leading-4 text-white/80">Ofsted inspection practice simulator</div>
           </div>
         </div>

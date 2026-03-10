@@ -10,7 +10,7 @@ export default function AcceptableUse() {
               Acceptable Use Policy
             </div>
             <h1 className="mt-4 font-display text-3xl font-bold text-slate-900 md:text-4xl">Acceptable Use Policy</h1>
-            <p className="mt-3 text-slate-600">Standards for safe, lawful, and fair use of Voice Inspector.</p>
+            <p className="mt-3 text-slate-600">Standards for safe, lawful, and fair use of MockOfsted.</p>
           </div>
 
           <div className="rounded-[28px] border bg-white p-6 shadow-sm ring-2 ring-teal-200">

@@ -1,4 +1,4 @@
-// InspectReady — Children's Home Inspection Question Bank
+// MockOfsted — Children's Home Inspection Question Bank
 // Based on the 9 Quality Standards from Children's Homes (England) Regulations 2015
 // 2 variants per domain — 1 randomly selected per session
 

@@ -13,7 +13,7 @@ export default function Disclaimer() {
               Important Regulatory &amp; AI Disclaimer
             </h1>
             <p className="mt-3 text-slate-600">
-              Voice Inspector is an assistance, training, and simulation tool only. Human review and professional judgement are mandatory.
+              MockOfsted is an assistance, training, and simulation tool only. Human review and professional judgement are mandatory.
             </p>
           </div>
 
