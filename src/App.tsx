@@ -19,6 +19,7 @@ const AcceptableUse = lazy(() => import("./pages/legal/AcceptableUse"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Report = lazy(() => import("./pages/app/Report"));
 const Paywall = lazy(() => import("./pages/app/Paywall"));
+const Profile = lazy(() => import("./pages/app/Profile"));
 const About = lazy(() => import("./pages/About"));
 const Blog = lazy(() => import("./pages/Blog"));
 const BlogPost = lazy(() => import("./pages/BlogPost"));
@@ -74,6 +75,14 @@ function AppRoutes() {
           element={
             <RequireAuth>
               <PageTransition><Paywall /></PageTransition>
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/app/profile"
+          element={
+            <RequireAuth>
+              <PageTransition><Profile /></PageTransition>
             </RequireAuth>
           }
         />

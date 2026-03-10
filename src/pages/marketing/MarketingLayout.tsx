@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, LayoutDashboard, User, LogOut } from "lucide-react";
+import { useAuth } from "@/auth/AuthProvider";
+import { supabase } from "@/lib/supabase";
 
 type Props = { children: React.ReactNode };
 
@@ -8,8 +10,10 @@ const CONTACT_EMAIL = "info@mockofsted.co.uk";
 
 export default function MarketingLayout({ children }: Props) {
   const location = useLocation();
+  const { user, loading: authLoading } = useAuth();
   const [isTop, setIsTop] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   useEffect(() => {
     const onScroll = () => setIsTop(window.scrollY < 12);
@@ -20,6 +24,7 @@ export default function MarketingLayout({ children }: Props) {
 
   useEffect(() => {
     setMobileOpen(false);
+    setUserMenuOpen(false);
     window.scrollTo({ top: 0 });
   }, [location.pathname]);
 
@@ -61,20 +66,74 @@ export default function MarketingLayout({ children }: Props) {
             <Link to="/faq" className="text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors">FAQ</Link>
           </nav>
 
-          {/* CTA */}
+          {/* CTA — auth-aware */}
           <div className="flex items-center gap-2.5">
-            <Link
-              to="/login"
-              className="hidden sm:inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
-            >
-              Log in
-            </Link>
-            <Link
-              to="/login"
-              className="inline-flex items-center justify-center rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-teal-700 transition-colors"
-            >
-              Try free <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
-            </Link>
+            {!authLoading && user ? (
+              <div className="relative">
+                <button
+                  onClick={() => setUserMenuOpen((v) => !v)}
+                  className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+                  aria-expanded={userMenuOpen}
+                >
+                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-teal-600 text-white text-xs font-bold">
+                    {(user.email?.[0] ?? "U").toUpperCase()}
+                  </div>
+                  <span className="hidden sm:inline">Account</span>
+                </button>
+                {userMenuOpen && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-40"
+                      onClick={() => setUserMenuOpen(false)}
+                    />
+                    <div className="absolute right-0 z-50 mt-2 w-44 rounded-xl border border-slate-100 bg-white py-1 shadow-lg">
+                      <Link
+                        to="/app/dashboard"
+                        className="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                        onClick={() => setUserMenuOpen(false)}
+                      >
+                        <LayoutDashboard className="h-4 w-4 text-slate-400" />
+                        Dashboard
+                      </Link>
+                      <Link
+                        to="/app/profile"
+                        className="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                        onClick={() => setUserMenuOpen(false)}
+                      >
+                        <User className="h-4 w-4 text-slate-400" />
+                        Profile
+                      </Link>
+                      <div className="my-1 border-t border-slate-100" />
+                      <button
+                        onClick={async () => {
+                          setUserMenuOpen(false);
+                          await supabase.auth.signOut();
+                        }}
+                        className="flex w-full items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                      >
+                        <LogOut className="h-4 w-4" />
+                        Sign out
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            ) : (
+              <>
+                <Link
+                  to="/login"
+                  className="hidden sm:inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+                >
+                  Log in
+                </Link>
+                <Link
+                  to="/login"
+                  className="inline-flex items-center justify-center rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-teal-700 transition-colors"
+                >
+                  Try free <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </header>
