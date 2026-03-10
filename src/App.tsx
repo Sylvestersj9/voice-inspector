@@ -1,6 +1,7 @@
 import { Suspense, lazy, useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
+import * as Sentry from "@sentry/react";
 import RequireAuth from "./auth/RequireAuth";
 import PageTransition from "./components/PageTransition";
 import { ErrorBoundary } from "./components/ErrorBoundary";
@@ -118,6 +119,13 @@ export default function App() {
           <AppRoutes />
         </Suspense>
         <CookieConsent />
+        {/* SENTRY TEST — remove after confirming */}
+        <button
+          onClick={() => Sentry.captureException(new Error("LAUNCH-READY TEST"))}
+          style={{ position: "fixed", bottom: 8, right: 8, zIndex: 9999, fontSize: 10, opacity: 0.4, padding: "2px 6px", background: "#e11d48", color: "#fff", borderRadius: 4, border: "none", cursor: "pointer" }}
+        >
+          Sentry test
+        </button>
       </BrowserRouter>
     </ErrorBoundary>
   );
