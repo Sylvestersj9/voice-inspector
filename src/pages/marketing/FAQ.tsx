@@ -70,7 +70,7 @@ export default function FAQ() {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error || "Unable to submit your message right now.");
       }
-      setStatus("Thanks for reaching out. We'll reply from reports@ziantra.co.uk.");
+      setStatus("Thanks for reaching out. We'll reply from info@mockofsted.co.uk.");
       setName("");
       setEmail("");
       setOrganisation("");
@@ -95,8 +95,8 @@ export default function FAQ() {
             </h1>
             <p className="mt-3 text-slate-600">
               If you can’t find an answer, email{" "}
-              <a className="text-teal-700 underline" href="mailto:reports@ziantra.co.uk">
-                reports@ziantra.co.uk
+              <a className="text-teal-700 underline" href="mailto:info@mockofsted.co.uk">
+                info@mockofsted.co.uk
               </a>.
             </p>
           </div>

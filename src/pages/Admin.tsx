@@ -111,7 +111,7 @@ export default function Admin() {
             </p>
           </div>
           <div className="text-xs text-muted-foreground">
-            Questions? <a className="text-primary underline" href="mailto:reports@ziantra.co.uk">reports@ziantra.co.uk</a>
+            Questions? <a className="text-primary underline" href="mailto:info@mockofsted.co.uk">info@mockofsted.co.uk</a>
           </div>
         </div>
 

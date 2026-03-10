@@ -12,7 +12,7 @@ interface SendResult {
   message: string;
 }
 
-const emailAddress = "reports@ziantra.co.uk";
+const emailAddress = "info@mockofsted.co.uk";
 
 async function sendFeedback(payload: Record<string, string>, type: SubmitType): Promise<SendResult> {
   try {

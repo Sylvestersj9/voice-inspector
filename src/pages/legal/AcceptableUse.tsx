@@ -45,7 +45,7 @@ export default function AcceptableUse() {
               </Section>
 
               <Section title="Reporting misuse">
-                <p>Report concerns to reports@ziantra.co.uk. Provide as much detail as possible so we can investigate promptly.</p>
+                <p>Report concerns to info@mockofsted.co.uk. Provide as much detail as possible so we can investigate promptly.</p>
               </Section>
             </div>
           </div>

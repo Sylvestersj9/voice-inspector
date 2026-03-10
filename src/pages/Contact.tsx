@@ -57,7 +57,7 @@ export default function Contact() {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error || "Unable to submit your message right now.");
       }
-      setStatus("Thanks for reaching out. We'll reply from reports@ziantra.co.uk.");
+      setStatus("Thanks for reaching out. We'll reply from info@mockofsted.co.uk.");
       setName("");
       setEmail("");
       setOrganisation("");

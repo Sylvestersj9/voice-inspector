@@ -149,7 +149,7 @@ export default function History() {
             <p className="text-sm text-muted-foreground">Review your past inspection simulations</p>
           </div>
           <div className="text-xs text-muted-foreground">
-            Questions? <a className="text-primary underline" href="mailto:reports@ziantra.co.uk">reports@ziantra.co.uk</a>
+            Questions? <a className="text-primary underline" href="mailto:info@mockofsted.co.uk">info@mockofsted.co.uk</a>
           </div>
         </div>
 

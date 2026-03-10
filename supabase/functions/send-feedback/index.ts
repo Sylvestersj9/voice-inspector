@@ -16,11 +16,8 @@ const supabaseAdmin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false },
 });
 
-// TEMP: Resend testing mode only allows sending to your own email
-const TO_EMAIL = "janvesylvester@gmail.com";
-
-// Keep this as Resend sandbox sender for now
-const FROM_EMAIL = "MockOfsted <onboarding@resend.dev>";
+const TO_EMAIL = Deno.env.get("CONTACT_TO_EMAIL") || "info@mockofsted.co.uk";
+const FROM_EMAIL = Deno.env.get("CONTACT_FROM_EMAIL") || "MockOfsted <onboarding@resend.dev>";
 
 function json(body: unknown, status = 200, headers: HeadersInit = {}) {
   return new Response(JSON.stringify(body), {

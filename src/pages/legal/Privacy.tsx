@@ -97,7 +97,7 @@ export default function Privacy() {
 
               <Section title="13. Contact Details">
                 <p className="text-sm text-slate-700">
-                  For privacy questions or requests, email reports@ziantra.co.uk or use the contact form.
+                  For privacy questions or requests, email info@mockofsted.co.uk or use the contact form.
                 </p>
               </Section>
             </div>

@@ -4,7 +4,7 @@ import { ArrowRight } from "lucide-react";
 
 type Props = { children: React.ReactNode };
 
-const CONTACT_EMAIL = "hello@mockofsted.co.uk";
+const CONTACT_EMAIL = "info@mockofsted.co.uk";
 
 export default function MarketingLayout({ children }: Props) {
   const location = useLocation();

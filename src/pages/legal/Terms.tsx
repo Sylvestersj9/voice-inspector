@@ -118,7 +118,7 @@ export default function Terms() {
 
               <Section title="16. Contact Information">
                 <p className="text-sm text-slate-700">
-                  For questions about these terms, contact reports@ziantra.co.uk or use the contact page.
+                  For questions about these terms, contact info@mockofsted.co.uk or use the contact page.
                 </p>
               </Section>
             </div>

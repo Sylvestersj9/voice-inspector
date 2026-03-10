@@ -639,7 +639,7 @@ export default function Report() {
 
           {/* Footer */}
           <p className="text-xs text-slate-400 leading-relaxed">
-            © {new Date().getFullYear()} MockOfsted — mockofsted.co.uk — hello@mockofsted.co.uk
+            © {new Date().getFullYear()} MockOfsted — mockofsted.co.uk — info@mockofsted.co.uk
           </p>
         </main>
 
