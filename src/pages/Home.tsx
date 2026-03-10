@@ -190,19 +190,19 @@ export default function Landing() {
 
             {/* Card 2 */}
             <Link
-              to="/tools#generator"
+              to="/tools#mock"
               className="group rounded-2xl border border-teal-200 bg-white p-6 shadow-sm hover:shadow-md hover:border-teal-400 transition-all"
             >
               <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-50 ring-1 ring-amber-200 group-hover:bg-amber-500 transition-colors">
                 <BookOpen className="h-5 w-5 text-amber-600 group-hover:text-white transition-colors" />
               </div>
-              <h3 className="mt-4 font-semibold text-slate-900">Domain Question Generator</h3>
+              <h3 className="mt-4 font-semibold text-slate-900">Mock Inspector Demo</h3>
               <p className="mt-2 text-sm leading-relaxed text-slate-600">
-                Pick any Quality Standard and generate 10 targeted practice questions drawn from the
-                real SCCIF inspection framework.
+                Answer 3 real SCCIF inspector questions — type as you'd speak. Instant heuristic
+                feedback on each answer. No login, no data stored.
               </p>
               <div className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-amber-700 group-hover:gap-2 transition-all">
-                Generate questions <ArrowRight className="h-3.5 w-3.5" />
+                Try 3 questions <ArrowRight className="h-3.5 w-3.5" />
               </div>
             </Link>
 
