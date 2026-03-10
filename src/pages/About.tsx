@@ -20,7 +20,7 @@ export default function About() {
           </p>
 
           <p className="mt-4 text-slate-600 leading-relaxed">
-            I built MockOfsted because I needed it. As a Level 5 qualified children's home leader, I knew the questions inspectors ask — and I knew that no affordable tool existed to practise answering them under pressure. Every question in this simulator reflects real SCCIF lines of enquiry. Every scoring rubric is grounded in how judgements are actually formed.
+            I built MockOfsted because I needed it. As a residential care leader myself, I knew the questions inspectors ask — and I knew that no affordable tool existed to practise answering them under pressure. Every question in this simulator reflects real SCCIF lines of enquiry. Every scoring rubric is grounded in how judgements are actually formed.
           </p>
 
           <p className="mt-4 text-slate-600 leading-relaxed">

@@ -200,8 +200,8 @@ export default function Landing() {
                 <blockquote className="relative">
                   <Quote className="absolute -left-1 -top-1 h-6 w-6 text-slate-200" aria-hidden="true" />
                   <p className="pl-6 text-slate-700 leading-relaxed">
-                    I built MockOfsted because I needed it. As a Level 5 qualified children's home
-                    leader, I knew the questions inspectors ask — and I knew that no affordable tool
+                    I built MockOfsted because I needed it. As a residential care leader myself,
+                    I knew the questions inspectors ask — and I knew that no affordable tool
                     existed to practise answering them under pressure. Every question in this
                     simulator reflects real SCCIF lines of enquiry. Every scoring rubric is grounded
                     in how judgements are actually formed.
