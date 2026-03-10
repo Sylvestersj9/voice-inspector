@@ -108,7 +108,7 @@ function ArticleShell({
   return (
     <MarketingLayout>
       <title>{title} | MockOfsted Blog</title>
-      <meta name="description" content={`${title} — SCCIF inspection guidance for registered managers of children's homes.`} />
+      <meta name="description" content={`${title} — SCCIF inspection guidance for children's homes and supported living leaders.`} />
       <link rel="canonical" href={`https://mockofsted.co.uk/blog/${tag}`} />
       <meta property="og:title" content={`${title} | MockOfsted Blog`} />
       <meta property="og:type" content="article" />

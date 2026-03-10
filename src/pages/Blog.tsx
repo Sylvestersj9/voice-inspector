@@ -179,7 +179,7 @@ export default function Blog() {
       <title>Ofsted &amp; SCCIF Updates for Children's Homes | MockOfsted Blog</title>
       <meta
         name="description"
-        content="Weekly Ofsted and SCCIF inspection updates, QS guidance, and readiness articles for registered managers of children's homes in England."
+        content="Weekly Ofsted and SCCIF inspection updates, QS guidance, and readiness articles for children's homes and supported living leaders."
       />
       <link rel="canonical" href="https://mockofsted.co.uk/blog" />
       <meta property="og:title" content="MockOfsted Blog — Ofsted & SCCIF Updates" />

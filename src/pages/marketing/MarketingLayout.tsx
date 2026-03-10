@@ -96,7 +96,7 @@ export default function MarketingLayout({ children }: Props) {
                 <span className="font-display font-bold text-slate-900">MockOfsted</span>
               </div>
               <p className="mt-2 text-sm text-slate-600 leading-relaxed">
-                Realistic Ofsted inspection practice for registered managers of children's homes in England.
+                Ofsted practice simulator for children's homes &amp; supported living.
               </p>
               <p className="mt-2 text-sm text-slate-500">
                 Contact:{" "}
@@ -141,7 +141,7 @@ export default function MarketingLayout({ children }: Props) {
               <strong>Disclaimer:</strong> MockOfsted is a practice and professional development tool. It does not constitute official Ofsted guidance or legal compliance advice. All evaluations are AI-generated based on your answers only and do not reflect a full Ofsted inspection.
             </p>
             <p className="mt-2 text-xs text-slate-400">
-              © {new Date().getFullYear()} MockOfsted. Built for registered managers of children's homes in England.
+              © {new Date().getFullYear()} MockOfsted. Inspection practice for children's homes &amp; supported living.
             </p>
           </div>
         </div>
