@@ -10,9 +10,61 @@ export const meta = {
   tag: "Inspection Readiness",
 };
 
+const FAQ_SCHEMA = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: [
+    {
+      "@type": "Question",
+      name: "Are all Ofsted inspections of children's homes unannounced?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Yes. Under the Children's Homes Regulations 2015 and SCCIF, all standard Ofsted inspections of children's homes are unannounced. Inspectors can arrive during normal operating hours (typically 8am–6pm) with no prior notice to the home.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "What documents will Ofsted ask for during an unannounced inspection?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Inspectors typically request: the statement of purpose, children's care plans and risk assessments, safeguarding logs and referral records, staff supervision records, qualifications matrix, Regulation 44 monitoring reports, and the complaints log. Having these current and accessible is essential.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "What is the limiting judgement in a children's home inspection?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "QS7 — Protection of Children — is the limiting judgement under SCCIF. If a home is judged Inadequate on QS7, the overall inspection outcome is Inadequate regardless of how well all other Quality Standards are met.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "How often must Regulation 44 visits take place?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Regulation 44 independent person visits must take place within every 28-day period. Inspectors check both frequency and quality — reports that are superficial or poorly timed are a common inspection finding.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "How can registered managers prepare staff for Ofsted questioning?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "The most effective preparation is regular practice conversations using simulated inspector questioning — either in supervision or as team exercises. Familiarity with how SCCIF questions are framed reduces anxiety and significantly improves the quality of staff responses during inspection.",
+      },
+    },
+  ],
+};
+
 export default function Post() {
   return (
     <div className="space-y-6 text-slate-700 leading-relaxed">
+      {/* Schema.org FAQ structured data — picked up by Google for rich results */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(FAQ_SCHEMA) }}
+      />
 
       <p>
         Every Ofsted inspection of a children's home is, by design, unannounced. Inspectors can

@@ -14,6 +14,7 @@ import {
 } from "@/lib/questions";
 import { computeTrialUsage, TRIAL_DAILY_LIMIT, TRIAL_TOTAL_LIMIT } from "@/lib/trial";
 import { clearPaused, generateReportAndWait, loadPaused, progressColor, savePaused } from "@/lib/simulator";
+import { trackSessionStart, trackSessionComplete, trackReportGenerated } from "@/lib/analytics";
 import ConfettiBurst from "@/components/ConfettiBurst";
 import { VoiceRecorder } from "@/components/VoiceRecorder";
 import { TranscriptEditor } from "@/components/TranscriptEditor";
@@ -275,6 +276,7 @@ export default function Index() {
 
     const picked = pickSessionQuestions(sid);
     setQuestions(picked.map((q) => ({ question: q, transcript: "", result: null })));
+    trackSessionStart(picked.length);
     setQIndex(0);
     setStep("input");
     setSkipUsed(false);
@@ -463,6 +465,18 @@ export default function Index() {
         setStep("evaluated");
         return;
       }
+      // Derive score/band from answered questions for analytics
+      const answered = questions.filter((q) => q.result);
+      const avgScore = answered.length
+        ? answered.reduce((s, q) => s + (q.result?.score ?? 0), 0) / answered.length
+        : 0;
+      const topBand = answered[0]?.result?.band ?? "Unknown";
+      trackSessionComplete({
+        overall_band: topBand,
+        overall_score: Math.round(avgScore * 10) / 10,
+        questions_answered: answered.length,
+      });
+      trackReportGenerated(sessionId);
       setReportSessionId(sessionId);
       if (!isPaidSubscriber && trialInfo) {
         setPendingReportId(sessionId);
@@ -473,6 +487,7 @@ export default function Index() {
       }
     } catch {
       // Even on failure, mark as done and go to report page (report will show raw responses)
+      trackReportGenerated(sessionId);
       setReportSessionId(sessionId);
       if (!isPaidSubscriber && trialInfo) {
         setPendingReportId(sessionId);
