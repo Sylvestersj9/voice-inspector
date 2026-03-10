@@ -275,6 +275,12 @@ export default function Dashboard() {
             >
               Dashboard
             </Link>
+            <Link
+              to="/app/profile"
+              className="rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors"
+            >
+              Profile
+            </Link>
             {!paid && (
               <Link
                 to="/pricing"

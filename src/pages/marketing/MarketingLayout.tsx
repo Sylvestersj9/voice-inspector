@@ -68,7 +68,9 @@ export default function MarketingLayout({ children }: Props) {
 
           {/* CTA — auth-aware */}
           <div className="flex items-center gap-2.5">
-            {!authLoading && user ? (
+            {authLoading ? (
+              <div className="h-9 w-24 animate-pulse rounded-lg bg-slate-100" />
+            ) : user ? (
               <div className="relative">
                 <button
                   onClick={() => setUserMenuOpen((v) => !v)}
