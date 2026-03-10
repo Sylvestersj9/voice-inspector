@@ -16,6 +16,9 @@ const AcceptableUse = lazy(() => import("./pages/legal/AcceptableUse"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Report = lazy(() => import("./pages/app/Report"));
 const Paywall = lazy(() => import("./pages/app/Paywall"));
+const Tools = lazy(() => import("./pages/marketing/Tools"));
+const About = lazy(() => import("./pages/About"));
+const Blog = lazy(() => import("./pages/Blog"));
 
 export default function App() {
   return (
@@ -33,6 +36,9 @@ export default function App() {
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/disclaimer" element={<Disclaimer />} />
           <Route path="/acceptable-use" element={<AcceptableUse />} />
+          <Route path="/tools" element={<Tools />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/blog" element={<Blog />} />
 
           {/* Protected app */}
           <Route

@@ -239,6 +239,25 @@ Fix:
 - Added `tests/dashboard.test.tsx`: 6 tests covering `computeTrialUsage` (counts, expiry, clamp) and `formatDomainMix` (plurals, empty, Safeguarding label). All passing.
 - `bun run typecheck` → clean. No new lint errors introduced.
 
+### 16) Public marketing expansion — Tools, About, Blog
+- **Updated `src/pages/Home.tsx`**: Inserted "Free Ofsted Prep Tools" section after "How It Works" — 3 interactive cards (QS Readiness Quiz → `/tools#quiz`, Domain Question Generator → `/tools#generator`, Monthly Prep Calendar → `/tools#calendar`) + "Full suite → /tools" CTA. Teal/amber theme on teal-50 background.
+- **New `src/pages/marketing/Tools.tsx`**:
+  - Hero: "Essential Ofsted Tools for Children's Home Managers"
+  - 5 shadcn-style tool cards: Mock Inspector, Question Bank (CSV download), Report Templates, SCCIF Audit Checklist, Session Planner.
+  - Embedded interactive tools: QS Readiness Quiz (9 self-score questions → band result), Domain Question Generator (select QS → 10 questions + CSV download link), Monthly Prep Calendar (4-week rotation).
+  - Footer CTA: "Unlimited AI practice → Try 3-day free"
+- **New `src/pages/About.tsx`**:
+  - Sections: My Story (youth work → RM → InspectReady origin), Validated (10+ homes beta, all 9 QS, SCCIF-native), Tech (UK data, voice/text, scoring, privacy), Contact.
+  - Honest disclaimer panel in amber.
+- **New `src/pages/Blog.tsx`**:
+  - Hero: "Ofsted Insights for Children's Home Managers"
+  - 3 teaser articles: "SCCIF 2026 Changes", "QS7 Safeguarding Deep Dive", "Unannounced Prep Guide" — all marked "coming soon".
+  - Email subscribe strip (static form, no backend yet).
+- **Updated `src/App.tsx`**: Added lazy routes `/tools`, `/about`, `/blog` (all public).
+- **Updated `src/pages/marketing/MarketingLayout.tsx`**: Nav adds "Free Tools", "About", "Blog". Footer adds "Company" column with About/Blog/FAQ/Contact; "Product" column adds "Free Tools".
+- **New `public/tools/question-bank.csv`**: 18 rows — 2 questions per domain across all 9 QS with hint column. Served statically.
+- `bun run typecheck` → clean. No new lint errors.
+
 ## Operational Notes
 
 - Supabase project linked: `hedxbcpqcgtsqjogedru` (URL: https://hedxbcpqcgtsqjogedru.supabase.co)

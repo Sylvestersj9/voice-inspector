@@ -55,9 +55,11 @@ export default function MarketingLayout({ children }: Props) {
           {/* Desktop nav */}
           <nav className="hidden items-center gap-7 md:flex">
             <Link to="/" className="text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors">Home</Link>
+            <Link to="/tools" className="text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors">Free Tools</Link>
             <Link to="/pricing" className="text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors">Pricing</Link>
+            <Link to="/about" className="text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors">About</Link>
+            <Link to="/blog" className="text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors">Blog</Link>
             <Link to="/faq" className="text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors">FAQ</Link>
-            <Link to="/contact" className="text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors">Contact</Link>
           </nav>
 
           {/* CTA */}
@@ -110,14 +112,17 @@ export default function MarketingLayout({ children }: Props) {
                 <div className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">Product</div>
                 <div className="flex flex-col gap-2 text-sm">
                   <Link to="/" className="text-slate-600 hover:text-slate-900">Home</Link>
+                  <Link to="/tools" className="text-slate-600 hover:text-slate-900">Free Tools</Link>
                   <Link to="/pricing" className="text-slate-600 hover:text-slate-900">Pricing</Link>
                   <Link to="/login" className="text-slate-600 hover:text-slate-900">Log in</Link>
                   <Link to="/login" className="text-slate-600 hover:text-slate-900">Sign up</Link>
                 </div>
               </div>
               <div>
-                <div className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">Support</div>
+                <div className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">Company</div>
                 <div className="flex flex-col gap-2 text-sm">
+                  <Link to="/about" className="text-slate-600 hover:text-slate-900">About</Link>
+                  <Link to="/blog" className="text-slate-600 hover:text-slate-900">Blog</Link>
                   <Link to="/faq" className="text-slate-600 hover:text-slate-900">FAQ</Link>
                   <Link to="/contact" className="text-slate-600 hover:text-slate-900">Contact</Link>
                 </div>
