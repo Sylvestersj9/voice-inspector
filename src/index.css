@@ -4,6 +4,11 @@
 @tailwind components;
 @tailwind utilities;
 
+/* About page hero gradient */
+.about-hero {
+  background: linear-gradient(135deg, #f0fdfa 0%, #f8fafc 60%, #fffbeb 100%);
+}
+
 @layer base {
   :root {
     /* Professional teal-based palette for care sector */
