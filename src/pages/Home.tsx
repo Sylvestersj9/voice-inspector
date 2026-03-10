@@ -357,6 +357,60 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* ── V2 teaser ────────────────────────────────────────────────────────── */}
+      <section className="px-4 py-16 bg-white border-t border-slate-100">
+        <div className="mx-auto max-w-4xl">
+          <div className="text-center mb-10">
+            <div className="inline-flex items-center gap-2 rounded-full border border-teal-400 bg-teal-50 px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-teal-700 mb-5">
+              <span className="h-1.5 w-1.5 rounded-full bg-teal-500 animate-pulse" />
+              V2 Soon
+            </div>
+            <h2 className="font-display text-2xl font-bold text-slate-900 md:text-3xl">
+              Version 2 is coming soon
+            </h2>
+            <p className="mt-3 text-slate-500 max-w-xl mx-auto">
+              Tailored Ofsted prep that adapts to your home.
+            </p>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            {[
+              {
+                title: "Previous Report Analysis",
+                desc: "Upload your last Ofsted report → AI identifies gaps → generates targeted practice questions for your specific weaknesses.",
+              },
+              {
+                title: "Templates Gallery",
+                desc: "100+ free templates — Risk Assessment STAR, Reg 44, incidents — constantly updated. Paid users always get the latest.",
+              },
+              {
+                title: "Incident Pattern AI",
+                desc: "Upload redacted incident reports → auto-detects patterns → generates prevention plans, risk assessment updates, and support plan amendments.",
+              },
+              {
+                title: "Adaptive Learning",
+                desc: "Tracks your weak areas across sessions → prioritises the inspector questions you're most likely to face next.",
+              },
+            ].map((f) => (
+              <div
+                key={f.title}
+                className="group relative rounded-2xl border border-slate-200 bg-slate-50 p-6 transition-all duration-200 hover:border-teal-200 hover:bg-teal-50/40 hover:shadow-md"
+              >
+                <div className="absolute top-4 right-4 rounded-full bg-teal-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-teal-600">
+                  V2
+                </div>
+                <h3 className="font-semibold text-slate-900 pr-10">{f.title}</h3>
+                <p className="mt-2 text-sm text-slate-500 leading-relaxed">{f.desc}</p>
+              </div>
+            ))}
+          </div>
+
+          <p className="mt-8 text-center text-sm italic text-slate-400">
+            Not generic. Built to make your home inspection-ready.
+          </p>
+        </div>
+      </section>
+
       {/* ── Final CTA ─────────────────────────────────────────────────────────── */}
       <section className="bg-teal-600 px-4 py-14">
         <div className="mx-auto max-w-3xl text-center">
