@@ -12,7 +12,7 @@ export default function About() {
           </div>
 
           <h1 className="mt-4 font-display text-3xl font-bold text-slate-900 md:text-4xl">
-            Created by a residential care manager, for care leaders preparing for Ofsted.
+            Built by a children's home leader — not a vendor.
           </h1>
 
           <p className="mt-5 text-lg text-slate-600 leading-relaxed">
@@ -20,7 +20,7 @@ export default function About() {
           </p>
 
           <p className="mt-4 text-slate-600 leading-relaxed">
-            After 12+ years in children's homes—from youth support to deputy and manager roles—I built MockOfsted because nothing existed to instantly pressure-test your readiness. This tool simulates live inspector Q&A (voice/text), scores against all 9 Quality Standards, and flags gaps with actionable feedback.
+            I built MockOfsted because I needed it. As a Level 5 qualified children's home leader, I knew the questions inspectors ask — and I knew that no affordable tool existed to practise answering them under pressure. Every question in this simulator reflects real SCCIF lines of enquiry. Every scoring rubric is grounded in how judgements are actually formed.
           </p>
 
           <p className="mt-4 text-slate-600 leading-relaxed">
