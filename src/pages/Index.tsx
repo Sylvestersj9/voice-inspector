@@ -729,29 +729,27 @@ export default function Index() {
                 </div>
               </div>
             )}
-            <div className="absolute right-0 top-0 z-0">
-              <button
-                onClick={() => setPaused(true)}
-                className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-xs font-semibold text-slate-700 shadow-lg hover:scale-105 transition"
-              >
-                <Pause className="h-3.5 w-3.5" /> Pause
-              </button>
-            </div>
             {/* Progress */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div>
                 <p className="text-sm font-semibold text-slate-500">
                   Question {qIndex + 1} of {questions.length}
                 </p>
                 <h2 className="font-display text-lg font-bold text-slate-900">{domainLabel}</h2>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3 flex-wrap">
                 {isLimitingDomain && (
                   <span className="rounded-full bg-red-50 border border-red-200 px-2.5 py-0.5 text-xs font-bold text-red-700">
                     LIMITING JUDGEMENT
                   </span>
                 )}
                 <span className="text-sm text-slate-500">{completedCount}/{questions.length} answered</span>
+                <button
+                  onClick={() => setPaused(true)}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-1.5 text-xs font-semibold text-slate-700 shadow border border-slate-200 hover:bg-slate-50 transition flex-shrink-0"
+                >
+                  <Pause className="h-3.5 w-3.5" /> Pause
+                </button>
               </div>
             </div>
 
