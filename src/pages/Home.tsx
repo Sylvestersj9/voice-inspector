@@ -37,7 +37,7 @@ export default function Landing() {
             </Link>
           </div>
           <p className="mt-3 text-sm text-slate-500">
-            3-day free trial · up to 5 sessions/day · no card upfront
+            3-day free trial · 2 sessions/day · no card upfront
           </p>
         </div>
       </section>
@@ -305,7 +305,7 @@ export default function Landing() {
                   "Scored feedback per question",
                   "Full inspection report per session",
                   "Session history",
-                  "3-day free trial (15 sessions)",
+                  "3-day free trial (6 sessions)",
                 ].map((f) => (
                   <li key={f} className="flex items-center gap-2.5">
                     <CheckCircle2 className="h-4 w-4 text-teal-600 shrink-0" />{f}

@@ -1,6 +1,6 @@
 export const TRIAL_DAYS = 3;
-export const TRIAL_DAILY_LIMIT = 5;
-export const TRIAL_TOTAL_LIMIT = TRIAL_DAYS * TRIAL_DAILY_LIMIT;
+export const TRIAL_DAILY_LIMIT = 2;
+export const TRIAL_TOTAL_LIMIT = 6; // 2/day × 3 days
 
 export type TrialUsage = {
   isTrial: boolean;

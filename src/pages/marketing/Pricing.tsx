@@ -12,7 +12,7 @@ const SOLO_FEATURES = [
   "Scored feedback on every answer",
   "Full inspection report after each session",
   "Session history",
-  "3-day free trial — up to 5 sessions/day (15 total)",
+  "3-day free trial — 2 sessions/day (6 total)",
 ];
 
 const TEAM_FEATURES = [
@@ -125,7 +125,7 @@ export default function Pricing() {
                 <p className="mt-3 text-center text-xs text-red-700">{error}</p>
               ) : null}
               <p className="mt-3 text-center text-xs text-slate-500">
-                Free trial: 3 days, up to 15 sessions total.
+                Free trial: 3 days, 2 sessions/day (6 total).
               </p>
             </div>
 

@@ -268,7 +268,7 @@ export default function Index() {
     if (sErr || !sess) {
       const msg = sErr?.message ?? "Unknown error";
       if (msg.toLowerCase().includes("row-level security")) {
-        setError("Trial limit reached. Free trial includes 3 days with up to 5 sessions per day (15 total).");
+        setError("Trial limit reached. Free trial includes 2 sessions/day for 3 days (6 total).");
       } else {
         setError("Failed to start session: " + msg);
       }
@@ -642,7 +642,7 @@ export default function Index() {
                   {trialInfo?.expired ? "Free trial ended" : "Trial limit reached"}
                 </h1>
                 <p className="mt-2 text-slate-600">
-                  Free trial includes 3 days with up to 5 sessions per day (15 total). Subscribe for unlimited sessions and full reports.
+                  Free trial includes 2 sessions/day for 3 days (6 total). Subscribe for unlimited sessions and full reports.
                 </p>
                 <Link
                   to="/app/paywall"

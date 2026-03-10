@@ -92,7 +92,7 @@ function trialBadgeColour(
 ): string {
   if (trialInfo.expired || trialInfo.remainingTotal === 0)
     return "bg-red-50 text-red-700 border-red-200";
-  if (trialInfo.remainingToday <= 1 || trialInfo.remainingTotal <= 3)
+  if (trialInfo.remainingToday <= 1 || trialInfo.remainingTotal <= 2)
     return "bg-amber-50 text-amber-700 border-amber-200";
   return "bg-teal-50 text-teal-700 border-teal-200";
 }
@@ -391,7 +391,7 @@ export default function Dashboard() {
               Free trial limit reached.
             </p>
             <p className="mt-1 text-sm text-amber-800">
-              Trial includes 3 days with up to 5 sessions per day (15 total).
+              Trial includes 2 sessions/day for 3 days (6 total).
             </p>
             <p className="mt-1 text-sm text-amber-800">
               Subscribe for unlimited sessions and full inspection reports.
