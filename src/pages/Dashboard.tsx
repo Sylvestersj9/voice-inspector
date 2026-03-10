@@ -4,13 +4,13 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/auth/AuthProvider";
 import { getBandColorClass, DOMAIN_LABELS, type Domain } from "@/lib/questions";
 import { computeTrialUsage, TRIAL_DAILY_LIMIT, TRIAL_TOTAL_LIMIT } from "@/lib/trial";
+import AppNav from "@/components/AppNav";
 import ConfettiBurst from "@/components/ConfettiBurst";
 import type { SessionRow } from "@/types/session";
 import {
   ArrowRight,
   PlayCircle,
   FileText,
-  LogOut,
   CheckCircle2,
   Loader2,
   Clipboard,
@@ -233,72 +233,7 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Nav */}
-      <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-teal-600">
-              <svg
-                viewBox="0 0 32 32"
-                fill="none"
-                className="h-4 w-4"
-                aria-hidden="true"
-              >
-                <path
-                  d="M16 4L4 10v12l12 6 12-6V10L16 4z"
-                  stroke="white"
-                  strokeWidth="2"
-                  strokeLinejoin="round"
-                  fill="none"
-                />
-                <path
-                  d="M16 4v18M4 10l12 6 12-6"
-                  stroke="white"
-                  strokeWidth="2"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </div>
-            <span className="font-display font-bold text-slate-900">
-              MockOfsted
-            </span>
-          </div>
-          <nav className="hidden items-center gap-1 sm:flex">
-            <Link
-              to="/app"
-              className="rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors"
-            >
-              Practice
-            </Link>
-            <Link
-              to="/app/dashboard"
-              className="rounded-lg px-3 py-2 text-sm font-medium text-slate-900 bg-slate-100"
-            >
-              Dashboard
-            </Link>
-            <Link
-              to="/app/profile"
-              className="rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors"
-            >
-              Profile
-            </Link>
-            {!paid && (
-              <Link
-                to="/pricing"
-                className="rounded-lg px-3 py-2 text-sm font-semibold text-teal-700 hover:bg-teal-50 transition-colors"
-              >
-                Subscribe
-              </Link>
-            )}
-          </nav>
-          <button
-            onClick={handleSignOut}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
-          >
-            <LogOut className="h-4 w-4" />
-            <span className="hidden sm:inline">Sign out</span>
-          </button>
-        </div>
-      </header>
+      <AppNav isPaid={paid} onSignOut={handleSignOut} />
 
       <main className="mx-auto max-w-6xl px-4 py-8 space-y-6 relative">
         <ConfettiBurst active={justSubscribed} />

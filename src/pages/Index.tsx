@@ -15,10 +15,11 @@ import {
 import { computeTrialUsage, TRIAL_DAILY_LIMIT, TRIAL_TOTAL_LIMIT } from "@/lib/trial";
 import { clearPaused, generateReportAndWait, loadPaused, progressColor, savePaused } from "@/lib/simulator";
 import { trackSessionStart, trackSessionComplete, trackReportGenerated } from "@/lib/analytics";
+import AppNav from "@/components/AppNav";
 import ConfettiBurst from "@/components/ConfettiBurst";
 import { VoiceRecorder } from "@/components/VoiceRecorder";
 import { TranscriptEditor } from "@/components/TranscriptEditor";
-import { LogOut, Mic, Keyboard, ArrowRight, CheckCircle2, AlertTriangle, Loader2, FileText, RotateCcw, X, BookOpen, Target, Pause, Play, SkipForward } from "lucide-react";
+import { Mic, Keyboard, ArrowRight, CheckCircle2, AlertTriangle, Loader2, FileText, RotateCcw, X, BookOpen, Target, Pause, Play, SkipForward } from "lucide-react";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -570,67 +571,32 @@ export default function Index() {
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Nav */}
-      <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-teal-600">
-              <svg viewBox="0 0 32 32" fill="none" className="h-4 w-4" aria-hidden="true">
-                <path d="M16 4L4 10v12l12 6 12-6V10L16 4z" stroke="white" strokeWidth="2" strokeLinejoin="round" fill="none" />
-                <path d="M16 4v18M4 10l12 6 12-6" stroke="white" strokeWidth="2" strokeLinejoin="round" />
-              </svg>
-            </div>
-            <span className="font-display font-bold text-slate-900">MockOfsted</span>
-          </div>
-          <nav className="hidden items-center gap-1 sm:flex">
-            <Link to="/app" className="rounded-lg px-3 py-2 text-sm font-medium text-slate-900 bg-slate-100">
-              Practice
-            </Link>
-            <Link to="/app/dashboard" className="rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors">
-              Dashboard
-            </Link>
-            <Link to="/app/profile" className="rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors">
-              Profile
-            </Link>
-            {subscriptionStatus !== "active" && (
-              <Link
-                to="/pricing"
-                className="rounded-lg px-3 py-2 text-sm font-semibold text-teal-700 hover:bg-teal-50 transition-colors"
+      <AppNav
+        isPaid={isPaidSubscriber}
+        onSignOut={handleSignOut}
+        extraControls={
+          step !== "idle" && step !== "done" ? (
+            <>
+              <button
+                onClick={restartSession}
+                title="Restart session"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
               >
-                Subscribe
-              </Link>
-            )}
-          </nav>
-          <div className="flex items-center gap-2">
-            {step !== "idle" && step !== "done" && (
-              <>
-                <button
-                  onClick={restartSession}
-                  title="Restart session"
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
-                >
-                  <RotateCcw className="h-4 w-4" />
-                  <span className="hidden sm:inline">Restart</span>
-                </button>
-                <button
-                  onClick={stopSession}
-                  title="Stop session"
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
-                >
-                  <X className="h-4 w-4" />
-                  <span className="hidden sm:inline">Stop</span>
-                </button>
-              </>
-            )}
-            <button
-              onClick={handleSignOut}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
-            >
-              <LogOut className="h-4 w-4" />
-              <span className="hidden sm:inline">Sign out</span>
-            </button>
-          </div>
-        </div>
-      </header>
+                <RotateCcw className="h-4 w-4" />
+                <span className="hidden sm:inline">Restart</span>
+              </button>
+              <button
+                onClick={stopSession}
+                title="Stop session"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
+              >
+                <X className="h-4 w-4" />
+                <span className="hidden sm:inline">Stop</span>
+              </button>
+            </>
+          ) : undefined
+        }
+      />
 
       <main className="mx-auto max-w-5xl px-4 py-8">
         {/* ── Idle: start screen ─────────────────────────────────────────── */}
