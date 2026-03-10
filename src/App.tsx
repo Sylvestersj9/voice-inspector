@@ -1,6 +1,8 @@
 import { Suspense, lazy } from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { AnimatePresence } from "framer-motion";
 import RequireAuth from "./auth/RequireAuth";
+import PageTransition from "./components/PageTransition";
 
 const Login = lazy(() => import("./pages/Login"));
 const AuthCallback = lazy(() => import("./pages/AuthCallback"));
@@ -20,63 +22,73 @@ const About = lazy(() => import("./pages/About"));
 const Blog = lazy(() => import("./pages/Blog"));
 const BlogPost = lazy(() => import("./pages/BlogPost"));
 
+function AppRoutes() {
+  const location = useLocation();
+
+  return (
+    <AnimatePresence mode="wait" initial={false}>
+      <Routes location={location} key={location.pathname}>
+        {/* Public */}
+        <Route path="/" element={<PageTransition><Home /></PageTransition>} />
+        <Route path="/login" element={<PageTransition><Login /></PageTransition>} />
+        <Route path="/auth/callback" element={<AuthCallback />} />
+        <Route path="/pricing" element={<PageTransition><Pricing /></PageTransition>} />
+        <Route path="/faq" element={<PageTransition><FAQ /></PageTransition>} />
+        <Route path="/contact" element={<PageTransition><Contact /></PageTransition>} />
+        <Route path="/terms" element={<PageTransition><Terms /></PageTransition>} />
+        <Route path="/privacy" element={<PageTransition><Privacy /></PageTransition>} />
+        <Route path="/disclaimer" element={<PageTransition><Disclaimer /></PageTransition>} />
+        <Route path="/acceptable-use" element={<PageTransition><AcceptableUse /></PageTransition>} />
+        <Route path="/about" element={<PageTransition><About /></PageTransition>} />
+        <Route path="/blog" element={<PageTransition><Blog /></PageTransition>} />
+        <Route path="/blog/:slug" element={<PageTransition><BlogPost /></PageTransition>} />
+
+        {/* Protected app */}
+        <Route
+          path="/app"
+          element={
+            <RequireAuth>
+              <PageTransition><Index /></PageTransition>
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/app/dashboard"
+          element={
+            <RequireAuth>
+              <PageTransition><Dashboard /></PageTransition>
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/app/report/:sessionId"
+          element={
+            <RequireAuth>
+              <PageTransition><Report /></PageTransition>
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/app/paywall"
+          element={
+            <RequireAuth>
+              <PageTransition><Paywall /></PageTransition>
+            </RequireAuth>
+          }
+        />
+
+        {/* Default */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </AnimatePresence>
+  );
+}
+
 export default function App() {
   return (
     <BrowserRouter>
       <Suspense fallback={<div />}>
-        <Routes>
-          {/* Public */}
-          <Route path="/" element={<Home />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/auth/callback" element={<AuthCallback />} />
-          <Route path="/pricing" element={<Pricing />} />
-          <Route path="/faq" element={<FAQ />} />
-          <Route path="/contact" element={<Contact />} />
-          <Route path="/terms" element={<Terms />} />
-          <Route path="/privacy" element={<Privacy />} />
-          <Route path="/disclaimer" element={<Disclaimer />} />
-          <Route path="/acceptable-use" element={<AcceptableUse />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/blog" element={<Blog />} />
-          <Route path="/blog/:slug" element={<BlogPost />} />
-
-          {/* Protected app */}
-          <Route
-            path="/app"
-            element={
-              <RequireAuth>
-                <Index />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/app/dashboard"
-            element={
-              <RequireAuth>
-                <Dashboard />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/app/report/:sessionId"
-            element={
-              <RequireAuth>
-                <Report />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/app/paywall"
-            element={
-              <RequireAuth>
-                <Paywall />
-              </RequireAuth>
-            }
-          />
-
-          {/* Default */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+        <AppRoutes />
       </Suspense>
     </BrowserRouter>
   );

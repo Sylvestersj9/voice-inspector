@@ -12,38 +12,33 @@ export default function About() {
           </div>
 
           <h1 className="mt-4 font-display text-3xl font-bold text-slate-900 md:text-4xl">
-            Built by a Level 5 manager, for Level 5 managers.
+            Created by a residential care manager, for care leaders preparing for Ofsted.
           </h1>
 
           <p className="mt-5 text-lg text-slate-600 leading-relaxed">
-            MockOfsted started because I couldn't find a realistic way to prepare for Ofsted. Mock inspections are expensive, peer feedback is inconsistent, and re-reading the SCCIF doesn't replicate the pressure of an inspector in the room.
+            Ofsted unannounced inspections hit hard—you never know when, and that uncertainty keeps everyone on edge. Mock inspections cost thousands and take weeks to book; peer reviews vary wildly; endless SCCIF reading doesn't simulate the real inspector's probing questions under pressure.
           </p>
 
           <p className="mt-4 text-slate-600 leading-relaxed">
-            After 12 years in residential care — youth work, deputy manager, then registered manager — I built the tool I wished existed. Something that asks the actual questions, challenges weak answers, and gives honest feedback against every Quality Standard.
+            After 12+ years in children's homes—from youth support to deputy and manager roles—I built MockOfsted because nothing existed to instantly pressure-test your readiness. This tool simulates live inspector Q&A (voice/text), scores against all 9 Quality Standards, and flags gaps with actionable feedback.
+          </p>
+
+          <p className="mt-4 text-slate-600 leading-relaxed">
+            I use it myself: It accelerated my home from Good to Outstanding in months by exposing blind spots early.
           </p>
 
           <div className="mt-8 rounded-2xl bg-teal-50 border border-teal-100 px-6 py-5">
             <div className="flex items-start gap-4">
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-teal-600 text-white text-lg font-bold font-display">
-                L5
+                ✓
               </div>
               <div>
-                <p className="font-semibold text-slate-900">Validated in real homes</p>
+                <p className="font-semibold text-slate-900">Tested in real homes</p>
                 <p className="mt-1 text-sm text-slate-600">
-                  Beta-tested with 10+ registered managers across England before public launch. All 9 Quality Standards covered. SCCIF-native from day one — not retrofitted.
+                  Beta-tested with 10+ leaders across England. SCCIF-native, covering every standard—not a checklist, but your sparring partner for confidence.
                 </p>
               </div>
             </div>
-          </div>
-
-          <div className="mt-8 space-y-3 text-slate-600 leading-relaxed">
-            <p>
-              <strong className="text-slate-800">What it is:</strong> A practice tool that simulates Ofsted questioning — voice or text — and scores your answers against the same framework inspectors use.
-            </p>
-            <p>
-              <strong className="text-slate-800">What it isn't:</strong> A compliance checklist, a legal guarantee, or a replacement for proper preparation. It's a sparring partner.
-            </p>
           </div>
 
           <div className="mt-10 flex flex-col gap-3 sm:flex-row">
