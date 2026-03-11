@@ -341,7 +341,7 @@ export default function Billing() {
         )}
 
         {/* Section 4: Danger Zone */}
-        {paid && (
+        {paid && !billingDetails?.cancelAtPeriodEnd && (
           <section className="rounded-2xl border border-red-200 bg-red-50 p-6">
             <h2 className="font-display text-lg font-bold text-red-900 mb-2">Danger Zone</h2>
             <p className="text-sm text-red-800 mb-4">
