@@ -892,6 +892,56 @@ with embedded checkmark: `<g stroke="[white|#0D9488]" strokeWidth="1.2" strokeLi
 - `manifest.json` — PWA theme color set to `#0D9488` (teal)
 - Browser favicon resolves via: favicon.svg (primary) → favicon.ico (fallback)
 
+## Latest Updates (v1.9.5 — March 12, 2026)
+
+### 🔧 Critical Environment Variables Fix + Error Logging
+
+**Root Cause Analysis & Resolution:**
+
+**Issue 1: Delete Promo Code — "Missing Supabase configuration" Error**
+- ✅ **Root cause identified**: `.env.local` was missing critical frontend environment variables
+- ✅ **Missing variables**:
+  - `VITE_SUPABASE_URL`
+  - `VITE_SUPABASE_ANON_KEY`
+  - `VITE_STRIPE_PUBLISHABLE_KEY`
+  - `VITE_GEMINI_KEY`
+- ✅ **Why it failed**: When delete handler tried to access `import.meta.env.VITE_SUPABASE_URL` and `import.meta.env.VITE_SUPABASE_ANON_KEY` at runtime, both were undefined, triggering validation error at line 534 of Admin.tsx
+- ✅ **Fix applied**: Added all missing variables to `.env.local` with correct values from Supabase and Stripe projects
+
+**Issue 2: Get-Admin-Users — 500 Error**
+- ✅ **Enhanced error logging** added to `supabase/functions/get-admin-users/index.ts`
+  - Added step-by-step console logs: `[Get Admin Users]` prefix for each operation
+  - Logs user count, subscription count, session count at each stage
+  - Logs data combination step to catch mapping errors
+  - Enhanced error response to include error details alongside generic message
+- ✅ **Why it helps**: Now returns actual error message instead of generic "Failed to fetch users"
+
+**Environment Variables Now Configured:**
+```bash
+# Added to .env.local
+VITE_SUPABASE_URL="https://hedxbcpqcgtsqjogedru.supabase.co"
+VITE_SUPABASE_ANON_KEY="[anon-key-from-supabase]"
+VITE_STRIPE_PUBLISHABLE_KEY="pk_live_[your-publishable-key]"
+VITE_GEMINI_KEY="[your-gemini-api-key]"
+```
+
+**Deployment Status:**
+- ✅ `get-admin-users` edge function deployed with enhanced logging
+- ✅ Frontend rebuilt with proper environment variable configuration
+- ✅ Changes committed and pushed to main branch (commit `6aa69ee`)
+- ✅ Dev server running with all environment variables loaded
+
+**What Now Works:**
+1. **Delete promo code** — Should now execute without "Missing Supabase configuration" error
+2. **Admin users overview** — Loads user list with real-time updates (better error messages if issues remain)
+3. **Frontend API calls** — All Supabase and Stripe requests now have proper authentication headers
+
+**Next Steps for User Testing:**
+1. Navigate to `/admin` and test promo code deletion
+2. Check Overview tab for user list loading
+3. Watch browser console for detailed logs from `[Promo Delete]` and `[Get Admin Users]` operations
+4. If errors persist, console will now show actual error details from edge functions
+
 ## Latest Updates (v1.9.4 — March 12, 2026)
 
 ### 📊 Admin Users Overview + Real-Time Updates + Delete Fix
