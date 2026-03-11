@@ -104,7 +104,7 @@ Helper utilities: `src/lib/simulator.ts` (report generation + polling, pause per
 - **`billing-portal/`** — returns Stripe customer portal URL for subscription management.
 
 **Email (Resend):**
-- **`welcome-email/`** — triggered on signup (email & Google OAuth); sends onboarding email via Resend with MockOfsted logo and trial info. CORS-enabled.
+- **`welcome-email/`** — triggered on signup (email & Google OAuth); sends onboarding email via Resend with MockOfsted logo and trial info. CORS-enabled. Full redesign with improved formatting: flexbox-based step numbering (1,2,3), app benefits section, trial information, pro tip about Safeguarding (QS7), and enhanced visual hierarchy.
 - **`admin-notifications/`** — sends formatted emails to `CONTACT_TO_EMAIL` (admin inbox) for operational events:
   - `signup` — new user account created (email or Google)
   - `login` — user signed in
@@ -241,7 +241,17 @@ Implementation: `supabase/functions/_shared/rate-limiter.ts` — extracts IP (Cl
 - ✅ Integrated into Login.tsx (email/OAuth), Index.tsx (session flow), Contact.tsx (feedback), AuthProvider (OAuth detection)
 
 ### 📧 Email System Complete Overhaul
-- ✅ **Welcome email redesigned** — Added MockOfsted shield+checkmark logo, improved HTML/CSS styling
+- ✅ **Welcome email redesigned** — Added MockOfsted shield+checkmark logo, improved HTML/CSS styling, enhanced with app benefits
+  - **Logo:** 56x56px SVG shield with checkmark at email header with teal gradient background
+  - **Numbered steps formatting:** Fixed misaligned 1,2,3 numbers by replacing table layout with flexbox
+  - **Step cards:** Each step now in individual container with proper padding and alignment
+  - **Step numbers:** 28x28px circles with teal background, white text, positioned left of step description
+  - **App benefits section:** New "What is MockOfsted?" section with 5-bullet list explaining platform benefits
+  - **Trial information:** Clear display of "3 days with 2 practice sessions per day (up to 6 total)"
+  - **Pro tip:** Added highlighted tip about Safeguarding (QS7) with yellow background for emphasis
+  - **CTA button:** Enhanced styling with teal background, white text, and box shadow for prominence
+  - **Footer:** Improved signature with "The MockOfsted Team" and links to Privacy/Terms/Main site
+  - **Overall UX:** Better visual hierarchy, improved spacing, clearer information architecture
 - ✅ **CORS fixed** — Both `welcome-email` and `send-feedback` functions now include CORS headers for browser requests
 - ✅ **Email delivery to Inbox (not Promotions)** — Verified domain sender `info@mockofsted.co.uk`, SPF/DKIM/DMARC configured
 - ✅ **Contact form transactional** — Reply-to set to user's email, rate limited (1 req/min per email or IP)
