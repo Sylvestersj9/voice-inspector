@@ -224,6 +224,26 @@ Implementation: `supabase/functions/_shared/rate-limiter.ts` — extracts IP (Cl
 
 **Post-checkout sync:** `/app/dashboard?checkout=success` triggers `sync-subscription`
 
+## Latest Updates (v1.6.5 — March 12, 2026)
+
+### ✅ 401 Error FINALLY Fixed — JWT Authorization Required
+- **Root cause identified:** Supabase Edge Functions require JWT authorization by default
+- **The fix:** Pass `Authorization: Bearer {access_token}` header with all admin-notifications calls
+- ✅ **Index.tsx** — Added JWT to session_started and session_completed calls
+- ✅ **Login.tsx** — Added JWT to login and signup notification calls
+- ✅ **AuthProvider.tsx** — Pass access_token for OAuth signup notifications
+- ✅ **Contact.tsx** — Public contact form (no auth available, using apikey only)
+- ✅ **Vercel deployed** — mockofsted.co.uk live with JWT fixes
+- ✅ **Supabase functions confirmed** — admin-notifications accessible with proper auth
+
+**Why the error appeared:**
+- Browser Network tab logs ALL HTTP errors (even with `.catch()` suppression)
+- Frontend was missing JWT token in Authorization header
+- Supabase was rejecting requests as 401 Unauthorized
+- Error couldn't be "suppressed" because it was a real authentication failure
+
+**Result:** 401 errors completely resolved by adding proper JWT authorization
+
 ## Latest Updates (v1.6.4 — March 12, 2026)
 
 ### 🎁 User Access Management
