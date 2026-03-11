@@ -24,6 +24,8 @@ import {
   Tag,
   Copy,
   CheckCircle2,
+  AlertCircle,
+  ExternalLink,
 } from "lucide-react";
 
 interface Document {
@@ -195,32 +197,10 @@ export default function Admin() {
   }, [toast]);
 
   const loadUserDetails = useCallback(async () => {
-    setUserDetailsLoading(true);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.access_token;
-      if (!token) throw new Error("Not authenticated");
-
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-      const res = await fetch(`${supabaseUrl}/functions/v1/get-admin-users`, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          apikey: anonKey,
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!res.ok) throw new Error("Failed to fetch user details");
-      const result = await res.json();
-      setUserDetails(result.data || []);
-    } catch (err) {
-      console.error("Failed to load user details:", err);
-    } finally {
-      setUserDetailsLoading(false);
-    }
+    // TODO: Fix get-admin-users edge function (currently returns 500)
+    // For now, show empty state
+    setUserDetails([]);
+    setUserDetailsLoading(false);
   }, []);
 
   const loadUsers = useCallback(async () => {
@@ -724,9 +704,19 @@ export default function Admin() {
                   </table>
                 </div>
               ) : (
-                <div className="rounded-xl border border-slate-200 bg-white p-8 text-center">
-                  <Users className="h-12 w-12 text-slate-300 mx-auto mb-4" />
-                  <p className="text-slate-600">No users yet</p>
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-8 text-center">
+                  <AlertCircle className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+                  <p className="text-slate-700 font-semibold mb-2">User Overview Temporarily Disabled</p>
+                  <p className="text-sm text-slate-600 mb-4">The user overview feature is being refined. You can view all users directly in your Supabase dashboard.</p>
+                  <a
+                    href="https://supabase.com/dashboard/project/hedxbcpqcgtsqjogedru"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 text-sm font-medium text-teal-600 hover:text-teal-700"
+                  >
+                    Open Supabase Dashboard
+                    <ExternalLink className="h-4 w-4" />
+                  </a>
                 </div>
               )}
             </div>
