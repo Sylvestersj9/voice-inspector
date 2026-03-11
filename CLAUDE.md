@@ -892,6 +892,54 @@ with embedded checkmark: `<g stroke="[white|#0D9488]" strokeWidth="1.2" strokeLi
 - `manifest.json` — PWA theme color set to `#0D9488` (teal)
 - Browser favicon resolves via: favicon.svg (primary) → favicon.ico (fallback)
 
+## Latest Updates (v1.9.4 — March 12, 2026)
+
+### 📊 Admin Users Overview + Real-Time Updates + Delete Fix
+
+**New Admin Dashboard Feature:**
+- ✅ **Comprehensive users list** in Overview tab
+  - Shows all users with details: Name, Email, Role, Home/Setting
+  - Session count per user
+  - Subscription status (Paid/Trial/Cancelled/None)
+  - Access expiry date (when they lose access)
+  - No pagination needed - all users visible
+  - Organized table layout with color-coded status badges
+
+- ✅ **Real-time updates every 5 seconds**
+  - Polling mechanism automatically refreshes user data
+  - Shows loading indicator when fetching
+  - No manual refresh needed
+  - Displays in-progress loading state
+
+- ✅ **New edge function** `get-admin-users`
+  - Fetches all users with subscription + session details
+  - Combines data from 3 tables: users, subscriptions, sessions
+  - Returns complete user snapshot with all relevant fields
+  - Admin-only access (JWT + role verified)
+
+**Promo Code Delete Fix - Detailed Debugging:**
+- ✅ **Improved edge function logging**
+  - Detailed console logs at each step: `[Delete]` prefix
+  - Logs promo code found, Stripe deletion, database deletion
+  - Reports exact error details instead of generic messages
+  - Response includes `deleted` count for verification
+
+- ✅ **Better frontend error handling**
+  - Improved response parsing with try-catch
+  - Shows detailed error messages from edge function
+  - Logs full error chain for debugging
+  - Better error messaging to user
+
+**What to Check If Delete Still Fails:**
+1. Open browser DevTools → Console tab
+2. Try to delete a promo code
+3. Look for `[Promo Delete]` and `[Delete]` logs
+4. Check the exact error message returned
+5. Verify:
+   - Admin role is set correctly
+   - Stripe coupon ID exists in database
+   - Database RLS allows deletion
+
 ## Latest Updates (v1.9.3 — March 12, 2026)
 
 ### 🐛 Promo Code Delete Bug Fix — Complete End-to-End Testing
