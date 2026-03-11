@@ -403,6 +403,29 @@ Implementation: `supabase/functions/_shared/rate-limiter.ts` — extracts IP (Cl
 
 **Git status:** ✅ Committed & pushed — Commit `502c79f`
 
+## Latest Updates (v1.8.4 — March 11, 2026)
+
+### 🎯 Inclusive Hero Tagline Update
+
+**Change:**
+- ✅ Badge: "Inspection Practice · Interview Prep · Children's Homes" → **"Inspection Prep · SCCIF Training · For All"**
+- ✅ Headline: "Practice Ofsted inspections. Ace your RM interview." → **"Ofsted ready. Standards prepared. Confidence built."**
+
+**Why:**
+- Previous tagline was too narrow (RM interview focus)
+- New tagline is inclusive, benefit-driven, not audience-limiting
+- Positions MockOfsted as **inspection prep** (primary) + interview prep as secondary benefit
+- Appeals to: RMs, aspiring RMs, leaders, deputies, care staff
+- Focuses on outcomes (confidence, standards mastery) not narrow use cases
+
+**Messaging Strategy:**
+- Hero: Inclusive, broad appeal
+- Pricing page: Two audience cards (RMs + Aspiring Leaders)
+- About page: Mention interview prep as bonus benefit
+- Keep "interview prep" in secondary messaging, not hero
+
+**Git status:** ✅ Committed & pushed — Commit `041dace`
+
 ## Latest Updates (v1.7.0 — March 12, 2026)
 
 ### ⚡ Generate-Report Performance Critical Optimization COMPLETE
