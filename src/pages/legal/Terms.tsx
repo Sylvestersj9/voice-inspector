@@ -22,11 +22,11 @@ export default function Terms() {
               <div className="text-xs text-slate-500">
                 Last updated: 15 December 2025. If you do not agree, do not use the service.
               </div>
-              <Section title=”1. Introduction”>
-                <ul className=”list-disc space-y-2 pl-5 text-sm text-slate-700”>
-                  <li>These Terms of Use form a binding agreement between you and MockOfsted (“we”, “us”, “our”).</li>
+              <Section title="1. Introduction">
+                <ul className="list-disc space-y-2 pl-5 text-sm text-slate-700">
+                  <li>These Terms of Use form a binding agreement between you and MockOfsted (&quot;we&quot;, &quot;us&quot;, &quot;our&quot;).</li>
                   <li>By accessing or using MockOfsted, you confirm you accept these terms. If you do not agree, do not use the service.</li>
-                  <li>Definitions: “Service” means the MockOfsted SaaS platform; “Content” means prompts, outputs, and materials made available by the Service; “You” or “User” means the organisation or individual using the Service.</li>
+                  <li>Definitions: &quot;Service&quot; means the MockOfsted SaaS platform; &quot;Content&quot; means prompts, outputs, and materials made available by the Service; &quot;You&quot; or &quot;User&quot; means the organisation or individual using the Service.</li>
                 </ul>
               </Section>
 
@@ -78,7 +78,7 @@ export default function Terms() {
 
               <Section title="9. Intellectual Property">
                 <p className="text-sm text-slate-700">
-                  The Service, content, and technology are owned by MockOfsted or its licensors. You receive a limited, revocable, non-transferable licence to use the Service. No ownership is transferred.
+                  The Service, content, and technology are owned by MockOfsted or its licensors. You receive a limited, revocable, non-transferable license to use the Service. No ownership is transferred.
                 </p>
               </Section>
 
@@ -90,7 +90,7 @@ export default function Terms() {
 
               <Section title="11. Availability & Changes">
                 <p className="text-sm text-slate-700">
-                  The Service is provided “as is” and “as available”. We do not guarantee uptime. Features may change, be suspended, or removed at any time.
+                  The Service is provided "as is" and "as available". We do not guarantee uptime. Features may change, be suspended, or removed at any time.
                 </p>
               </Section>
 

@@ -18,9 +18,9 @@ export default function Privacy() {
               <div className="text-xs text-slate-500">
                 Last updated: March 2026. UK GDPR compliant. If you do not agree, do not use the service.
               </div>
-              <Section title=”1. Introduction & Scope”>
-                <p className=”text-sm text-slate-700”>
-                  This Privacy Policy explains how MockOfsted (“we”, “us”) processes personal data when you use MockOfsted. It applies to all users of the Service.
+              <Section title="1. Introduction & Scope">
+                <p className="text-sm text-slate-700">
+                  This Privacy Policy explains how MockOfsted (&quot;we&quot;, &quot;us&quot;) processes personal data when you use MockOfsted. It applies to all users of the Service.
                 </p>
               </Section>
 
