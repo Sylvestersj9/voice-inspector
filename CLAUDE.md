@@ -224,6 +224,58 @@ Implementation: `supabase/functions/_shared/rate-limiter.ts` — extracts IP (Cl
 
 **Post-checkout sync:** `/app/dashboard?checkout=success` triggers `sync-subscription`
 
+## Latest Updates (v1.6 — March 11, 2026)
+
+### 🗑️ Account Deletion Feature with Status Tracking
+
+**Database Migration:**
+- Created `20260311_add_user_status.sql` migration
+- Added `status` column to users table (default: 'active', values: 'active' | 'deleted')
+- Added `deleted_at` timestamp column to track when account was deleted
+- Updated RLS policies to prevent deleted users from accessing sessions/data
+- **Critical:** All session records, responses, and data retained in database for compliance and reference
+
+**Edge Function:**
+- Created `supabase/functions/delete-account/index.ts`
+- Authenticates user via Authorization header
+- Updates user status to 'deleted' and anonymizes personal data:
+  - `name` → "Deleted User"
+  - `role` → null
+  - `home_name` → null
+  - `deleted_at` → current timestamp
+- Deletes `auth.users` entry from Supabase Auth (removes authentication access)
+- Sends confirmation email to user (branded confirmation message)
+- Sends admin notification to `CONTACT_TO_EMAIL` for audit trail
+- Non-blocking email delivery (failures logged but don't fail request)
+- Returns 200 OK on success, 401 for auth errors, 500 for failures
+
+**Frontend UI:**
+- Updated `src/pages/app/Profile.tsx` with account deletion interface
+- Added "Danger Zone" section (red-themed) at bottom of profile
+- Delete account button triggers confirmation dialog
+- Confirmation dialog explains consequences:
+  - Account permanently deleted
+  - Cannot be recovered
+  - Personal data anonymized
+  - Records retained for compliance
+- Two-stage confirmation: button click → modal with "Yes, delete permanently" button
+- Handles loading states, displays errors gracefully
+- Redirects to home page after successful deletion
+
+**Data Retention:**
+- User's sessions (all records in `sessions` table) retained indefinitely
+- User's responses (all records in `responses` table) retained indefinitely
+- Subscription records retained
+- Account status shows as 'deleted' for future reference
+- **Rationale:** Compliance, audit trail, historical records for business reference
+
+**Security & Privacy:**
+- Personal identifiable data anonymized (name, role, home_name removed)
+- Authentication access revoked (auth.users deleted)
+- RLS policies prevent deleted users from querying any data
+- Email confirmation sent to user's email address
+- Admin notification sent for operational awareness
+
 ## Latest Updates (v1.5 — March 11, 2026)
 
 ### 🔧 Legal Pages Code Quality Refactor
