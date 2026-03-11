@@ -479,6 +479,12 @@ export default function Admin() {
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
+      if (!supabaseUrl || !anonKey) {
+        throw new Error("Missing Supabase configuration");
+      }
+
+      console.log("[Promo Delete] Starting deletion for:", deletingCodeId);
+
       const res = await fetch(`${supabaseUrl}/functions/v1/delete-promo-code`, {
         method: "POST",
         headers: {
@@ -489,9 +495,13 @@ export default function Admin() {
         body: JSON.stringify({ promoCodeId: deletingCodeId }),
       });
 
+      console.log("[Promo Delete] Response status:", res.status);
+
+      const data = await res.json();
+      console.log("[Promo Delete] Response data:", data);
+
       if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.error || "Failed to delete promo code");
+        throw new Error(data.error || `Failed to delete promo code (${res.status})`);
       }
 
       toast({
@@ -499,11 +509,19 @@ export default function Admin() {
         description: "Code has been removed from Stripe and your system",
       });
 
+      // Clear deletion state immediately
+      const codeToDelete = deletingCodeId;
       setDeletingCodeId(null);
-      loadPromoCodes();
+
+      // Refresh list after clearing state
+      console.log("[Promo Delete] Refreshing list");
+      await loadPromoCodes();
+
+      console.log("[Promo Delete] Deletion complete for:", codeToDelete);
     } catch (error) {
+      console.error("[Promo Delete] Error:", error);
       toast({
-        title: "Error",
+        title: "Error deleting code",
         description: error instanceof Error ? error.message : "Failed to delete promo code",
         variant: "destructive",
       });
