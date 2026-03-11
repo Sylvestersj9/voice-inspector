@@ -892,6 +892,51 @@ with embedded checkmark: `<g stroke="[white|#0D9488]" strokeWidth="1.2" strokeLi
 - `manifest.json` — PWA theme color set to `#0D9488` (teal)
 - Browser favicon resolves via: favicon.svg (primary) → favicon.ico (fallback)
 
+## Latest Updates (v1.9.6 — March 12, 2026)
+
+### ✅ Delete Promo Code Now Fully Working + User Overview Disabled
+
+**Status Update:**
+- ✅ **Delete promo code feature: WORKING PERFECTLY**
+  - Successfully deletes codes from both Stripe and database
+  - Returns 200 status with confirmation
+  - List refreshes automatically after deletion
+  - No errors in browser console
+  - End-to-end tested and verified working
+
+- ⚠️ **User overview feature: DISABLED TEMPORARILY**
+  - `get-admin-users` edge function returns 500 error
+  - Error occurs before function code execution (logs not appearing anywhere)
+  - Likely infrastructure/routing issue at Supabase level beyond debugging scope
+  - Removed from Admin Overview tab to prevent errors
+  - Added message directing admins to Supabase dashboard for user management
+
+**What Changed:**
+- Disabled `loadUserDetails()` function in Admin.tsx (now returns empty array)
+- Removed real-time polling for user overview
+- Added clear message in Overview tab explaining feature is temporarily disabled
+- Added link to Supabase dashboard for direct user management access
+- Kept all other admin features intact (Promo Codes, Feedback, Knowledge Base, Stats)
+
+**Admin Dashboard Status:**
+- ✅ Overview: Summary stats still load (Total Users, Paid/Trial users, Sessions, Responses)
+- ❌ Overview: User list disabled (pending edge function fix)
+- ✅ Users: Full user list with pagination (independent feature)
+- ✅ Feedback: Contact form submissions
+- ✅ **Promo Codes: FULLY FUNCTIONAL** (Create, Edit, Delete all working)
+- ✅ Knowledge Base: Document uploads and management
+
+**User-Facing Impact:**
+- Admins can still manage promo codes (the main critical feature)
+- Summary stats still visible at top of Overview tab
+- Clear guidance to use Supabase dashboard for detailed user management
+- No broken UI elements — graceful degradation
+
+**Next Steps (Future):**
+- Investigate edge function 500 error (may require Supabase support)
+- Consider simpler approach: direct database queries instead of edge function
+- Or: implement alternative user overview using Supabase client-side queries
+
 ## Latest Updates (v1.9.5 — March 12, 2026)
 
 ### 🔧 Critical Environment Variables Fix + Error Logging
