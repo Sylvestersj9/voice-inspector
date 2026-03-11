@@ -67,11 +67,21 @@ Helper utilities: `src/lib/simulator.ts` (report generation + polling, pause per
 
 9 domains (`DOMAIN_ORDER`), 2 variants each (`questionBank`, 18 total). `ProtectionChildren` is the LIMITING JUDGEMENT domain. `DOMAIN_LABELS`, `DOMAIN_TAGS`, `getBandColorClass()` are co-located here.
 
-### Analytics (`src/lib/analytics.ts`)
+### Analytics & Error Tracking
 
-PostHog integration — GDPR-compliant, EU cloud (`eu.i.posthog.com`). Lazy init: only activates after user accepts cookie consent banner (`src/components/CookieConsent.tsx`). No-ops if `VITE_POSTHOG_KEY` is absent.
+**PostHog** (`src/lib/analytics.ts`):
+- GDPR-compliant, US cloud endpoint (`https://us.i.posthog.com`)
+- Lazy init: only activates after user accepts cookie consent banner (`src/components/CookieConsent.tsx`)
+- No-ops if `VITE_POSTHOG_KEY` is absent
+- **Events tracked:** `signup`, `session_start`, `session_complete`, `report_generated`, `checkout_started`, `subscription_confirmed`, `$pageview`
+- Env var: `VITE_POSTHOG_KEY`
 
-**Events tracked:** `signup`, `session_start`, `session_complete`, `report_generated`, `checkout_started`, `subscription_confirmed`, `$pageview`.
+**Sentry** (`src/main.tsx`):
+- Error tracking & performance monitoring
+- DSN: `VITE_SENTRY_DSN`
+- React integration with browser tracing
+- `sendDefaultPii: true` — collects user identifiers for error context
+- Disabled in dev if DSN is absent
 
 ### Blog system
 
@@ -94,9 +104,13 @@ PostHog integration — GDPR-compliant, EU cloud (`eu.i.posthog.com`). Lazy init
 - **`billing-portal/`** — returns Stripe customer portal URL for subscription management.
 
 **Email (Resend):**
-- **`welcome-email/`** — triggered by pg_net on signup; sends onboarding email via Resend.
-- **`trial-warning/`** — cron job; emails users when 5/6 trial sessions used.
-- **`send-feedback/`** — handles feedback form submissions.
+- **`welcome-email/`** — triggered by pg_net on signup; sends onboarding email via Resend
+- **`trial-warning/`** — cron job; emails users when 5/6 trial sessions used
+- **`send-feedback/`** — handles contact form submissions; sends to `CONTACT_TO_EMAIL`, uses `CONTACT_FROM_EMAIL` as sender, includes `reply_to` field with user's email
+  - Rate limited: 1 request/min per email or IP
+  - Validates message ≥ 5 characters client-side & server-side
+  - Stores feedback in `public.feedback` table
+  - Env vars: `RESEND_API_KEY`, `CONTACT_TO_EMAIL`, `CONTACT_FROM_EMAIL`
 
 **Blog automation:**
 - **`blog-autopilot/`** — Sunday 02:00 UTC cron; fetches GOV.UK/Ofsted RSS, Claude Haiku summarises, upserts to `blog_posts`.
@@ -122,6 +136,7 @@ Migrations in `supabase/migrations/`:
 - `public.sessions` — one row per practice session, stores `overall_band`, `overall_score`, `report_json` (jsonb), `started_at`, `completed_at`
 - `public.responses` — one row per question answered, stores `score`, `band`, `feedback_json`
 - `public.blog_posts` — `slug`, `title`, `source_url`, `summary`, `tags`, `published_at`; upserted by blog-autopilot
+- `public.feedback` — contact form submissions, stores `type` (contact/feedback), `name`, `email`, `message`, `user_agent`, `status` (received/sent/failed), `created_at`
 
 Triggers auto-create both `users` and `subscriptions` rows on `auth.users` insert. RLS enforces trial limits in the DB as a second layer after frontend checks.
 
@@ -171,37 +186,62 @@ Code-based, in-memory rate limiting on 3 core edge functions:
 Implementation: `supabase/functions/_shared/rate-limiter.ts` — extracts IP (Cloudflare → x-forwarded-for → x-real-ip), returns 429 + `retryAfter` on limit.
 
 ### Config & Environment
-- Post-checkout sync: `/app/dashboard?checkout=success` triggers `sync-subscription`
-- `VITE_POSTHOG_KEY` — analytics (EU cloud, GDPR compliant)
+
+**Frontend env vars** (`.env.local`):
+- `VITE_POSTHOG_KEY` — analytics (US cloud endpoint, GDPR compliant)
+- `VITE_SENTRY_DSN` — error tracking
 - `VITE_GEMINI_KEY` — Gemini gap analysis on /tools (static fallback if missing)
-- ESLint: `react-refresh/only-export-components` disabled in config
-- Supabase client: `no-explicit-any` disable for flexible casting
+- `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY`
+- `VITE_STRIPE_PUBLISHABLE_KEY`
 
-### Legacy Code
-Unlinked but present: `Account.tsx`, `Sessions.tsx`, `History.tsx`, `Onboarding.tsx`, `Admin.tsx`, `InspectionReport.tsx`
+**Supabase secrets** (edge function env vars):
+- `RESEND_API_KEY` — Resend email API key
+- `CONTACT_TO_EMAIL` — where contact form emails are sent (default: info@mockofsted.co.uk)
+- `CONTACT_FROM_EMAIL` — sender email for contact form (must be verified domain in Resend)
+- `ANTHROPIC_API_KEY` — Claude API for evaluation
+- `STRIPE_SECRET_KEY`, `STRIPE_PRICE_ID`, `STRIPE_WEBHOOK_SECRET`
+- `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_URL`
 
-## Latest Updates (v1.1 — March 11, 2026)
+**React Router** (`src/App.tsx`):
+- Future flags enabled: `v7_startTransition`, `v7_relativeSplatPath` (suppresses v7 deprecation warnings)
 
-### 🛡️ New Branding (Shield + Checkmark Icon)
-- Updated favicon.svg, logo.svg, and 9 inline SVG instances across app
-- Teal (#0D9488) shield with white checkmark — represents safeguarding (QS7) + quality standards
-- Applied to: AppNav, Paywall, MarketingLayout, Index, Login, ResetPassword, Report pages
-- PWA manifest theme color updated to teal
+**ESLint & Config:**
+- `react-refresh/only-export-components` disabled
+- Supabase client: `no-explicit-any` disabled for flexible casting
 
-### 🔒 Rate Limiting Protection (NEW)
-- Code-based rate limiting on `evaluate`, `generate-report`, `transcribe` edge functions
-- Shared implementation: `supabase/functions/_shared/rate-limiter.ts`
-- Protects Claude API quota (100 req/min each) and Deepgram quota (50 req/min)
-- IP extraction: Cloudflare → x-forwarded-for → x-real-ip fallback
-- Returns 429 Too Many Requests + `retryAfter` when exceeded
+**Post-checkout sync:** `/app/dashboard?checkout=success` triggers `sync-subscription`
 
-### 🐛 Bug Fix
-- Fixed React hooks conditional execution in `Admin.tsx` (moved all hooks before early return)
+### Legacy & Cleanup
+- Skipped/unused migrations: `.20260312_feature_additions.sql.skip` (already applied to remote)
+- Deprecated files (if present): `Account.tsx`, `Sessions.tsx`, `History.tsx`, `Onboarding.tsx` (prefer Dashboard)
 
-### ✅ Quality Checks
+## Latest Updates (v1.2 — March 11, 2026)
+
+### 🎯 Console Error Fixes
+- ✅ **React Router v7 warnings** — Added future flags (`v7_startTransition`, `v7_relativeSplatPath`) to BrowserRouter
+- ✅ **PostHog analytics** — Fixed API endpoint from `eu.i.posthog.com` to `us.i.posthog.com`
+- ✅ **Sentry error tracking** — Configured with new DSN, enabled `sendDefaultPii` for better error context
+- ✅ **Contact form 502 errors** — Fixed by creating `public.feedback` table and configuring Resend integration
+
+### 📧 Contact Form & Email Integration
+- Created `public.feedback` table for contact form submissions (status tracking: received/sent/failed)
+- Integrated Resend API for email delivery
+- Added message length validation (≥5 characters) both client & server-side
+- Implemented reply-to functionality: emails sent from verified domain with user's email in `reply_to` field
+- Rate limiting: 1 request/min per email or IP to prevent spam
+- Environment variables: `RESEND_API_KEY`, `CONTACT_TO_EMAIL`, `CONTACT_FROM_EMAIL`
+
+### 🗄️ Database Migrations
+- `20260316_add_feedback_table.sql` — feedback table for contact form
+- Fixed & skipped conflicting `20260312_feature_additions.sql` (already applied to remote)
+
+### ✅ Quality Checks & Deployments
 - ESLint: PASSING
 - TypeScript type check: PASSING
-- Production build: PASSING (chunk size warnings only, expected for jsPDF libraries)
+- Production build: PASSING
+- Vercel: Environment variables configured (`RESEND_API_KEY`)
+- Supabase: All secrets configured and deployed
+- Resend: Domain verified and integrated with Supabase + Vercel
 
 ## Branding & Design
 
