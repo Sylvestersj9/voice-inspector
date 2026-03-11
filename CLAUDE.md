@@ -419,6 +419,39 @@ Implementation: `supabase/functions/_shared/rate-limiter.ts` — extracts IP (Cl
 
 **Admin Guard:** All tabs protected by JWT + admin role check
 
+## Latest Updates (v1.9.0 — March 11, 2026)
+
+### 🎯 Trial Usage Indicator + Team Pricing Enhancements
+
+**Feature 1: Prominent Trial Usage Indicator**
+- ✅ **Dashboard card** showing trial progress prominently above session history
+- ✅ **Clear remaining sessions** — "X sessions left" (not "used")
+- ✅ **Time remaining** — Shows trial expiry date
+- ✅ **Progress percentage** — Visual "% remaining" indicator
+- ✅ **Today's budget** — "X available today" (prevents daily limit confusion)
+- **Location:** Dashboard (first thing trial users see)
+- **Impact:** Prevents churn from users hitting limit unexpectedly
+
+**Feature 2: Enhanced Team Pricing**
+- ✅ **Savings badge** — "Save 54%" (catches eyes, shows value)
+- ✅ **Per-person breakdown** — "£13.80 per person vs £29 solo"
+- ✅ **Value proposition box** — "Best for homes with multiple managers"
+- ✅ **Benefits callout** — "All staff practice together, see team progress"
+- **Location:** Pricing page (Team card, marked "Most Popular")
+- **Pricing:** £69/month for up to 5 staff (saves homes £76/month vs solo)
+
+**Why These Matter:**
+- **Trial indicator** → Users understand limits before hitting them → retention
+- **Team pricing** → Captures entire homes/organizations at once → higher LTV, faster growth
+- **Early adopter focus** → Managers promoting codes usually manage teams
+
+**Build & Deploy:**
+- ✅ Frontend built successfully
+- ✅ Changes committed and pushed
+- ✅ Live on next deployment
+
+**Git status:** ✅ Committed & pushed — Commit `a934219`
+
 ## Latest Updates (v1.8.3 — March 11, 2026)
 
 ### 🔧 Fixed Admin Page Race Condition
