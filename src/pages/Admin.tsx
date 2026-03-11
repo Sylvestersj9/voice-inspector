@@ -78,7 +78,7 @@ interface PromoCode {
 }
 
 export default function Admin() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
 
   // Knowledge Base state
@@ -297,7 +297,15 @@ export default function Admin() {
     }
   }, [uploading, statsLoading, usersLoading, feedbackLoading, promoCodesLoading]);
 
-  // Auth guard - admin only
+  // Auth guard - admin only (wait for auth to load first)
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
+      </div>
+    );
+  }
+
   if (!user || user?.user_metadata?.role !== "admin") {
     return <Navigate to="/app" replace />;
   }
