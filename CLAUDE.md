@@ -891,3 +891,35 @@ with embedded checkmark: `<g stroke="[white|#0D9488]" strokeWidth="1.2" strokeLi
 - `index.html` — links favicon.svg as primary icon
 - `manifest.json` — PWA theme color set to `#0D9488` (teal)
 - Browser favicon resolves via: favicon.svg (primary) → favicon.ico (fallback)
+
+## Latest Updates (v1.9.1 — March 12, 2026)
+
+### 🔧 Subscription Cancellation Status Display + Team Pricing Update
+
+**Fixed Subscription Cancellation Display:**
+- ✅ **Profile.tsx** — Added explicit handling for `subscription.status === "cancelled"`
+  - Cancelled subscriptions now display "Cancelled" badge (gray, neutral styling)
+  - Shows "Your subscription was cancelled and has ended." message
+  - Shows "Resubscribe — £29/month" button instead of "Upgrade"
+  - Previously incorrectly showed "Free trial" or "Upgrade" button for cancelled subscriptions
+
+- **Code changes:**
+  - Updated `subLabel` logic: `cancelled` → "Cancelled" (prioritized before isPaid check)
+  - Updated `subColour` logic: `cancelled` → slate colors (not red, not teal)
+  - Updated CTA rendering: Three-way conditional (cancelled → resubscribe, paid → manage, unpaid → upgrade)
+
+**Team Pricing Update:**
+- ✅ **Pricing.tsx** — Changed team plan pricing from £69 to £89/month
+  - Updated price display: £69 → £89
+  - Updated savings badge: 54% → 39% (based on 5 staff × £29 = £145/month)
+  - Updated per-person cost: £13.80 → £17.80 per person vs £29 solo
+
+**Build & Deploy:**
+- ✅ Frontend built successfully: `bun run build`
+- ✅ Changes committed: Commit `3a60e49`
+- ✅ Pushed to main: `git push origin main`
+
+**User Messaging:**
+- When subscription is cancelled, users now see clear status and option to resubscribe
+- Previous issue where cancelled subscriptions showed upgrade button is resolved
+- Team pricing now reflects £89/month with updated savings calculation
