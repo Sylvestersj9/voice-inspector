@@ -224,6 +224,16 @@ Implementation: `supabase/functions/_shared/rate-limiter.ts` — extracts IP (Cl
 
 **Post-checkout sync:** `/app/dashboard?checkout=success` triggers `sync-subscription`
 
+## Latest Updates (v1.6.6 — March 12, 2026)
+
+### 🐛 Generate-Report 500 Error Diagnostic
+- ✅ **Added detailed error logging to generate-report function**
+- Logs Claude API errors with full response for debugging
+- Logs JSON parsing failures with truncated content
+- Helps identify why report generation is returning 500
+- **Deployed:** Vercel live with updated error handling
+- **Next:** Try generating a report to see detailed error message in Supabase logs
+
 ## Latest Updates (v1.6.5 — March 12, 2026)
 
 ### ✅ 401 Error FINALLY Fixed — JWT Authorization Required
