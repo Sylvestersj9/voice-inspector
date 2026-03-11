@@ -142,7 +142,7 @@ serve(async (req: Request) => {
             <!-- Step 1 -->
             <div style="margin:0 0 16px;padding:16px;border:1px solid #e2e8f0;border-radius:10px;background:#fafbfc">
               <div style="display:flex;align-items:flex-start">
-                <div style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;background:#0d9488;color:#ffffff;border-radius:50%;font-weight:700;font-size:13px;flex-shrink:0;margin-right:12px">1</div>
+                <span style="color:#0d9488;font-weight:700;font-size:18px;margin-right:12px;flex-shrink:0">1</span>
                 <div>
                   <p style="margin:0 0 4px;font-size:14px;font-weight:600;color:#0f172a"><strong>Answer Real Inspection Questions</strong></p>
                   <p style="margin:0;font-size:13px;color:#475569">Choose from all 9 Quality Standards. Record your voice or type your answer — just like in a real inspection.</p>
@@ -153,7 +153,7 @@ serve(async (req: Request) => {
             <!-- Step 2 -->
             <div style="margin:0 0 16px;padding:16px;border:1px solid #e2e8f0;border-radius:10px;background:#fafbfc">
               <div style="display:flex;align-items:flex-start">
-                <div style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;background:#0d9488;color:#ffffff;border-radius:50%;font-weight:700;font-size:13px;flex-shrink:0;margin-right:12px">2</div>
+                <span style="color:#0d9488;font-weight:700;font-size:18px;margin-right:12px;flex-shrink:0">2</span>
                 <div>
                   <p style="margin:0 0 4px;font-size:14px;font-weight:600;color:#0f172a"><strong>Get Instant Scored Feedback</strong></p>
                   <p style="margin:0;font-size:13px;color:#475569">Receive AI-powered feedback with a band score (1–4), identified gaps, and follow-up questions to guide your improvement.</p>
@@ -164,7 +164,7 @@ serve(async (req: Request) => {
             <!-- Step 3 -->
             <div style="margin:0 0 24px;padding:16px;border:1px solid #e2e8f0;border-radius:10px;background:#fafbfc">
               <div style="display:flex;align-items:flex-start">
-                <div style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;background:#0d9488;color:#ffffff;border-radius:50%;font-weight:700;font-size:13px;flex-shrink:0;margin-right:12px">3</div>
+                <span style="color:#0d9488;font-weight:700;font-size:18px;margin-right:12px;flex-shrink:0">3</span>
                 <div>
                   <p style="margin:0 0 4px;font-size:14px;font-weight:600;color:#0f172a"><strong>Download Your Inspection Report</strong></p>
                   <p style="margin:0;font-size:13px;color:#475569">Generate a full report with your scores, analysis, and action plan. Share with your improvement partner or inspectors.</p>
