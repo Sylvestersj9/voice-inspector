@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS public.announcements (
 -- RLS: authenticated users can read active announcements
 ALTER TABLE public.announcements ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Authenticated users can read announcements" ON public.announcements;
 CREATE POLICY "Authenticated users can read announcements"
   ON public.announcements
   FOR SELECT
