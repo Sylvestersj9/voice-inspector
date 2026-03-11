@@ -60,7 +60,7 @@ serve(async (req: Request) => {
       body: JSON.stringify({
         from: FROM_EMAIL,
         to: email,
-        subject: "Welcome to MockOfsted",
+        subject: "Welcome to MockOfsted — Your Ofsted Inspection Practice Tool",
         html: `
 <!DOCTYPE html>
 <html lang="en">
@@ -71,99 +71,139 @@ serve(async (req: Request) => {
     body { margin: 0; padding: 0; background: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
     table { border-collapse: collapse; }
     a { color: #0d9488; text-decoration: none; }
+    .step-number { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; background: #0d9488; color: white; border-radius: 50%; font-weight: 700; font-size: 13px; margin-right: 12px; flex-shrink: 0; }
   </style>
 </head>
 <body>
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;padding:40px 16px">
     <tr><td align="center">
-      <table width="100%" cellpadding="0" cellspacing="0" style="max-width:540px;background:#ffffff;border-radius:16px;border:1px solid #e2e8f0;overflow:hidden;box-shadow:0 4px 6px rgba(0,0,0,0.07)">
+      <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#ffffff;border-radius:16px;border:1px solid #e2e8f0;overflow:hidden;box-shadow:0 4px 6px rgba(0,0,0,0.07)">
 
         <!-- Header with Logo -->
         <tr>
-          <td style="background:linear-gradient(135deg,#0d9488 0%,#059669 100%);padding:32px;text-align:center">
-            <svg width="48" height="48" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-bottom:16px">
+          <td style="background:linear-gradient(135deg,#0d9488 0%,#059669 100%);padding:40px 32px;text-align:center">
+            <svg width="56" height="56" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-bottom:16px">
               <path d="M16 2C16 2 6 8 6 14C6 19 16 26 16 26C16 26 26 19 26 14C26 8 16 2 16 2Z" fill="#ffffff"/>
               <g stroke="#0d9488" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M11 16L13.5 19L20 11"/>
               </g>
             </svg>
-            <h1 style="margin:0;font-size:24px;font-weight:700;color:#ffffff">MockOfsted</h1>
-            <p style="margin:8px 0 0;font-size:13px;color:rgba(255,255,255,0.9)">Ofsted inspection practice</p>
+            <h1 style="margin:0;font-size:28px;font-weight:700;color:#ffffff">MockOfsted</h1>
+            <p style="margin:8px 0 0;font-size:14px;color:rgba(255,255,255,0.95)">Practice Ofsted Inspections with Confidence</p>
           </td>
         </tr>
 
         <!-- Body -->
         <tr>
-          <td style="padding:32px 32px 24px">
-            <h2 style="margin:0 0 12px;font-size:20px;font-weight:700;color:#0f172a">
+          <td style="padding:40px 32px">
+            <!-- Greeting -->
+            <h2 style="margin:0 0 16px;font-size:22px;font-weight:700;color:#0f172a">
               Welcome, ${firstName}! 👋
             </h2>
-            <p style="margin:0 0 20px;font-size:15px;color:#475569;line-height:1.6">
-              Your account is ready. You have access to a <strong>free 3-day trial</strong> with <strong>2 practice sessions per day</strong> — up to 6 sessions total.
+            <p style="margin:0 0 24px;font-size:15px;color:#475569;line-height:1.6">
+              Your account is ready to go! You're now part of a community of childcare leaders preparing for Ofsted inspections with confidence.
+            </p>
+
+            <!-- About MockOfsted -->
+            <div style="margin:28px 0;background:#f0fdf9;border:1px solid #99f6e4;border-radius:12px;padding:20px">
+              <h3 style="margin:0 0 12px;font-size:16px;font-weight:700;color:#0d9488">What is MockOfsted?</h3>
+              <p style="margin:0 0 10px;font-size:14px;color:#0f172a;line-height:1.6">
+                MockOfsted is an AI-powered practice platform designed to help childcare leaders prepare for Ofsted inspections. Using the official SCCIF (Safeguarding, Children and Childcare in Focus) framework, you can:
+              </p>
+              <ul style="margin:12px 0 0;padding-left:20px;font-size:14px;color:#0f172a;line-height:1.8">
+                <li>Practice answering real Ofsted-style inspection questions</li>
+                <li>Get instant AI-powered feedback on your responses</li>
+                <li>Identify knowledge gaps across all 9 Quality Standards</li>
+                <li>Receive actionable improvement suggestions</li>
+                <li>Build confidence before your actual inspection</li>
+              </ul>
+            </div>
+
+            <!-- Your Trial -->
+            <p style="margin:28px 0 16px;font-size:14px;font-weight:600;color:#0f172a">
+              🎁 <strong>Your Free Trial Includes:</strong>
+            </p>
+            <p style="margin:0 0 16px;font-size:14px;color:#475569;line-height:1.6">
+              <strong>3 days</strong> of unlimited access with <strong>2 practice sessions per day</strong> (up to 6 total). After your trial, choose a subscription to continue your preparation journey.
             </p>
 
             <!-- CTA Button -->
             <div style="margin:28px 0;text-align:center">
-              <a href="https://mockofsted.co.uk/app" style="display:inline-block;background:#0d9488;color:#ffffff;padding:14px 32px;border-radius:10px;font-size:14px;font-weight:600;text-decoration:none">
-                Start your practice session →
+              <a href="https://mockofsted.co.uk/app" style="display:inline-block;background:#0d9488;color:#ffffff;padding:16px 40px;border-radius:10px;font-size:15px;font-weight:600;text-decoration:none;box-shadow:0 2px 8px rgba(13,148,136,0.3)">
+                Start Your First Practice Session →
               </a>
             </div>
 
-            <!-- Feature List -->
-            <p style="margin:28px 0 16px;font-size:13px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.5px">
-              How it works
+            <!-- How It Works -->
+            <p style="margin:32px 0 20px;font-size:13px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.5px">
+              How It Works (3 Simple Steps)
             </p>
-            <table cellpadding="0" cellspacing="0" width="100%">
-              <tr>
-                <td style="padding:12px 0;border-top:1px solid #e2e8f0;width:32px">
-                  <span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;background:#e0f2f1;border-radius:50%;font-size:12px;font-weight:700;color:#0d9488;flex-shrink:0">1</span>
-                </td>
-                <td style="padding:12px 0 12px 12px;border-top:1px solid #e2e8f0">
-                  <p style="margin:0;font-size:14px;color:#334155;line-height:1.5"><strong>Answer inspection questions</strong> — all 9 Quality Standards, voice or text</p>
-                </td>
-              </tr>
-              <tr>
-                <td style="padding:12px 0;border-top:1px solid #e2e8f0;width:32px">
-                  <span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;background:#e0f2f1;border-radius:50%;font-size:12px;font-weight:700;color:#0d9488;flex-shrink:0">2</span>
-                </td>
-                <td style="padding:12px 0 12px 12px;border-top:1px solid #e2e8f0">
-                  <p style="margin:0;font-size:14px;color:#334155;line-height:1.5"><strong>Get instant feedback</strong> — scores, gaps, and follow-up questions</p>
-                </td>
-              </tr>
-              <tr>
-                <td style="padding:12px 0;border-top:1px solid #e2e8f0;width:32px">
-                  <span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;background:#e0f2f1;border-radius:50%;font-size:12px;font-weight:700;color:#0d9488;flex-shrink:0">3</span>
-                </td>
-                <td style="padding:12px 0 12px 12px;border-top:1px solid #e2e8f0">
-                  <p style="margin:0;font-size:14px;color:#334155;line-height:1.5"><strong>Download your report</strong> — share with your improvement partner or inspectors</p>
-                </td>
-              </tr>
-            </table>
 
-            <!-- Helpful Tip -->
-            <div style="margin:24px 0;background:#f0fdf9;border-left:4px solid #0d9488;border-radius:8px;padding:16px">
-              <p style="margin:0;font-size:13px;color:#0d9488">
-                <strong>💡 Pro tip:</strong> Start with <strong>Safeguarding (QS7)</strong> — it's the most critical domain for your grade.
+            <!-- Step 1 -->
+            <div style="margin:0 0 16px;padding:16px;border:1px solid #e2e8f0;border-radius:10px;background:#fafbfc">
+              <div style="display:flex;align-items:flex-start">
+                <div style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;background:#0d9488;color:#ffffff;border-radius:50%;font-weight:700;font-size:13px;flex-shrink:0;margin-right:12px">1</div>
+                <div>
+                  <p style="margin:0 0 4px;font-size:14px;font-weight:600;color:#0f172a"><strong>Answer Real Inspection Questions</strong></p>
+                  <p style="margin:0;font-size:13px;color:#475569">Choose from all 9 Quality Standards. Record your voice or type your answer — just like in a real inspection.</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Step 2 -->
+            <div style="margin:0 0 16px;padding:16px;border:1px solid #e2e8f0;border-radius:10px;background:#fafbfc">
+              <div style="display:flex;align-items:flex-start">
+                <div style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;background:#0d9488;color:#ffffff;border-radius:50%;font-weight:700;font-size:13px;flex-shrink:0;margin-right:12px">2</div>
+                <div>
+                  <p style="margin:0 0 4px;font-size:14px;font-weight:600;color:#0f172a"><strong>Get Instant Scored Feedback</strong></p>
+                  <p style="margin:0;font-size:13px;color:#475569">Receive AI-powered feedback with a band score (1–4), identified gaps, and follow-up questions to guide your improvement.</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Step 3 -->
+            <div style="margin:0 0 24px;padding:16px;border:1px solid #e2e8f0;border-radius:10px;background:#fafbfc">
+              <div style="display:flex;align-items:flex-start">
+                <div style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;background:#0d9488;color:#ffffff;border-radius:50%;font-weight:700;font-size:13px;flex-shrink:0;margin-right:12px">3</div>
+                <div>
+                  <p style="margin:0 0 4px;font-size:14px;font-weight:600;color:#0f172a"><strong>Download Your Inspection Report</strong></p>
+                  <p style="margin:0;font-size:13px;color:#475569">Generate a full report with your scores, analysis, and action plan. Share with your improvement partner or inspectors.</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Pro Tip -->
+            <div style="margin:24px 0;background:#fff3cd;border-left:4px solid #ffc107;border-radius:8px;padding:16px">
+              <p style="margin:0;font-size:13px;color:#856404">
+                <strong>💡 Pro Tip:</strong> Start with <strong>Safeguarding (QS7)</strong> — it's the most critical domain and often the limiting judgement factor in inspections. Mastering this will significantly boost your overall grade.
               </p>
             </div>
+
+            <!-- Support -->
+            <p style="margin:28px 0 0;font-size:14px;color:#475569;line-height:1.6">
+              Have questions? Our team is here to help. <a href="https://mockofsted.co.uk/contact" style="color:#0d9488;font-weight:600">Contact us</a> anytime or <a href="https://mockofsted.co.uk/faq" style="color:#0d9488;font-weight:600">check our FAQ</a>.
+            </p>
           </td>
         </tr>
 
         <!-- Footer -->
         <tr>
-          <td style="padding:24px 32px;border-top:1px solid #e2e8f0;background:#f9fafb">
-            <p style="margin:0 0 12px;font-size:13px;color:#64748b;line-height:1.6">
-              Questions or feedback? <a href="https://mockofsted.co.uk/contact">Contact us</a> or reply to this email.
+          <td style="padding:28px 32px;border-top:1px solid #e2e8f0;background:#f9fafb">
+            <p style="margin:0 0 16px;font-size:13px;color:#64748b;line-height:1.6">
+              Best wishes on your inspection journey,<br/>
+              <strong>The MockOfsted Team</strong>
             </p>
-            <p style="margin:0;font-size:12px;color:#94a3b8;line-height:1.6">
-              <a href="https://mockofsted.co.uk/privacy" style="color:#0d9488">Privacy policy</a> ·
-              <a href="https://mockofsted.co.uk/terms" style="color:#0d9488">Terms</a> ·
-              <a href="https://mockofsted.co.uk" style="color:#0d9488">mockofsted.co.uk</a>
-            </p>
-            <p style="margin:12px 0 0;font-size:11px;color:#cbd5e1">
-              MockOfsted · Helping childcare leaders ace their inspections<br/>
-              info@mockofsted.co.uk
-            </p>
+            <div style="margin:16px 0;border-top:1px solid #e2e8f0;padding-top:16px">
+              <p style="margin:0 0 8px;font-size:12px;color:#94a3b8">
+                <a href="https://mockofsted.co.uk/privacy" style="color:#0d9488">Privacy Policy</a> ·
+                <a href="https://mockofsted.co.uk/terms" style="color:#0d9488">Terms of Use</a> ·
+                <a href="https://mockofsted.co.uk" style="color:#0d9488">Visit MockOfsted</a>
+              </p>
+              <p style="margin:8px 0 0;font-size:11px;color:#cbd5e1">
+                MockOfsted Ltd · Helping childcare leaders ace their Ofsted inspections<br/>
+                info@mockofsted.co.uk
+              </p>
+            </div>
           </td>
         </tr>
 
