@@ -3,6 +3,8 @@ import { DOMAIN_LABELS, DOMAIN_ORDER } from "@/lib/questions";
 
 // RGB colors
 const TEAL_RGB = [13, 148, 136];
+const GRAY_RGB = [40, 40, 40];
+const LIGHT_GRAY_RGB = [120, 120, 120];
 const BAND_COLORS: Record<string, number[]> = {
   Outstanding: [34, 197, 94],
   Good: [245, 158, 11],
@@ -85,6 +87,7 @@ type JsPdfLike = {
   setTextColor: (...args: number[] | string[]) => void;
   text: (text: string | string[], x: number, y: number, options?: Record<string, unknown>) => void;
   setDrawColor: (...args: number[]) => void;
+  rect: (x: number, y: number, w: number, h: number, style?: string) => void;
   line: (x1: number, y1: number, x2: number, y2: number) => void;
   addPage: () => void;
   save: (filename: string) => void;
@@ -93,6 +96,23 @@ type JsPdfLike = {
 
 function splitLines(doc: JsPdfLike, text: string, maxWidth: number) {
   return doc.splitTextToSize(text, maxWidth) as string[];
+}
+
+function addPageHeader(doc: JsPdfLike, pageNum: number, pageWidth: number) {
+  // Logo/Brand header on every page
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...TEAL_RGB);
+  doc.text("MockOfsted", 20, 12);
+
+  // Page number
+  doc.setFontSize(8);
+  doc.setTextColor(...LIGHT_GRAY_RGB);
+  doc.text(`Page ${pageNum}`, pageWidth - 25, 12);
+
+  // Thin line separator
+  doc.setDrawColor(220, 220, 220);
+  doc.line(20, 15, pageWidth - 20, 15);
 }
 
 export async function exportReportPdf(params: NewParams | LegacyParams) {
@@ -116,25 +136,34 @@ export async function exportReportPdf(params: NewParams | LegacyParams) {
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
   const margin = 20;
-  const lineHeight = 16.5;
+  const contentTop = 20; // Content starts below header
+  const contentBottom = pageHeight - 15; // Bottom margin
+  let currentPage = 1;
 
   const addHeader = (title: string, y: number) => {
-    doc.setFontSize(14);
+    doc.setFontSize(13);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(...TEAL_RGB);
     doc.text(title, margin, y);
     doc.setFont("helvetica", "normal");
-    doc.setDrawColor(220, 220, 220);
-    doc.line(margin, y + 2, pageWidth - margin, y + 2);
   };
 
   const addParagraph = (text: string, startY: number, maxWidth: number) => {
-    doc.setFontSize(11);
+    doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
-    doc.setTextColor(40, 40, 40);
+    doc.setTextColor(...GRAY_RGB);
     const lines = splitLines(doc, text, maxWidth);
-    doc.text(lines, margin, startY, { lineHeightFactor: 1.6 });
-    return startY + lines.length * 6.5;
+    doc.text(lines, margin, startY, { lineHeightFactor: 1.4 });
+    return startY + lines.length * 4.8;
+  };
+
+  const checkPageBreak = (currentY: number, neededSpace: number = 20): { y: number; page: number } => {
+    if (currentY + neededSpace > contentBottom) {
+      doc.addPage();
+      addPageHeader(doc, ++currentPage, pageWidth);
+      return { y: contentTop, page: currentPage };
+    }
+    return { y: currentY, page: currentPage };
   };
 
   if (isLegacyParams(params)) {
@@ -142,45 +171,58 @@ export async function exportReportPdf(params: NewParams | LegacyParams) {
     const overallScore = params.report.overall_score;
     const date = new Date(params.report.created_at).toLocaleDateString("en-GB");
 
-    // Cover page
-    doc.setFontSize(26);
+    // Page 1: Cover
+    addPageHeader(doc, 1, pageWidth);
+    doc.setFontSize(24);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(...TEAL_RGB);
-    doc.text("MockOfsted", margin, 35);
-    doc.setFontSize(18);
-    doc.text("Practice Report", margin, 45);
+    doc.text("Practice Report", margin, 40);
 
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(12);
-    doc.setTextColor(80, 80, 80);
-    doc.text(`Home: ${params.homeName || "N/A"}`, margin, 60);
-    doc.text(`Date: ${date}`, margin, 68);
+    doc.setFontSize(11);
+    doc.setTextColor(...GRAY_RGB);
+    let y = 55;
+    y = addParagraph(`Home: ${params.homeName || "N/A"}`, y, pageWidth - margin * 2) + 3;
+    y = addParagraph(`Date: ${date}`, y, pageWidth - margin * 2) + 6;
 
-    doc.setFontSize(16);
+    doc.setFontSize(14);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(...getBandColor(overallBand));
-    doc.text(`Overall: ${overallBand}`, margin, 85);
+    doc.text(`Overall: ${overallBand}`, margin, y);
+    y += 8;
+
     if (overallScore != null) {
       doc.setFont("helvetica", "normal");
-      doc.setFontSize(12);
-      doc.setTextColor(80, 80, 80);
-      doc.text(`Score: ${overallScore.toFixed(1)} / 4.0`, margin, 93);
+      doc.setFontSize(11);
+      doc.setTextColor(...GRAY_RGB);
+      doc.text(`Score: ${overallScore.toFixed(1)} / 4.0`, margin, y);
+      y += 10;
     }
 
-    doc.addPage();
-    addHeader("Executive Summary", margin);
-    let y = margin + 12;
-    y = addParagraph(params.report.strengths || "", y, pageWidth - margin * 2);
+    // Executive Summary on same page
+    let pageBreak = checkPageBreak(y, 30);
+    y = pageBreak.y;
+    addHeader("Summary", margin + (pageBreak.page > 1 ? 10 : 0));
     y += 6;
-    y = addParagraph(params.report.recommended_actions || "", y, pageWidth - margin * 2);
+    y = addParagraph(params.report.strengths || "", y, pageWidth - margin * 2) + 3;
+    y = addParagraph(params.report.recommended_actions || "", y, pageWidth - margin * 2) + 3;
 
-    doc.addPage();
-    addHeader("Domain Breakdown", margin);
-    const body = params.domains.map((d) => [d.domain, d.avg_score.toFixed(1), d.band, "-", "-", "-"]);
-    if (autoTable) {
+    // Domain Table
+    pageBreak = checkPageBreak(y, 40);
+    y = pageBreak.y;
+    if (pageBreak.page > currentPage) {
+      addHeader("Domains", margin + 10);
+      y += 6;
+    } else {
+      addHeader("Domains", margin);
+      y += 6;
+    }
+
+    const body = params.domains.map((d) => [d.domain, d.avg_score.toFixed(1), d.band]);
+    if (autoTable && pageBreak.page === currentPage) {
       autoTable(doc, {
-        startY: margin + 10,
-        head: [["Domain", "Score", "Band", "Strengths", "Gaps", "Inspector Note"]],
+        startY: y,
+        head: [["Domain", "Score", "Band"]],
         body,
         margin: { left: margin, right: margin },
         styles: { fontSize: 9, cellPadding: 2, valign: "top" },
@@ -188,15 +230,11 @@ export async function exportReportPdf(params: NewParams | LegacyParams) {
       });
     }
 
-    doc.addPage();
-    addHeader("Action Plan", margin);
-    y = margin + 12;
-    y = addParagraph(params.report.recommended_actions || "", y, pageWidth - margin * 2);
-
     doc.save(`mockofsted-${params.inspectionSessionId}.pdf`);
     return;
   }
 
+  // New params section - streamlined layout
   const report = params.report ?? {};
   const header = params.header ?? report.header ?? {};
   const overallBand = report.overallGrade ?? report.overallBand ?? "";
@@ -204,163 +242,125 @@ export async function exportReportPdf(params: NewParams | LegacyParams) {
   const homeName = header.homeName ?? "Children's Home";
   const date = header.date ?? new Date().toLocaleDateString("en-GB");
 
-  // Cover page
-  doc.setFontSize(26);
+  // Page 1: Cover + Summary
+  addPageHeader(doc, 1, pageWidth);
+  doc.setFontSize(24);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(...TEAL_RGB);
-  doc.text("MockOfsted", margin, 35);
-  doc.setFontSize(18);
-  doc.text("Practice Report", margin, 45);
+  doc.text("Practice Report", margin, 40);
 
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(12);
-  doc.setTextColor(80, 80, 80);
-  doc.text(`Home: ${homeName}`, margin, 60);
-  doc.text(`Date: ${date}`, margin, 68);
+  doc.setFontSize(11);
+  doc.setTextColor(...GRAY_RGB);
+  let y = 55;
+  y = addParagraph(`Home: ${homeName}`, y, pageWidth - margin * 2) + 3;
+  y = addParagraph(`Date: ${date}`, y, pageWidth - margin * 2) + 6;
 
-  doc.setFontSize(16);
+  doc.setFontSize(14);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(...getBandColor(overallBand));
-  doc.text(`Overall: ${overallBand}`, margin, 85);
+  doc.text(`Overall: ${overallBand}`, margin, y);
+  y += 8;
+
   if (overallScore != null) {
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(12);
-    doc.setTextColor(80, 80, 80);
-    doc.text(`Score: ${Number(overallScore).toFixed(1)} / 4.0`, margin, 93);
+    doc.setFontSize(11);
+    doc.setTextColor(...GRAY_RGB);
+    doc.text(`Score: ${Number(overallScore).toFixed(1)} / 4.0`, margin, y);
+    y += 12;
   }
 
-  // Page 2: Executive Summary
-  doc.addPage();
-  addHeader("Executive Summary", margin);
-  let y = margin + 12;
+  // Executive Summary
+  let pageBreak = checkPageBreak(y, 30);
+  y = pageBreak.y;
+  if (pageBreak.page > currentPage) {
+    addHeader("Executive Summary", margin + 10);
+  } else {
+    addHeader("Executive Summary", margin);
+  }
+  y += 5;
+
   if (report.summaryNarrative) {
-    y = addParagraph(report.summaryNarrative, y, pageWidth - margin * 2);
-    y += 6;
+    y = addParagraph(report.summaryNarrative, y, pageWidth - margin * 2) + 2;
   }
   if (report.closingVerdict) {
-    y = addParagraph(`Closing verdict: ${report.closingVerdict}`, y, pageWidth - margin * 2);
-    y += 6;
+    y = addParagraph(`Verdict: ${report.closingVerdict}`, y, pageWidth - margin * 2) + 2;
   }
   if (report.readinessStatement) {
-    y = addParagraph(report.readinessStatement, y, pageWidth - margin * 2);
-    y += 6;
+    y = addParagraph(report.readinessStatement, y, pageWidth - margin * 2) + 2;
   }
 
   const strengths = report.keyStrengths ?? [];
   const actions = report.priorityActions ?? [];
+
   if (strengths.length > 0) {
-    y += 6;
-    doc.setFontSize(12);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(...TEAL_RGB);
-    doc.text("Key Strengths", margin, y);
-    y += 7;
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(40, 40, 40);
-    strengths.forEach((s) => {
-      y = addParagraph(`• ${s}`, y, pageWidth - margin * 2);
+    pageBreak = checkPageBreak(y, 18);
+    y = pageBreak.y;
+    if (pageBreak.page > currentPage) {
+      addHeader("Strengths", margin + 10);
+    } else {
+      addHeader("Strengths", margin);
+    }
+    y += 4;
+    doc.setFontSize(10);
+    doc.setTextColor(...GRAY_RGB);
+    strengths.slice(0, 3).forEach((s) => {
+      y = addParagraph(`• ${truncateWords(s, 20)}`, y, pageWidth - margin * 2) + 1;
     });
   }
+
   if (actions.length > 0) {
-    y += 8;
-    doc.setFontSize(12);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(...BAND_COLORS["Good"]);
-    doc.text("Priority Actions", margin, y);
-    y += 7;
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(40, 40, 40);
-    actions.forEach((a) => {
-      y = addParagraph(`• ${a}`, y, pageWidth - margin * 2);
+    pageBreak = checkPageBreak(y, 18);
+    y = pageBreak.y;
+    if (pageBreak.page > currentPage) {
+      addHeader("Actions", margin + 10);
+    } else {
+      addHeader("Actions", margin);
+    }
+    y += 4;
+    doc.setFontSize(10);
+    doc.setTextColor(...GRAY_RGB);
+    actions.slice(0, 3).forEach((a) => {
+      y = addParagraph(`• ${truncateWords(a, 20)}`, y, pageWidth - margin * 2) + 1;
     });
   }
 
-  // Domain table
-  doc.addPage();
-  addHeader("Domain Breakdown", margin);
-
+  // Domain Breakdown Table
   const responsesByDomain = new Map<string, ResponseRow>();
   params.responses.forEach((r) => responsesByDomain.set(r.domain, r));
 
-  const rows: Array<[string, string, string, string, string, string]> = [];
+  const rows: Array<[string, string, string]> = [];
   DOMAIN_ORDER.forEach((domainKey) => {
     const res = responsesByDomain.get(domainKey);
     if (!res) return;
     const domainLabel = DOMAIN_LABELS[domainKey] ?? domainKey;
     const score = res.score != null ? String(res.score) : "-";
     const band = res.band ?? "-";
-
-    const breakdown = report.domainBreakdown?.find((d) => d.qsName === domainLabel || d.domain === Number(domainKey));
-    const strengthsText = (breakdown?.strengths ?? (res.feedback_json?.strengths as string[]) ?? []).join("; ");
-    const gapsText = (res.feedback_json?.gaps as string[])?.join("; ") ?? (breakdown?.actions ?? []).join("; ");
-    const noteRaw = breakdown?.inspectorNote ?? (res.feedback_json?.inspectorNote as string) ?? "";
-    const note = noteRaw ? truncateWords(noteRaw, 200) : "";
-
-    rows.push([domainLabel, score, band, strengthsText, gapsText, note]);
+    rows.push([domainLabel, score, band]);
   });
+
+  pageBreak = checkPageBreak(y, 50);
+  y = pageBreak.y;
+  if (pageBreak.page > currentPage) {
+    addHeader("Domain Breakdown", margin + 10);
+  } else {
+    addHeader("Domain Breakdown", margin);
+  }
 
   if (autoTable) {
     autoTable(doc, {
-      startY: margin + 10,
-      head: [["Domain", "Score", "Band", "Strengths", "Gaps", "Inspector Note"]],
+      startY: y + 4,
+      head: [["Domain", "Score", "Band"]],
       body: rows,
       margin: { left: margin, right: margin },
-      styles: { fontSize: 9, cellPadding: 2, valign: "top", lineColor: [220, 220, 220] },
-      headStyles: { fillColor: [13, 148, 136], textColor: 255 },
+      styles: { fontSize: 9, cellPadding: 2.5, valign: "middle" },
+      headStyles: { fillColor: [13, 148, 136], textColor: 255, fontStyle: "bold" },
       columnStyles: {
-        0: { cellWidth: 32 },
-        1: { cellWidth: 12 },
-        2: { cellWidth: 22 },
-        3: { cellWidth: 40 },
-        4: { cellWidth: 40 },
-        5: { cellWidth: 60 },
+        0: { cellWidth: 85 },
+        1: { cellWidth: 30 },
+        2: { cellWidth: 40 },
       },
     });
-  } else {
-    let tableY = margin + 10;
-    doc.setFontSize(10);
-    doc.setTextColor(40, 40, 40);
-    rows.forEach((row) => {
-      const line = row.join(" | ");
-      const lines = splitLines(doc, line, pageWidth - margin * 2);
-      if (tableY + lines.length * 5 > pageHeight - margin) {
-        doc.addPage();
-        addHeader("Domain Breakdown (cont.)", margin);
-        tableY = margin + 10;
-      }
-      doc.text(lines, margin, tableY);
-      tableY += lines.length * 5 + 2;
-    });
-  }
-
-  // Final page: Action plan
-  doc.addPage();
-  addHeader("Action Plan", margin);
-  y = margin + 12;
-  const devPoints = report.developmentPoints ?? report.priorityActions ?? [];
-  if (devPoints.length === 0) {
-    y = addParagraph("No action points recorded.", y, pageWidth - margin * 2);
-  } else {
-    devPoints.forEach((p, i) => {
-      y = addParagraph(`${i + 1}. ${p}`, y, pageWidth - margin * 2);
-    });
-  }
-
-  y += 10;
-  doc.setFontSize(12);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(...TEAL_RGB);
-  doc.text("Next Steps", margin, y);
-  y += 7;
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(11);
-  doc.setTextColor(40, 40, 40);
-  if (report.readinessStatement) {
-    addParagraph(report.readinessStatement, y, pageWidth - margin * 2);
-  } else if (report.closingVerdict) {
-    addParagraph(report.closingVerdict, y, pageWidth - margin * 2);
-  } else {
-    addParagraph("Subscribe for unlimited sessions and continue building inspection readiness.", y, pageWidth - margin * 2);
   }
 
   doc.save(`mockofsted-${params.sessionId}.pdf`);
