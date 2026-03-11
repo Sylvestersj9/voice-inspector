@@ -231,6 +231,7 @@ Implementation: `supabase/functions/_shared/rate-limiter.ts` — extracts IP (Cl
 - ✅ **Google OAuth signups now work** — Users who sign up via Google OAuth now properly recorded in database
 - ✅ **Auth user sync** — Migration syncs any orphaned `auth.users` to `public.users` and ensures subscriptions exist for all users
 - ✅ **422/500 errors fixed** — Disabled problematic welcome-email trigger, welcome emails now sent manually from frontend
+- ✅ **Welcome email now reliable** — Fixed onAuthStateChange event detection; now handles both SIGNED_UP (email) and SIGNED_IN (OAuth) events with sessionStorage tracking to prevent duplicates
 - ✅ **Auth reset complete** — Cleared all `auth.users` to allow fresh testing (20260319 migration)
 
 ### 📬 Admin Notifications System (NEW)
