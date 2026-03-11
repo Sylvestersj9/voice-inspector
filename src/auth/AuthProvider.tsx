@@ -27,8 +27,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     // 2️⃣ Listen for auth changes
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, newSession) => {
+    const { data: listener } = supabase.auth.onAuthStateChange((event, newSession) => {
       setSession(newSession);
+
+      // Send welcome email & notifications on new OAuth signups
+      if ((event === "SIGNED_UP" || event === "USER_UPDATED") && newSession?.user && newSession.user.created_at) {
+        const now = new Date();
+        const createdAt = new Date(newSession.user.created_at);
+        const isNewUser = now.getTime() - createdAt.getTime() < 5000; // Created within last 5 seconds
+
+        if (isNewUser && newSession.user.email) {
+          const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+          const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+          const name = newSession.user.user_metadata?.name || newSession.user.email.split("@")[0];
+
+          // Send welcome email
+          fetch(`${supabaseUrl}/functions/v1/welcome-email`, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${newSession.access_token}`,
+              apikey: anonKey,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ user_id: newSession.user.id, name }),
+          }).catch(() => { /* best-effort */ });
+
+          // Send admin signup notification
+          fetch(`${supabaseUrl}/functions/v1/admin-notifications`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", apikey: anonKey },
+            body: JSON.stringify({
+              type: "signup",
+              userName: name,
+              userEmail: newSession.user.email,
+              userId: newSession.user.id,
+            }),
+          }).catch(() => { /* best-effort */ });
+        }
+      }
     });
 
     return () => {
