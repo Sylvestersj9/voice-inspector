@@ -376,6 +376,47 @@ Implementation: `supabase/functions/_shared/rate-limiter.ts` — extracts IP (Cl
 
 **Git status:** ✅ Committed & pushed — Commit `9807c00`
 
+## Admin Dashboard (`/admin`) — Complete Reference
+
+**5 functional admin tabs** (all require `user.user_metadata.role === "admin"`):
+
+1. **Overview** ⭐ NEW DEPLOYED
+   - Dashboard metrics: total users, paid subscribers, trial users, sessions today, total sessions, total responses
+   - Powered by `get-admin-stats` edge function (requires admin JWT)
+   - Auto-refreshes when opened
+
+2. **Users**
+   - Complete user list with pagination (20 users per page)
+   - Shows: Name, Role, Home, Subscription Status (Paid/Trial/None), Signup Date
+   - Status badges: Green (Paid), Amber (Trial), Gray (None)
+   - Fully functional ✅
+
+3. **Feedback**
+   - All contact form submissions from `/contact` page
+   - Shows: Name, Email, Message, Rating, Status, Submission Date
+   - Helps monitor user inquiries
+   - Fully functional ✅
+
+4. **Promo Codes**
+   - Create personalised discount codes with hard limit of 5 uses per code
+   - Form inputs: Code name, Description, Discount %, Expiry date (optional)
+   - Stripe integration: codes auto-sync to Stripe on creation
+   - Table: Code | Description | Discount | Uses | Expires | Created
+   - Copy-to-clipboard button for sharing codes
+   - Backend enforces `max_redemptions: 5` at all levels
+   - Fully functional ✅
+
+5. **Knowledge Base** ⭐ HOLDS YOUR KB!
+   - Upload reference documents for evaluation context
+   - Accepts: Ofsted reports, policies, action plans, evidence logs, SCCIF guidance, internal docs
+   - Auto-chunks and embeds content for semantic search
+   - Document types selector: Ofsted report, Inspection action plan, Policy/Procedure, Evidence/Logs, Internal Guidance, SCCIF/Regulations, Other
+   - Documents list with delete capability
+   - Reserved for future retrieval-augmented evaluation features
+   - Fully functional ✅
+
+**Admin Guard:** All tabs protected by JWT + admin role check
+
 ## Latest Updates (v1.8.3 — March 11, 2026)
 
 ### 🔧 Fixed Admin Page Race Condition
