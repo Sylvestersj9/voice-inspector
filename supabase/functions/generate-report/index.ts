@@ -189,12 +189,29 @@ ${reportSchema}`;
     });
 
     const raw = await resp.text();
-    if (!resp.ok) throw new Error(`Claude API error ${resp.status}: ${raw.slice(0, 400)}`);
+    if (!resp.ok) {
+      console.error(`Claude API error ${resp.status}:`, raw.slice(0, 500));
+      throw new Error(`Claude API error ${resp.status}: ${raw.slice(0, 200)}`);
+    }
 
-    const claudeData = JSON.parse(raw);
+    let claudeData;
+    try {
+      claudeData = JSON.parse(raw);
+    } catch (e) {
+      console.error("Failed to parse Claude response:", raw.slice(0, 500));
+      throw new Error(`Invalid JSON from Claude: ${e instanceof Error ? e.message : "unknown"}`);
+    }
+
     const text: string = claudeData?.content?.[0]?.text ?? "{}";
     const cleaned = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/i, "").trim();
-    const report = JSON.parse(cleaned);
+
+    let report;
+    try {
+      report = JSON.parse(cleaned);
+    } catch (e) {
+      console.error("Failed to parse report JSON:", cleaned.slice(0, 500));
+      throw new Error(`Invalid report JSON: ${e instanceof Error ? e.message : "unknown"}`);
+    }
 
     // Attach deterministic metadata
     report.header = {
