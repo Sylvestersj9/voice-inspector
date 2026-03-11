@@ -5,7 +5,6 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY") ?? "";
 const CONTACT_FROM_EMAIL = Deno.env.get("CONTACT_FROM_EMAIL") ?? "MockOfsted <onboarding@resend.dev>";
-const CONTACT_TO_EMAIL = Deno.env.get("CONTACT_TO_EMAIL") ?? "info@mockofsted.co.uk";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -172,19 +171,9 @@ serve(async (req: Request) => {
       });
     }
 
-    // 4. Send admin notification
-    fetch(`${SUPABASE_URL}/functions/v1/admin-notifications`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        type: "account_deleted",
-        userEmail: userEmail,
-        userId: userId,
-        deletedAt: new Date().toISOString(),
-      }),
-    }).catch((err) => {
-      console.error("Admin notification error:", err);
-    });
+    // Note: Admin notification not sent from edge function due to auth constraints.
+    // Email confirmation above provides user notification.
+    // Session records retained in database for audit purposes.
 
     return new Response(JSON.stringify({ ok: true, message: "Account deleted successfully" }), {
       status: 200,
