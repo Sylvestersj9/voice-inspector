@@ -30,16 +30,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data: listener } = supabase.auth.onAuthStateChange((event, newSession) => {
       setSession(newSession);
 
-      // Send welcome email & notifications on new OAuth signups
-      if ((event === "SIGNED_UP" || event === "USER_UPDATED") && newSession?.user && newSession.user.created_at) {
-        const now = new Date();
-        const createdAt = new Date(newSession.user.created_at);
-        const isNewUser = now.getTime() - createdAt.getTime() < 5000; // Created within last 5 seconds
+      // Send welcome email on SIGNED_UP (email) and SIGNED_IN (first-time OAuth)
+      if ((event === "SIGNED_UP" || event === "SIGNED_IN") && newSession?.user?.email) {
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+        const name = newSession.user.user_metadata?.name || newSession.user.email.split("@")[0];
 
-        if (isNewUser && newSession.user.email) {
-          const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-          const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-          const name = newSession.user.user_metadata?.name || newSession.user.email.split("@")[0];
+        // Check if we've already sent welcome email for this user in this session
+        const welcomeEmailKey = `welcomed_${newSession.user.id}`;
+        if (!sessionStorage.getItem(welcomeEmailKey)) {
+          sessionStorage.setItem(welcomeEmailKey, "true");
 
           // Send welcome email
           fetch(`${supabaseUrl}/functions/v1/welcome-email`, {
@@ -50,7 +50,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               "Content-Type": "application/json",
             },
             body: JSON.stringify({ user_id: newSession.user.id, name }),
-          }).catch(() => { /* best-effort */ });
+          }).catch((err) => {
+            console.error("Welcome email error:", err);
+          });
 
           // Send admin signup notification
           fetch(`${supabaseUrl}/functions/v1/admin-notifications`, {
@@ -62,7 +64,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               userEmail: newSession.user.email,
               userId: newSession.user.id,
             }),
-          }).catch(() => { /* best-effort */ });
+          }).catch((err) => {
+            console.error("Admin notification error:", err);
+          });
         }
       }
     });
