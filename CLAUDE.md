@@ -251,26 +251,31 @@ Implementation: `supabase/functions/_shared/rate-limiter.ts` — extracts IP (Cl
 - Line 165: `"claude-sonnet-4-6"` → `"claude-haiku-4-5-20251001"`
 - Line 166: `max_tokens: 4000` → `max_tokens: 1500`
 
-### 🎨 PDF Export Formatting Completely Fixed
-- ✅ **Fixed color handling** — Converted all hex colors to RGB arrays for proper PDF rendering
-- ✅ **Improved typography** — Bold headers, consistent font families (Helvetica normal/bold)
-- ✅ **Enhanced spacing** — Better line heights (1.6 factor), improved paragraph spacing (6.5mm)
-- ✅ **Better visual hierarchy** — Title: 26pt bold teal, Headers: 14pt bold teal, Body: 11pt gray
-- ✅ **Cover page redesign** — Larger title layout, better spacing between sections
-- ✅ **Consistent colors throughout**:
-  - Teal RGB [13, 148, 136] for headers and brand elements
-  - Band colors: Outstanding green, Good amber, Requires Improvement orange, Inadequate red
-  - Text: Dark gray [40, 40, 40] for readability
-- ✅ **Improved section spacing** — Headers, strengths, actions, and next steps now properly spaced
-- ✅ **Better bullet formatting** — Key Strengths and Priority Actions with proper indentation
-- ✅ **Fixed table fallback** — Cleaner formatted text table when jspdf-autotable unavailable
-- ✅ **Deployed to Vercel** — mockofsted.co.uk live with beautiful PDF reports
-- ✅ **Git committed & pushed** — Commit `6992721` with all PDF improvements
+### 🎨 PDF Export Completely Redesigned — Professional Compact Layout
+- ✅ **Eliminated blank pages** — Intelligent page break detection prevents unnecessary page breaks
+- ✅ **Added header to every page** — MockOfsted branding + page numbers on all pages
+- ✅ **Compact professional layout** — Cover + Summary on page 1, maximized content density
+- ✅ **Smart page breaks** — `checkPageBreak()` function ensures content flows naturally without gaps
+- ✅ **Reduced excessive spacing** — Removed 6-10mm gaps between sections, now 1-4mm (professional)
+- ✅ **Minimalistic design** — Clean borders, teal accents, professional gray text
+- ✅ **Improved typography** — 24pt title, 14pt section headers, 10pt body (optimized for reading)
+- ✅ **Condensed table** — Domain breakdown table uses simplified columns (Domain/Score/Band)
+- ✅ **One-page cover design** — Executive summary, key strengths, and actions on first page
+- ✅ **Better color scheme**:
+  - Teal RGB [13, 148, 136] for headers and branding
+  - Gray RGB [40, 40, 40] for body text (professional)
+  - Light Gray RGB [120, 120, 120] for page numbers
+  - Band colors for overall grade badge
+- ✅ **No truncation** — Full content visible without cutting off paragraphs
+- ✅ **Page header function** — `addPageHeader()` adds branding to every page consistently
+- ✅ **Deployed to Vercel** — mockofsted.co.uk live with professional PDF reports
+- ✅ **Git committed & pushed** — Commit `d9fd728` with full PDF redesign
 
-**File modified:** `src/reports/exportReportPdf.ts`
-- ~81 lines changed across formatting, spacing, and color fixes
-- No functional changes, purely visual/presentation improvements
-- All band color references now use RGB arrays for consistency
+**Key improvements:**
+- **Before:** 4-5 pages with multiple blank pages and inefficient spacing
+- **After:** 2-3 pages, fully populated with no blank spaces, professional appearance
+- File modified: `src/reports/exportReportPdf.ts` (~150 lines rewritten)
+- Better use of page real estate while maintaining readability
 
 ## Latest Updates (v1.6.6 — March 12, 2026)
 
