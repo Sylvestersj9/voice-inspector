@@ -15,6 +15,7 @@ import {
   AlertTriangle,
   KeyRound,
   Bell,
+  Trash2,
 } from "lucide-react";
 
 const ROLES = [
@@ -69,6 +70,10 @@ export default function Profile() {
   const [portalErr, setPortalErr] = useState<string | null>(null);
   const [emailPrefs, setEmailPrefs] = useState({ trial_warnings: true, product_updates: true });
   const [prefsSaving, setPrefsSaving] = useState(false);
+
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteErr, setDeleteErr] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -209,6 +214,42 @@ export default function Profile() {
     } catch (e) {
       setPortalErr(e instanceof Error ? e.message : "Unable to open billing portal.");
       setPortalLoading(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!user) return;
+    setDeleteLoading(true);
+    setDeleteErr(null);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+      const res = await fetch(`${supabaseUrl}/functions/v1/delete-account`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${session?.access_token}`,
+          apikey: anonKey,
+          "Content-Type": "application/json",
+        },
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        setDeleteErr(data.error || "Failed to delete account");
+        return;
+      }
+
+      // Account deleted successfully, sign out and redirect
+      await supabase.auth.signOut();
+      navigate("/");
+    } catch (e) {
+      setDeleteErr(e instanceof Error ? e.message : "Failed to delete account");
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -489,6 +530,60 @@ export default function Profile() {
                 />
               </div>
             </div>
+          </div>
+        </section>
+
+        {/* ── Danger Zone ────────────────────────────────────────────────────── */}
+        <section className="rounded-2xl border border-red-200 bg-red-50 p-6 shadow-sm">
+          <div className="mb-4 flex items-center gap-2">
+            <Trash2 className="h-5 w-5 text-red-600" />
+            <h2 className="font-display text-base font-bold text-red-900">Danger zone</h2>
+          </div>
+          <div className="space-y-4">
+            <p className="text-sm text-red-700">
+              Permanently delete your account and anonymize your personal data. Your session records will be retained for compliance purposes only.
+            </p>
+            {deleteErr && (
+              <div className="flex items-center gap-2 rounded-lg bg-red-100 px-4 py-3 text-sm text-red-700">
+                <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+                {deleteErr}
+              </div>
+            )}
+            {!showDeleteConfirm ? (
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                className="inline-flex items-center gap-2 rounded-xl border border-red-300 bg-white px-5 py-2.5 text-sm font-semibold text-red-700 hover:bg-red-50 transition-colors"
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete my account
+              </button>
+            ) : (
+              <div className="space-y-3 rounded-lg border border-red-300 bg-white p-4">
+                <div>
+                  <p className="text-sm font-semibold text-red-900 mb-2">Are you sure?</p>
+                  <p className="text-xs text-red-700 mb-4">
+                    This action cannot be undone. Your account will be permanently deleted, but your session records will be retained for our records.
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setShowDeleteConfirm(false)}
+                    disabled={deleteLoading}
+                    className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-60"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleDeleteAccount}
+                    disabled={deleteLoading}
+                    className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 transition-colors disabled:opacity-60"
+                  >
+                    {deleteLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+                    Yes, delete permanently
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </section>
       </div>
