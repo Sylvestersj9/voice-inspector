@@ -1,10 +1,13 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { checkRateLimit, getClientIp } from "../_shared/rate-limiter.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
+
+const RATE_LIMIT = 100; // per minute
 
 const SYSTEM_PROMPT = `You are an experienced Ofsted inspector conducting a children's home inspection under the SCCIF 2025. You are evaluating a registered manager's spoken or written response to an inspection question. Your tone is professional but fair — you are a human inspector, not a robotic marking system. Managers are practitioners, not academics. You reward answers that demonstrate genuine knowledge, real examples, reflective thinking, and child-centred practice. You do not penalise imperfect wording or lack of technical jargon if the substance is strong.
 
@@ -45,6 +48,16 @@ serve(async (req: Request) => {
 
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json(405, { error: "Method not allowed" });
+
+  // Rate limit check
+  const clientIp = getClientIp(req);
+  const { allowed, remaining, retryAfter } = checkRateLimit(clientIp, RATE_LIMIT);
+  if (!allowed) {
+    return json(429, {
+      error: "Rate limit exceeded. Max 100 requests per minute.",
+      retryAfter,
+    });
+  }
 
   try {
     const body = await req.json().catch(() => ({}));

@@ -293,8 +293,10 @@ export default function Report() {
             <div className="flex items-center gap-2.5">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-teal-600">
                 <svg viewBox="0 0 32 32" fill="none" className="h-4 w-4" aria-hidden="true">
-                  <path d="M16 4L4 10v12l12 6 12-6V10L16 4z" stroke="white" strokeWidth="2" strokeLinejoin="round" fill="none" />
-                  <path d="M16 4v18M4 10l12 6 12-6" stroke="white" strokeWidth="2" strokeLinejoin="round" />
+                  <path d="M16 2C16 2 6 8 6 14C6 19 16 26 16 26C16 26 26 19 26 14C26 8 16 2 16 2Z" fill="white"/>
+                  <g stroke="white" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" fill="none">
+                    <path d="M11 16L13.5 19L20 11"/>
+                  </g>
                 </svg>
               </div>
               <span className="font-display font-bold text-slate-900">MockOfsted</span>
@@ -316,8 +318,10 @@ export default function Report() {
             <div className="hidden print:flex items-center gap-2 mb-4 pb-4 border-b border-slate-200">
               <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-teal-600">
                 <svg viewBox="0 0 32 32" fill="none" className="h-3.5 w-3.5">
-                  <path d="M16 4L4 10v12l12 6 12-6V10L16 4z" stroke="white" strokeWidth="2" strokeLinejoin="round" fill="none" />
-                  <path d="M16 4v18M4 10l12 6 12-6" stroke="white" strokeWidth="2" strokeLinejoin="round" />
+                  <path d="M16 2C16 2 6 8 6 14C6 19 16 26 16 26C16 26 26 19 26 14C26 8 16 2 16 2Z" fill="white"/>
+                  <g stroke="white" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" fill="none">
+                    <path d="M11 16L13.5 19L20 11"/>
+                  </g>
                 </svg>
               </div>
               <span className="font-bold text-sm text-slate-700">MockOfsted — Inspection Readiness Assessment</span>

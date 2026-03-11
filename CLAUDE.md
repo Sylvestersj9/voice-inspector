@@ -83,9 +83,9 @@ PostHog integration — GDPR-compliant, EU cloud (`eu.i.posthog.com`). Lazy init
 ### Supabase Edge Functions (Deno) — `supabase/functions/`
 
 **Core:**
-- **`evaluate/`** — calls Claude with SCCIF rubric. Short-answer guard: responses < 20 chars or lacking domain signal words return immediate Inadequate (1) without calling Claude. Returns `{score (1–4), band, summary, strengths, gaps, developmentPoints, followUpQuestion, inspectorNote, regulatoryReference, encouragement}`. Uses `ANTHROPIC_API_KEY` secret.
-- **`generate-report/`** — fetches all responses for a session, calls Claude for narrative, updates `sessions.report_json`.
-- **`transcribe/`** — Deepgram speech-to-text. Accepts `multipart/form-data` with `file` field.
+- **`evaluate/`** — calls Claude with SCCIF rubric. Short-answer guard: responses < 20 chars or lacking domain signal words return immediate Inadequate (1) without calling Claude. Returns `{score (1–4), band, summary, strengths, gaps, developmentPoints, followUpQuestion, inspectorNote, regulatoryReference, encouragement}`. Uses `ANTHROPIC_API_KEY` secret. **Rate limit: 100 requests/min/IP** (in-memory, code-based).
+- **`generate-report/`** — fetches all responses for a session, calls Claude for narrative, updates `sessions.report_json`. **Rate limit: 100 requests/min/IP** (in-memory, code-based).
+- **`transcribe/`** — Deepgram speech-to-text. Accepts `multipart/form-data` with `file` field. **Rate limit: 50 requests/min/IP** (in-memory, code-based).
 
 **Billing:**
 - **`create-checkout/`** — creates/looks up Stripe customer, returns Checkout URL. Uses `STRIPE_SECRET_KEY`, `STRIPE_PRICE_ID`.
@@ -160,10 +160,54 @@ Static file: `public/tools/question-bank.csv` (18 rows, 2 questions per domain).
 ## Operational Notes
 
 - Supabase project: `hedxbcpqcgtsqjogedru` (https://hedxbcpqcgtsqjogedru.supabase.co)
-- **Stripe currently in TEST mode** — switch keys and `STRIPE_PRICE_ID` to live before real launch.
+- **Stripe in LIVE mode** — currently accepting real payments.
+
+### Rate Limiting (Code-Based, In-Memory)
+Three critical edge functions have rate limits to prevent abuse:
+- `evaluate`: **100 requests/min/IP** — protects Claude API quota + costs
+- `generate-report`: **100 requests/min/IP** — protects Claude API quota + costs
+- `transcribe`: **50 requests/min/IP** — protects Deepgram API quota + costs
+
+Rate limits extracted from request headers: Cloudflare IP (`cf-connecting-ip`) → x-forwarded-for → x-real-ip → "unknown".
+Limits tracked in-memory per IP. Returns 429 Too Many Requests + `retryAfter` (seconds) when exceeded.
+Implementation: `supabase/functions/_shared/rate-limiter.ts` (imported by core functions).
 - After checkout, `/app/dashboard?checkout=success` triggers immediate subscription sync.
 - `eslint.config.js` disables `react-refresh/only-export-components` warnings.
 - `@/lib/supabase` uses `no-explicit-any` eslint disable to keep flexible client casting.
 - `VITE_POSTHOG_KEY` env var required for analytics; silently no-ops if missing.
 - `VITE_GEMINI_KEY` env var for Gemini gap analysis on /tools; falls back to static content if missing.
 - Legacy pages still exist in codebase but are not linked: `Account.tsx`, `Sessions.tsx`, `History.tsx`, `Onboarding.tsx`, `Admin.tsx`, `InspectionReport.tsx`.
+
+## Branding & Design
+
+### Brand Colors
+- **Primary:** Teal `#0D9488` — main brand color, buttons, active states
+- **Accent:** Amber — trial/warning states
+- **Neutral:** Slate (50, 100, 200, 600, 900) — backgrounds, text, borders
+- **Status:** Red (50, 700) — errors, inadequate grades, overdue; Green (teal-600) — success, checkmarks
+
+### Icon Assets (Shield + Checkmark)
+**Location:** `public/`
+- `favicon.svg` — 64x64, browser tab icon (SVG, scalable)
+- `favicon.ico` — 64x64, legacy favicon fallback
+- `logo.svg` — 256x256, app header & branding (SVG, scalable)
+
+**Design:** Minimalist shield with teal checkmark inside, representing safeguarding (QS7) + quality standards approval. Used across all pages.
+
+### Icon Usage in Code (Inline SVGs)
+Inline shield+checkmark SVG appears in:
+- `src/components/AppNav.tsx` — app header (8x8px)
+- `src/pages/app/Paywall.tsx` — trial paywall header
+- `src/pages/marketing/MarketingLayout.tsx` — public site header (3 instances: desktop nav, mobile menu, footer)
+- `src/pages/Index.tsx` — practice page hero
+- `src/pages/Login.tsx` — login page (2 instances: left hero panel, top nav)
+- `src/pages/ResetPassword.tsx` — password reset page
+- `src/pages/app/Report.tsx` — report page header (2 instances: screen nav, print-only header)
+
+All inline icons use: `<path d="M16 2C16 2 6 8 6 14C6 19 16 26 16 26C16 26 26 19 26 14C26 8 16 2 16 2Z" fill="[white|#0D9488]"/>`
+with embedded checkmark: `<g stroke="[white|#0D9488]" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 16L13.5 19L20 11"/></g>`
+
+### Favicon & PWA
+- `index.html` — links favicon.svg as primary icon
+- `manifest.json` — PWA theme color set to `#0D9488` (teal)
+- Browser favicon resolves via: favicon.svg (primary) → favicon.ico (fallback)

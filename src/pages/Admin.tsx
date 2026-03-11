@@ -18,14 +18,9 @@ interface Document {
 export default function Admin() {
   const { user } = useAuth();
   const { toast } = useToast();
-
-  if (user?.user_metadata?.role !== "admin") {
-    return <Navigate to="/app" replace />;
-  }
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
-  
   const [title, setTitle] = useState("");
   const [source, setSource] = useState<string>("Ofsted report");
   const [content, setContent] = useState("");
@@ -33,6 +28,10 @@ export default function Admin() {
   useEffect(() => {
     loadDocuments();
   }, []);
+
+  if (user?.user_metadata?.role !== "admin") {
+    return <Navigate to="/app" replace />;
+  }
 
   const loadDocuments = async () => {
     const { data, error } = await supabase

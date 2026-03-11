@@ -1,9 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="Voice Inspector logo">
-  <!-- Outer circle with subtle accent stroke -->
-  <circle cx="128" cy="128" r="122" fill="#0b1628" stroke="#0d9488" stroke-width="6" />
-  <!-- Stylised Z / inspection arrow -->
-  <path
-    d="M72 76h112v22H108l60 60v22H72v-22h76l-60-60V76z"
-    fill="#fff"
-  />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="MockOfsted logo">
+  <!-- Shield background -->
+  <path d="M128 32C128 32 56 72 56 112C56 152 128 208 128 208C128 208 200 152 200 112C200 72 128 32 128 32Z" fill="#0D9488"/>
+
+  <!-- Checkmark inside (quality standards + safeguarding) -->
+  <g stroke="white" stroke-width="16" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <path d="M96 128L128 160L176 96"/>
+  </g>
 </svg>

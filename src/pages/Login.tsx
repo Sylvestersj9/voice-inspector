@@ -166,8 +166,10 @@ export default function Login() {
           <a href="/" className="inline-flex items-center gap-2.5 mb-12 w-fit rounded-xl bg-white/80 px-3 py-2 text-slate-900 shadow-sm ring-1 ring-slate-200 transition hover:shadow-md">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-teal-600">
               <svg viewBox="0 0 32 32" fill="none" className="h-5 w-5" aria-hidden="true">
-                <path d="M16 4L4 10v12l12 6 12-6V10L16 4z" stroke="white" strokeWidth="2" strokeLinejoin="round" fill="none" />
-                <path d="M16 4v18M4 10l12 6 12-6" stroke="white" strokeWidth="2" strokeLinejoin="round" />
+                <path d="M16 2C16 2 6 8 6 14C6 19 16 26 16 26C16 26 26 19 26 14C26 8 16 2 16 2Z" fill="white"/>
+                <g stroke="white" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" fill="none">
+                  <path d="M11 16L13.5 19L20 11"/>
+                </g>
               </svg>
             </div>
             <span className="font-display text-lg font-semibold">MockOfsted</span>
@@ -205,8 +207,10 @@ export default function Login() {
           <a href="/" className="inline-flex items-center gap-2.5 mb-8 w-fit rounded-xl bg-white/80 px-3 py-2 text-slate-900 shadow-sm ring-1 ring-slate-200 lg:hidden">
             <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-teal-600">
               <svg viewBox="0 0 32 32" fill="none" className="h-4 w-4" aria-hidden="true">
-                <path d="M16 4L4 10v12l12 6 12-6V10L16 4z" stroke="white" strokeWidth="2" strokeLinejoin="round" fill="none" />
-                <path d="M16 4v18M4 10l12 6 12-6" stroke="white" strokeWidth="2" strokeLinejoin="round" />
+                <path d="M16 2C16 2 6 8 6 14C6 19 16 26 16 26C16 26 26 19 26 14C26 8 16 2 16 2Z" fill="white"/>
+                <g stroke="white" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" fill="none">
+                  <path d="M11 16L13.5 19L20 11"/>
+                </g>
               </svg>
             </div>
             <span className="font-display text-base font-semibold">MockOfsted</span>

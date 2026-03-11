@@ -1,8 +1,11 @@
 {
   "name": "MockOfsted - Ofsted Practice",
   "short_name": "MockOfsted",
-  "icons": [{"src": "/favicon.ico", "sizes": "64x64 32x32 24x24 16x16", "type": "image/x-icon"}],
-  "theme_color": "#3b82f6",
+  "icons": [
+    {"src": "/favicon.svg", "sizes": "64x64", "type": "image/svg+xml"},
+    {"src": "/favicon.ico", "sizes": "64x64 32x32 24x24 16x16", "type": "image/x-icon"}
+  ],
+  "theme_color": "#0D9488",
   "background_color": "#ffffff",
   "display": "standalone"
 }

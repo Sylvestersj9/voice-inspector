@@ -637,8 +637,10 @@ export default function Index() {
               <div className="max-w-md">
                 <div className="flex h-16 w-16 mx-auto items-center justify-center rounded-full bg-teal-50 ring-2 ring-teal-200">
                   <svg viewBox="0 0 32 32" fill="none" className="h-8 w-8" aria-hidden="true">
-                    <path d="M16 4L4 10v12l12 6 12-6V10L16 4z" stroke="#0D9488" strokeWidth="2" strokeLinejoin="round" fill="none" />
-                    <path d="M16 4v18M4 10l12 6 12-6" stroke="#0D9488" strokeWidth="2" strokeLinejoin="round" />
+                    <path d="M16 2C16 2 6 8 6 14C6 19 16 26 16 26C16 26 26 19 26 14C26 8 16 2 16 2Z" fill="#0D9488"/>
+                    <g stroke="#0D9488" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" fill="none">
+                      <path d="M11 16L13.5 19L20 11"/>
+                    </g>
                   </svg>
                 </div>
                 <h1 className="mt-4 font-display text-2xl font-bold text-slate-900">

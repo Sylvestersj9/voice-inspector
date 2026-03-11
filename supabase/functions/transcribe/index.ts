@@ -1,9 +1,12 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { checkRateLimit, getClientIp } from "../_shared/rate-limiter.ts";
 
 const allowedOrigins = (Deno.env.get("ALLOWED_ORIGINS") || "")
   .split(",")
   .map((o) => o.trim())
   .filter(Boolean);
+
+const RATE_LIMIT = 50; // per minute
 
 const baseCors = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -23,6 +26,19 @@ serve(async (req) => {
 
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 204, headers: corsHeaders });
+  }
+
+  // Rate limit check
+  const clientIp = getClientIp(req);
+  const { allowed, remaining, retryAfter } = checkRateLimit(clientIp, RATE_LIMIT);
+  if (!allowed) {
+    return new Response(
+      JSON.stringify({
+        error: "Rate limit exceeded. Max 50 requests per minute.",
+        retryAfter,
+      }),
+      { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
   }
 
   try {
