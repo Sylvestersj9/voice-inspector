@@ -376,6 +376,33 @@ Implementation: `supabase/functions/_shared/rate-limiter.ts` — extracts IP (Cl
 
 **Git status:** ✅ Committed & pushed — Commit `9807c00`
 
+## Latest Updates (v1.8.3 — March 11, 2026)
+
+### 🔧 Fixed Admin Page Race Condition
+
+**Issue:**
+- Admin page opened briefly then redirected to `/app`
+- Caused by auth guard checking `user.role` before session fully loaded
+- Race condition: component mounted → redirect before `user` data available → redirect to /app
+
+**Solution:**
+- ✅ Added `authLoading` state check from AuthProvider
+- ✅ Show loading spinner while auth is resolving
+- ✅ Only check admin role AFTER auth has fully loaded
+- ✅ Prevents premature redirects
+
+**Code Changes:**
+- Import `loading: authLoading` from `useAuth()`
+- Check `if (authLoading) return <LoadingSpinner />` before role check
+- Then check `if (!user || !isAdmin) return <Navigate />`
+
+**Result:**
+- Admin page now stays open
+- User sees brief loading spinner while auth resolves
+- No more premature redirects to /app
+
+**Git status:** ✅ Committed & pushed — Commit `502c79f`
+
 ## Latest Updates (v1.7.0 — March 12, 2026)
 
 ### ⚡ Generate-Report Performance Critical Optimization COMPLETE
