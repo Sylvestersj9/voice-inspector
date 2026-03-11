@@ -18,9 +18,9 @@ export default function Privacy() {
               <div className="text-xs text-slate-500">
                 Last updated: March 2026. UK GDPR compliant. If you do not agree, do not use the service.
               </div>
-              <Section title="1. Introduction & Scope">
-                <p className="text-sm text-slate-700">
-                  This Privacy Policy explains how Ziantra Ltd (“we”, “us”) processes personal data when you use MockOfsted. It applies to all users of the Service.
+              <Section title=”1. Introduction & Scope”>
+                <p className=”text-sm text-slate-700”>
+                  This Privacy Policy explains how MockOfsted (“we”, “us”) processes personal data when you use MockOfsted. It applies to all users of the Service.
                 </p>
               </Section>
 
@@ -67,13 +67,13 @@ export default function Privacy() {
 
               <Section title="8. Cookies & Analytics">
                 <p className="text-sm text-slate-700">
-                  We use essential cookies and local storage for authentication and session continuity. Analytics are collected via PostHog, hosted on EU servers (eu.i.posthog.com), and are consent-gated — no analytics data is captured until you accept the cookie banner. You can opt out at any time via the banner.
+                  We use essential cookies and local storage for authentication and session continuity. Analytics are collected via PostHog, hosted on US servers (us.i.posthog.com), and are consent-gated — no analytics data is captured until you accept the cookie banner. You can opt out at any time via the banner.
                 </p>
               </Section>
 
               <Section title="9. Data Retention">
                 <p className="text-sm text-slate-700">
-                  We retain data only as long as necessary for the purposes described or as required by law. Account and session data is deleted within 30 days of subscription cancellation. You may request earlier deletion via /profile or by emailing hello@inspectready.co.uk.
+                  We retain data only as long as necessary for the purposes described or as required by law. Account and session data is deleted within 30 days of subscription cancellation. You may request earlier deletion via /profile or by emailing info@mockofsted.co.uk.
                 </p>
               </Section>
 
@@ -97,7 +97,7 @@ export default function Privacy() {
 
               <Section title="13. Contact Details">
                 <p className="text-sm text-slate-700">
-                  For privacy questions or requests, email hello@inspectready.co.uk or use the contact form at /contact. We aim to respond within 5 business days.
+                  For privacy questions or requests, email info@mockofsted.co.uk or use the contact form at /contact. We aim to respond within 5 business days.
                 </p>
               </Section>
             </div>

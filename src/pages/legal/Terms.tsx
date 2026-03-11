@@ -22,9 +22,9 @@ export default function Terms() {
               <div className="text-xs text-slate-500">
                 Last updated: 15 December 2025. If you do not agree, do not use the service.
               </div>
-              <Section title="1. Introduction">
-                <ul className="list-disc space-y-2 pl-5 text-sm text-slate-700">
-                  <li>These Terms of Use form a binding agreement between you and Ziantra Ltd (“we”, “us”, “our”).</li>
+              <Section title=”1. Introduction”>
+                <ul className=”list-disc space-y-2 pl-5 text-sm text-slate-700”>
+                  <li>These Terms of Use form a binding agreement between you and MockOfsted (“we”, “us”, “our”).</li>
                   <li>By accessing or using MockOfsted, you confirm you accept these terms. If you do not agree, do not use the service.</li>
                   <li>Definitions: “Service” means the MockOfsted SaaS platform; “Content” means prompts, outputs, and materials made available by the Service; “You” or “User” means the organisation or individual using the Service.</li>
                 </ul>
@@ -78,7 +78,7 @@ export default function Terms() {
 
               <Section title="9. Intellectual Property">
                 <p className="text-sm text-slate-700">
-                  The Service, content, and technology are owned by Ziantra Ltd or its licensors. You receive a limited, revocable, non-transferable licence to use the Service. No ownership is transferred.
+                  The Service, content, and technology are owned by MockOfsted or its licensors. You receive a limited, revocable, non-transferable licence to use the Service. No ownership is transferred.
                 </p>
               </Section>
 
@@ -108,7 +108,7 @@ export default function Terms() {
 
               <Section title="14. Indemnity">
                 <p className="text-sm text-slate-700">
-                  You agree to indemnify and hold harmless Ziantra Ltd from claims, losses, and costs arising from your misuse of the Service, breach of these terms, or violation of law.
+                  You agree to indemnify and hold harmless MockOfsted from claims, losses, and costs arising from your misuse of the Service, breach of these terms, or violation of law.
                 </p>
               </Section>
 

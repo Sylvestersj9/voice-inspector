@@ -96,7 +96,22 @@ export default function Login() {
       if (mode === "signin") {
         const { data: signInData, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        if (signInData.user) identifyUser(signInData.user.id, { email: signInData.user.email });
+        if (signInData.user) {
+          identifyUser(signInData.user.id, { email: signInData.user.email });
+          // Send admin notification (non-blocking)
+          const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+          const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+          fetch(`${supabaseUrl}/functions/v1/admin-notifications`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", apikey: anonKey },
+            body: JSON.stringify({
+              type: "login",
+              userName: signInData.user.user_metadata?.name || email.split("@")[0],
+              userEmail: email,
+              userId: signInData.user.id,
+            }),
+          }).catch(() => { /* best-effort */ });
+        }
       } else {
         const { data, error } = await supabase.auth.signUp({
           email,
@@ -113,7 +128,7 @@ export default function Login() {
             .update({ role, home_name: homeName.trim() })
             .eq("id", data.session.user.id);
           trackSignup(role);
-          // Fire welcome email (non-blocking — ignore failures)
+          // Fire welcome email & admin notification (non-blocking — ignore failures)
           const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
           const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
           fetch(`${supabaseUrl}/functions/v1/welcome-email`, {
@@ -124,6 +139,17 @@ export default function Login() {
               "Content-Type": "application/json",
             },
             body: JSON.stringify({ user_id: data.session.user.id, name: name.trim() }),
+          }).catch(() => { /* best-effort */ });
+          // Send admin signup notification (non-blocking)
+          fetch(`${supabaseUrl}/functions/v1/admin-notifications`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", apikey: anonKey },
+            body: JSON.stringify({
+              type: "signup",
+              userName: name.trim(),
+              userEmail: email,
+              userId: data.session.user.id,
+            }),
           }).catch(() => { /* best-effort */ });
         } else {
           setMessage("Account created! Check your inbox to confirm your email, then sign in.");

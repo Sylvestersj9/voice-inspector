@@ -317,6 +317,21 @@ export default function Index() {
     setEvalResult(null);
     setShowGenerate(false);
     clearPaused(sid);
+
+    // Send admin notification (non-blocking)
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+    fetch(`${supabaseUrl}/functions/v1/admin-notifications`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", apikey: anonKey },
+      body: JSON.stringify({
+        type: "session_started",
+        userName: user.user_metadata?.name || user.email?.split("@")[0] || "Unknown",
+        userEmail: user.email,
+        userId: user.id,
+        sessionId: sid,
+      }),
+    }).catch(() => { /* best-effort */ });
   };
 
   // ── Transcribe audio ───────────────────────────────────────────────────────
@@ -512,6 +527,25 @@ export default function Index() {
         questions_answered: answered.length,
       });
       trackReportGenerated(sessionId);
+
+      // Send admin notification (non-blocking)
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      const primaryDomain = questions[0]?.result?.domain || "Unknown";
+      fetch(`${supabaseUrl}/functions/v1/admin-notifications`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", apikey: anonKey },
+        body: JSON.stringify({
+          type: "session_completed",
+          userName: user.user_metadata?.name || user.email?.split("@")[0] || "Unknown",
+          userEmail: user.email,
+          userId: user.id,
+          sessionId,
+          sessionDomain: primaryDomain,
+          sessionScore: Math.round(avgScore * 10) / 10,
+        }),
+      }).catch(() => { /* best-effort */ });
+
       setReportSessionId(sessionId);
       if (!isPaidSubscriber && trialInfo) {
         setPendingReportId(sessionId);

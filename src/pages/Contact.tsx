@@ -62,6 +62,23 @@ export default function Contact() {
         throw new Error(data.error || "Unable to submit your message right now.");
       }
       setStatus("Thanks for reaching out. We'll reply from info@mockofsted.co.uk.");
+
+      // Send admin notification (non-blocking)
+      fetch(`${supabaseUrl}/functions/v1/admin-notifications`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: anonKey,
+        },
+        body: JSON.stringify({
+          type: "feedback",
+          userName: name.trim() || "Anonymous",
+          userEmail: email.trim(),
+          userId: "contact-form",
+          message: message.trim(),
+        }),
+      }).catch(() => { /* best-effort */ });
+
       setName("");
       setEmail("");
       setOrganisation("");
