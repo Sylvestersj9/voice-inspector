@@ -104,7 +104,15 @@ Helper utilities: `src/lib/simulator.ts` (report generation + polling, pause per
 - **`billing-portal/`** — returns Stripe customer portal URL for subscription management.
 
 **Email (Resend):**
-- **`welcome-email/`** — triggered by pg_net on signup; sends onboarding email via Resend
+- **`welcome-email/`** — triggered on signup (email & Google OAuth); sends onboarding email via Resend with MockOfsted logo and trial info. CORS-enabled.
+- **`admin-notifications/`** — sends formatted emails to `CONTACT_TO_EMAIL` (admin inbox) for operational events:
+  - `signup` — new user account created (email or Google)
+  - `login` — user signed in
+  - `session_started` — user began a practice session
+  - `session_completed` — user finished session with score/domain
+  - `feedback` — user submitted contact form message
+  - Called non-blocking from frontend; all failures silently ignored to avoid UX disruption
+  - Env vars: `RESEND_API_KEY`, `CONTACT_TO_EMAIL`, `CONTACT_FROM_EMAIL`
 - **`trial-warning/`** — cron job; emails users when 5/6 trial sessions used
 - **`send-feedback/`** — handles contact form submissions; sends to `CONTACT_TO_EMAIL`, uses `CONTACT_FROM_EMAIL` as sender, includes `reply_to` field with user's email
   - Rate limited: 1 request/min per email or IP
@@ -235,6 +243,27 @@ Implementation: `supabase/functions/_shared/rate-limiter.ts` — extracts IP (Cl
 - `20260316_add_feedback_table.sql` — feedback table for contact form
 - Fixed & skipped conflicting `20260312_feature_additions.sql` (already applied to remote)
 
+### 📬 Admin Notifications System (NEW)
+- Created `admin-notifications` edge function to send formatted emails to `info@mockofsted.co.uk` for all key events
+- Integrated notifications into signup, login, session lifecycle, and feedback flows
+- Non-blocking, best-effort delivery to avoid blocking user experience
+- Events tracked: signup (email & OAuth), login, session_started, session_completed (with score/domain), feedback
+- Fixed Google OAuth signup: now sends welcome email and admin notifications (was missing before)
+- AuthProvider detects new users via `onAuthStateChange` and triggers welcome email for all signup methods
+
+### 🎨 Legal Pages & Email Template Fixes
+- Fixed Terms.tsx & Privacy.tsx: replaced "Ziantra Ltd" → "MockOfsted" (3 instances in Terms, 1 in Privacy)
+- Fixed email addresses: changed `hello@inspectready.co.uk` → `info@mockofsted.co.uk` (2 instances in Privacy)
+- Fixed PostHog endpoint reference: `eu.i.posthog.com` → `us.i.posthog.com` in Privacy Policy
+- Redesigned welcome-email template: added MockOfsted shield+checkmark logo (inline SVG), improved styling, better spacing
+- Updated footer links to point to correct domain and email
+
+### 🔧 Email Delivery & Configuration
+- Verified `CONTACT_FROM_EMAIL` set to `info@mockofsted.co.uk` (confirmed as verified sender in Resend)
+- DMARC record added to domain for authentication (SPF/DKIM already configured)
+- All transactional emails now sent from verified domain to avoid Promotions folder
+- Contact form email replies use `reply_to` field set to user's email
+
 ### ✅ Quality Checks & Deployments
 - ESLint: PASSING
 - TypeScript type check: PASSING
@@ -242,6 +271,8 @@ Implementation: `supabase/functions/_shared/rate-limiter.ts` — extracts IP (Cl
 - Vercel: Environment variables configured (`RESEND_API_KEY`)
 - Supabase: All secrets configured and deployed
 - Resend: Domain verified and integrated with Supabase + Vercel
+- Auth database reset: cleared `auth.users` and `public.users` (20260319 migration)
+- New user signups now working without 422 errors
 
 ## Branding & Design
 
