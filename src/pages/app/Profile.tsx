@@ -74,38 +74,58 @@ export default function Profile() {
     if (!user) return;
     setLoading(true);
 
-    const [
-      { data: prof },
-      { data: sub },
-      { data: sess },
-      { count: ansCount },
-    ] = await Promise.all([
-      supabase.from("users").select("name,role,home_name,email_preferences").eq("id", user.id).single(),
-      supabase.from("subscriptions").select("status,stripe_subscription_id,created_at").eq("user_id", user.id).maybeSingle(),
-      supabase.from("sessions").select("started_at").eq("user_id", user.id),
-      supabase.from("responses").select("id", { count: "exact", head: true }).in(
-        "session_id",
-        // subquery-style: fetch session ids first, then filter
-        (await supabase.from("sessions").select("id").eq("user_id", user.id)).data?.map((s) => s.id) ?? [],
-      ),
-    ]);
+    try {
+      const [
+        { data: prof, error: profError },
+        { data: sub, error: subError },
+        { data: sess, error: sessError },
+        { count: ansCount, error: ansError },
+      ] = await Promise.all([
+        supabase.from("users").select("name,role,home_name,email_preferences").eq("id", user.id).single(),
+        supabase.from("subscriptions").select("status,stripe_subscription_id,created_at").eq("user_id", user.id).maybeSingle(),
+        supabase.from("sessions").select("started_at").eq("user_id", user.id),
+        supabase.from("responses").select("id", { count: "exact", head: true }).in(
+          "session_id",
+          (await supabase.from("sessions").select("id").eq("user_id", user.id)).data?.map((s) => s.id) ?? [],
+        ),
+      ]);
 
-    setProfile({
-      name: prof?.name ?? "",
-      role: prof?.role ?? "",
-      home_name: prof?.home_name ?? "",
-    });
-    setEmailPrefs(prof?.email_preferences ?? { trial_warnings: true, product_updates: true });
-    setSubscription(sub ?? null);
-    setSessionCount(sess?.length ?? 0);
-    setAnswerCount(ansCount ?? 0);
+      if (profError) {
+        console.error("Error loading user profile:", profError);
+        throw profError;
+      }
+      if (subError) {
+        console.error("Error loading subscription:", subError);
+      }
+      if (sessError) {
+        console.error("Error loading sessions:", sessError);
+      }
+      if (ansError) {
+        console.error("Error loading response count:", ansError);
+      }
 
-    if (!isPaid(sub ?? null)) {
-      const trialStart = sub?.created_at ? new Date(sub.created_at) : new Date();
-      setTrialInfo(computeTrialUsage(trialStart, sess ?? []));
+      if (prof) {
+        setProfile({
+          name: prof.name ?? "",
+          role: prof.role ?? "",
+          home_name: prof.home_name ?? "",
+        });
+        setEmailPrefs(prof.email_preferences ?? { trial_warnings: true, product_updates: true });
+      }
+
+      setSubscription(sub ?? null);
+      setSessionCount(sess?.length ?? 0);
+      setAnswerCount(ansCount ?? 0);
+
+      if (!isPaid(sub ?? null)) {
+        const trialStart = sub?.created_at ? new Date(sub.created_at) : new Date();
+        setTrialInfo(computeTrialUsage(trialStart, sess ?? []));
+      }
+    } catch (err) {
+      console.error("Failed to load profile:", err);
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   }, [user]);
 
   useEffect(() => {
