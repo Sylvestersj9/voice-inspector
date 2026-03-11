@@ -54,11 +54,11 @@ serve(async (req: Request) => {
 
     const stripe = new Stripe(stripeSecretKey, { apiVersion: "2024-04-10" });
 
-    // Create Stripe coupon (max 5 redemptions per code)
+    // Create Stripe coupon
     const coupon = await stripe.coupons.create({
       percent_off: discountPercent,
       duration: "once",
-      max_redemptions: 5,
+      max_redemptions: maxRedemptions || undefined,
       name: code,
     });
 
@@ -76,7 +76,7 @@ serve(async (req: Request) => {
         description: description || null,
         stripe_coupon_id: coupon.id,
         discount_percent: discountPercent,
-        max_redemptions: 5,
+        max_redemptions: maxRedemptions || null,
         expires_at: expiresAt || null,
       })
       .select()
