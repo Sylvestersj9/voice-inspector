@@ -892,6 +892,26 @@ with embedded checkmark: `<g stroke="[white|#0D9488]" strokeWidth="1.2" strokeLi
 - `manifest.json` — PWA theme color set to `#0D9488` (teal)
 - Browser favicon resolves via: favicon.svg (primary) → favicon.ico (fallback)
 
+## Latest Updates (v1.10.1 — March 12, 2026)
+
+### 🐛 Fixed Billing Page UX — Cancel Button Hidden When Already Cancelled
+
+**Issue:** Danger Zone "Cancel subscription" button was showing even when user already cancelled their subscription (when `cancelAtPeriodEnd: true`)
+
+**Fix:** Modified Billing.tsx Danger Zone section to hide cancel button when subscription is already scheduled for cancellation
+- Button now only shows when: `paid && !billingDetails?.cancelAtPeriodEnd`
+- Users see "Cancellation scheduled" alert instead of cancel button
+- Prevents confusing UX where cancel button appears after cancelling
+
+**Result:** Clear, intuitive billing page flow
+- Active subscription → Shows "Cancel subscription" button in Danger Zone
+- Cancelled subscription → Shows "Cancellation scheduled" alert, no cancel button
+- Trial → Shows "Upgrade to Pro" CTA
+
+**Git Status:** ✅ Committed & pushed — Commit `a2eb976`
+
+---
+
 ## Latest Updates (v1.10.0 — March 12, 2026)
 
 ### 🎯 Interview Prep Marketing Angle — COMPLETE
