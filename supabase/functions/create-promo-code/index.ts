@@ -54,11 +54,11 @@ serve(async (req: Request) => {
 
     const stripe = new Stripe(stripeSecretKey, { apiVersion: "2024-04-10" });
 
-    // Create Stripe coupon
+    // Create Stripe coupon (limit to max 5 redemptions per code)
     const coupon = await stripe.coupons.create({
       percent_off: discountPercent,
       duration: "once",
-      max_redemptions: maxRedemptions || undefined,
+      max_redemptions: 5,
       name: code,
     });
 
@@ -68,7 +68,7 @@ serve(async (req: Request) => {
       code: code.toUpperCase(),
     });
 
-    // Insert into database
+    // Insert into database (max 5 redemptions per code)
     const { data, error } = await serviceClient
       .from("promo_codes")
       .insert({
@@ -76,7 +76,7 @@ serve(async (req: Request) => {
         description: description || null,
         stripe_coupon_id: coupon.id,
         discount_percent: discountPercent,
-        max_redemptions: maxRedemptions || null,
+        max_redemptions: 5,
         expires_at: expiresAt || null,
       })
       .select()
