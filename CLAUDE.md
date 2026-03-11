@@ -159,24 +159,49 @@ Static file: `public/tools/question-bank.csv` (18 rows, 2 questions per domain).
 
 ## Operational Notes
 
-- Supabase project: `hedxbcpqcgtsqjogedru` (https://hedxbcpqcgtsqjogedru.supabase.co)
-- **Stripe in LIVE mode** — currently accepting real payments.
+- **Supabase project:** `hedxbcpqcgtsqjogedru` (https://hedxbcpqcgtsqjogedru.supabase.co)
+- **Stripe:** LIVE mode — accepting real payments
 
-### Rate Limiting (Code-Based, In-Memory)
-Three critical edge functions have rate limits to prevent abuse:
-- `evaluate`: **100 requests/min/IP** — protects Claude API quota + costs
-- `generate-report`: **100 requests/min/IP** — protects Claude API quota + costs
-- `transcribe`: **50 requests/min/IP** — protects Deepgram API quota + costs
+### Rate Limiting (NEW — v1.1)
+Code-based, in-memory rate limiting on 3 core edge functions:
+- `evaluate`: 100 req/min/IP (Claude API protection)
+- `generate-report`: 100 req/min/IP (Claude API protection)
+- `transcribe`: 50 req/min/IP (Deepgram API protection)
 
-Rate limits extracted from request headers: Cloudflare IP (`cf-connecting-ip`) → x-forwarded-for → x-real-ip → "unknown".
-Limits tracked in-memory per IP. Returns 429 Too Many Requests + `retryAfter` (seconds) when exceeded.
-Implementation: `supabase/functions/_shared/rate-limiter.ts` (imported by core functions).
-- After checkout, `/app/dashboard?checkout=success` triggers immediate subscription sync.
-- `eslint.config.js` disables `react-refresh/only-export-components` warnings.
-- `@/lib/supabase` uses `no-explicit-any` eslint disable to keep flexible client casting.
-- `VITE_POSTHOG_KEY` env var required for analytics; silently no-ops if missing.
-- `VITE_GEMINI_KEY` env var for Gemini gap analysis on /tools; falls back to static content if missing.
-- Legacy pages still exist in codebase but are not linked: `Account.tsx`, `Sessions.tsx`, `History.tsx`, `Onboarding.tsx`, `Admin.tsx`, `InspectionReport.tsx`.
+Implementation: `supabase/functions/_shared/rate-limiter.ts` — extracts IP (Cloudflare → x-forwarded-for → x-real-ip), returns 429 + `retryAfter` on limit.
+
+### Config & Environment
+- Post-checkout sync: `/app/dashboard?checkout=success` triggers `sync-subscription`
+- `VITE_POSTHOG_KEY` — analytics (EU cloud, GDPR compliant)
+- `VITE_GEMINI_KEY` — Gemini gap analysis on /tools (static fallback if missing)
+- ESLint: `react-refresh/only-export-components` disabled in config
+- Supabase client: `no-explicit-any` disable for flexible casting
+
+### Legacy Code
+Unlinked but present: `Account.tsx`, `Sessions.tsx`, `History.tsx`, `Onboarding.tsx`, `Admin.tsx`, `InspectionReport.tsx`
+
+## Latest Updates (v1.1 — March 11, 2026)
+
+### 🛡️ New Branding (Shield + Checkmark Icon)
+- Updated favicon.svg, logo.svg, and 9 inline SVG instances across app
+- Teal (#0D9488) shield with white checkmark — represents safeguarding (QS7) + quality standards
+- Applied to: AppNav, Paywall, MarketingLayout, Index, Login, ResetPassword, Report pages
+- PWA manifest theme color updated to teal
+
+### 🔒 Rate Limiting Protection (NEW)
+- Code-based rate limiting on `evaluate`, `generate-report`, `transcribe` edge functions
+- Shared implementation: `supabase/functions/_shared/rate-limiter.ts`
+- Protects Claude API quota (100 req/min each) and Deepgram quota (50 req/min)
+- IP extraction: Cloudflare → x-forwarded-for → x-real-ip fallback
+- Returns 429 Too Many Requests + `retryAfter` when exceeded
+
+### 🐛 Bug Fix
+- Fixed React hooks conditional execution in `Admin.tsx` (moved all hooks before early return)
+
+### ✅ Quality Checks
+- ESLint: PASSING
+- TypeScript type check: PASSING
+- Production build: PASSING (chunk size warnings only, expected for jsPDF libraries)
 
 ## Branding & Design
 
