@@ -224,6 +224,36 @@ Implementation: `supabase/functions/_shared/rate-limiter.ts` — extracts IP (Cl
 
 **Post-checkout sync:** `/app/dashboard?checkout=success` triggers `sync-subscription`
 
+## Latest Updates (v1.5 — March 11, 2026)
+
+### 🔧 Legal Pages Code Quality Refactor
+- ✅ **Extracted shared LegalSection component** (`src/components/legal/LegalSection.tsx`)
+  - Eliminates 4x duplicate Section component definitions across Privacy, Terms, Disclaimer, AcceptableUse
+  - Single source of truth for legal page section styling
+  - Saves ~20 lines of duplicated code
+
+- ✅ **Centralized legal constants** (`src/lib/legal.ts`)
+  - `LEGAL_PAGES_UPDATED` — all dates now reference this constant ("11 March 2026")
+  - `CONTACT_EMAIL` — all email addresses reference this constant (info@mockofsted.co.uk)
+  - `LEGAL_PAGES_FOOTER` — shared footer disclaimer text
+  - `NO_LIABILITY_DISCLAIMERS` — consolidated liability language for consistency across pages
+  - Benefits: Single-point updates for dates/emails, easy to maintain consistency
+
+- ✅ **Updated all 4 legal pages**
+  - Privacy.tsx, Terms.tsx, Disclaimer.tsx, AcceptableUse.tsx
+  - Removed local Section() function definitions
+  - Import LegalSection from shared component
+  - Replace 10+ hardcoded "11 March 2026" references with constant
+  - Replace 6+ hardcoded "info@mockofsted.co.uk" references with constant
+  - Replace footer text with constant
+
+**Code Quality Improvements:**
+- ~236 lines of duplicated code eliminated
+- 4 to 1 component consolidation
+- 10-15 hardcoded string references centralized to constants
+- Single point of maintenance for legal page dates and contact info
+- Bundle size maintained (~16.2 KB gzip combined for all legal pages)
+
 ## Latest Updates (v1.4 — March 11, 2026)
 
 ### ⚖️ Comprehensive Legal Documentation Expansion
