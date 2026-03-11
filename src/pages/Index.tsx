@@ -321,9 +321,14 @@ export default function Index() {
     // Send admin notification (non-blocking)
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
     const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+    const { data: { session: authSession } } = await supabase.auth.getSession();
     fetch(`${supabaseUrl}/functions/v1/admin-notifications`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", apikey: anonKey },
+      headers: {
+        "Content-Type": "application/json",
+        apikey: anonKey,
+        ...(authSession?.access_token ? { Authorization: `Bearer ${authSession.access_token}` } : {}),
+      },
       body: JSON.stringify({
         type: "session_started",
         userName: user.user_metadata?.name || user.email?.split("@")[0] || "Unknown",
@@ -532,9 +537,14 @@ export default function Index() {
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
       const primaryDomain = questions[0]?.result?.domain || "Unknown";
+      const { data: { session: authSession } } = await supabase.auth.getSession();
       fetch(`${supabaseUrl}/functions/v1/admin-notifications`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", apikey: anonKey },
+        headers: {
+          "Content-Type": "application/json",
+          apikey: anonKey,
+          ...(authSession?.access_token ? { Authorization: `Bearer ${authSession.access_token}` } : {}),
+        },
         body: JSON.stringify({
           type: "session_completed",
           userName: user.user_metadata?.name || user.email?.split("@")[0] || "Unknown",

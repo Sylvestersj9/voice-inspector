@@ -64,6 +64,7 @@ export default function Contact() {
       setStatus("Thanks for reaching out. We'll reply from info@mockofsted.co.uk.");
 
       // Send admin notification (non-blocking)
+      // Note: Contact form is public, so we can't get a user token
       fetch(`${supabaseUrl}/functions/v1/admin-notifications`, {
         method: "POST",
         headers: {

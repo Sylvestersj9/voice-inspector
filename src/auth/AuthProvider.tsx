@@ -57,7 +57,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // Send admin signup notification (non-blocking, errors ignored)
           fetch(`${supabaseUrl}/functions/v1/admin-notifications`, {
             method: "POST",
-            headers: { "Content-Type": "application/json", apikey: anonKey },
+            headers: {
+              "Content-Type": "application/json",
+              apikey: anonKey,
+              Authorization: `Bearer ${newSession.access_token}`,
+            },
             body: JSON.stringify({
               type: "signup",
               userName: name,

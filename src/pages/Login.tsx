@@ -103,7 +103,11 @@ export default function Login() {
           const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
           fetch(`${supabaseUrl}/functions/v1/admin-notifications`, {
             method: "POST",
-            headers: { "Content-Type": "application/json", apikey: anonKey },
+            headers: {
+              "Content-Type": "application/json",
+              apikey: anonKey,
+              ...(signInData.session?.access_token ? { Authorization: `Bearer ${signInData.session.access_token}` } : {}),
+            },
             body: JSON.stringify({
               type: "login",
               userName: signInData.user.user_metadata?.name || email.split("@")[0],
@@ -143,7 +147,11 @@ export default function Login() {
           // Send admin signup notification (non-blocking)
           fetch(`${supabaseUrl}/functions/v1/admin-notifications`, {
             method: "POST",
-            headers: { "Content-Type": "application/json", apikey: anonKey },
+            headers: {
+              "Content-Type": "application/json",
+              apikey: anonKey,
+              ...(data.session?.access_token ? { Authorization: `Bearer ${data.session.access_token}` } : {}),
+            },
             body: JSON.stringify({
               type: "signup",
               userName: name.trim(),
