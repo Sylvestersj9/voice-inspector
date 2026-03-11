@@ -919,7 +919,16 @@ with embedded checkmark: `<g stroke="[white|#0D9488]" strokeWidth="1.2" strokeLi
 - ✅ Changes committed: Commit `3a60e49`
 - ✅ Pushed to main: `git push origin main`
 
+**Enhanced Cancelled Subscription Display:**
+- ✅ **Added access end date** to cancelled subscriptions
+  - Updated `Subscription` type to include `current_period_end` field
+  - Updated subscription query to fetch `current_period_end` from database
+  - Changed message from "has ended" to "Full access until [Date]"
+  - Shows date in format: "Full access until 11 April 2026"
+  - Clarifies that users retain full access through the end of the billing period
+
 **User Messaging:**
 - When subscription is cancelled, users now see clear status and option to resubscribe
+- Shows exact date when access ends: "Your subscription was cancelled. Full access until [date]"
 - Previous issue where cancelled subscriptions showed upgrade button is resolved
 - Team pricing now reflects £89/month with updated savings calculation
