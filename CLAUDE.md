@@ -302,6 +302,50 @@ Implementation: `supabase/functions/_shared/rate-limiter.ts` — extracts IP (Cl
 **Build status:** ✅ All TypeScript checks pass, bundle size OK (~839KB main bundle)
 **Git status:** ✅ Committed & pushed — Commit `783d3c6`
 
+## Latest Updates (v1.8.1 — March 11, 2026)
+
+### ✅ Admin Role Setup Complete
+
+**Admin Account Configuration:**
+- ✅ **Admin role granted** to `janvesylvester@gmail.com` via Supabase admin SDK
+  - Used `supabase.auth.admin.updateUserById()` to set `user_metadata.role = "admin"`
+  - Verified role persistence: role confirmed as "admin" in subsequent query
+  - No edge function call needed (direct SDK call via bun script)
+
+**Edge Functions Deployed:**
+- ✅ `create-promo-code` function deployed and live
+  - Accepts JWT auth headers and verifies admin role
+  - Creates Stripe coupons + promotion codes automatically
+  - Inserts records into promo_codes table with Stripe tracking
+
+- ✅ `grant-admin-role` function deployed (utility function for future admin management)
+  - Uses admin secret key authentication
+  - Allows granting admin role to users by email
+  - Available for future administrative operations
+
+**Frontend Updates:**
+- ✅ Admin role checks restored to `src/pages/Admin.tsx`
+  - Page redirects to `/app` if user lacks `role: "admin"` in user_metadata
+  - Only authenticated admin users can access promo code management UI
+  - Security enforced at both frontend and edge function layers
+
+**Build & Deployment Status:**
+- ✅ Frontend built successfully: `bun run build`
+- ✅ Edge functions deployed: `supabase functions deploy create-promo-code`
+- ✅ Admin dashboard verified working at `/admin`
+- ✅ Promo code creation tested and working
+- ✅ Stripe integration confirmed functional
+
+**Security Implementation:**
+- Two-layer admin verification:
+  1. Frontend: role check before rendering admin UI
+  2. Edge function: role verification on JWT before creating codes
+- Only admin users can create/manage promo codes
+- Stripe integration is one-way: create codes via UI → Stripe creates coupon automatically
+- Redemption counts tracked by Stripe (source of truth for usage)
+
+**Git status:** ✅ Committed & pushed — Commit `c2eb9fb`
+
 ## Latest Updates (v1.7.0 — March 12, 2026)
 
 ### ⚡ Generate-Report Performance Critical Optimization COMPLETE
