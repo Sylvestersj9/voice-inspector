@@ -9,7 +9,7 @@
 import posthog from "posthog-js";
 
 const KEY  = import.meta.env.VITE_POSTHOG_KEY as string | undefined;
-const HOST = "https://eu.i.posthog.com";
+const HOST = "https://us.i.posthog.com";
 const CONSENT_KEY = "mockofsted_cookie_consent";
 
 export type ConsentState = "accepted" | "declined" | null;
