@@ -892,6 +892,59 @@ with embedded checkmark: `<g stroke="[white|#0D9488]" strokeWidth="1.2" strokeLi
 - `manifest.json` — PWA theme color set to `#0D9488` (teal)
 - Browser favicon resolves via: favicon.svg (primary) → favicon.ico (fallback)
 
+## Latest Updates (v1.9.2 — March 12, 2026)
+
+### 🎟️ Full Promo Code Management — Edit, Delete, Revoke
+
+**New Edge Functions:**
+- ✅ **`delete-promo-code`** — Revoke and delete promo codes
+  - Deletes from Stripe (revokes coupon)
+  - Removes from database
+  - Admin-only access (JWT + role check)
+  - Returns 200 OK on success, handles Stripe errors gracefully
+
+- ✅ **`update-promo-code`** — Edit code details
+  - Update description
+  - Change/remove expiry date
+  - Updates database record
+  - Admin-only access (JWT + role check)
+
+**Admin UI Enhancements:**
+- ✅ **Edit button per code** — Click to open modal
+  - Edit description (change or clear)
+  - Edit expiry date (add or remove)
+  - Save changes directly
+  - Real-time updates
+
+- ✅ **Delete button per code** — Click to confirm deletion
+  - Confirmation modal warns: "Cannot be undone"
+  - Revokes from Stripe Checkout
+  - Removes from system
+  - Immediate removal on confirm
+
+- ✅ **Modal dialogs** — Clean, focused UX
+  - Edit modal: description + expiry fields
+  - Delete modal: confirmation with warning
+  - Cancel buttons to avoid accidental changes
+  - Loading states during operations
+
+**What You Can Now Do:**
+1. **Change description** — Update "Sarah's code" to "Sarah-Khan (March)"
+2. **Extend or set expiry** — Add/remove expiration dates
+3. **Revoke codes** — Delete from Stripe and your system completely
+4. **Track usage** — See redemptions before deleting (e.g., "3/5 uses")
+
+**Security:**
+- All operations admin-only
+- JWT verified on backend
+- Stripe deletes are confirmed before DB deletion
+- Error handling prevents orphaned records
+
+**Deployment:**
+- ✅ Edge functions deployed: `delete-promo-code`, `update-promo-code`
+- ✅ Frontend built successfully
+- ✅ Promo codes now fully manageable
+
 ## Latest Updates (v1.9.1 — March 12, 2026)
 
 ### 🔧 Subscription Cancellation Status Display + Team Pricing Update
