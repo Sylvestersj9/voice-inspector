@@ -54,7 +54,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             console.error("Welcome email error:", err);
           });
 
-          // Send admin signup notification
+          // Send admin signup notification (non-blocking, errors ignored)
           fetch(`${supabaseUrl}/functions/v1/admin-notifications`, {
             method: "POST",
             headers: { "Content-Type": "application/json", apikey: anonKey },
@@ -64,8 +64,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               userEmail: newSession.user.email,
               userId: newSession.user.id,
             }),
-          }).catch((err) => {
-            console.error("Admin notification error:", err);
+          }).catch(() => {
+            // Non-critical notification - ignore errors
           });
         }
       }

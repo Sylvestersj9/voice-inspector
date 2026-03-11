@@ -118,6 +118,17 @@ serve(async (req) => {
         `;
         break;
 
+      case "account_deleted":
+        subject = `🗑️ Account deleted: ${userEmail}`;
+        htmlBody = `
+          <h2>Account Deleted</h2>
+          <p><strong>User Email:</strong> ${userEmail}</p>
+          <p><strong>User ID:</strong> ${userId}</p>
+          <p><strong>Time:</strong> ${timestamp}</p>
+          <p style="color:#666;">User account has been permanently deleted. Personal data anonymized. Records retained for compliance.</p>
+        `;
+        break;
+
       default:
         subject = `📬 Admin notification: ${type}`;
         htmlBody = `
