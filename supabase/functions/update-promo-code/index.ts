@@ -60,10 +60,23 @@ serve(async (req) => {
 
     return new Response(JSON.stringify({ success: true, data: updated }), {
       status: 200,
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+      },
     });
   } catch (error) {
     console.error("Update promo code error:", error);
-    return new Response(JSON.stringify({ error: "Failed to update promo code" }), { status: 500 });
+    return new Response(JSON.stringify({ error: "Failed to update promo code" }), {
+      status: 500,
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+      },
+    });
   }
 });
