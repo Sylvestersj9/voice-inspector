@@ -109,7 +109,6 @@ export default function Admin() {
     code: "",
     description: "",
     discountPercent: 10,
-    maxRedemptions: "",
     expiresAt: "",
   });
   const [creatingPromo, setCreatingPromo] = useState(false);
@@ -356,7 +355,7 @@ export default function Admin() {
           code: promoCodeForm.code.toUpperCase(),
           description: promoCodeForm.description || null,
           discountPercent: promoCodeForm.discountPercent,
-          maxRedemptions: promoCodeForm.maxRedemptions ? parseInt(promoCodeForm.maxRedemptions) : null,
+          maxRedemptions: 5,
           expiresAt: promoCodeForm.expiresAt || null,
         }),
       });
@@ -375,7 +374,6 @@ export default function Admin() {
         code: "",
         description: "",
         discountPercent: 10,
-        maxRedemptions: "",
         expiresAt: "",
       });
 
@@ -627,16 +625,6 @@ export default function Admin() {
                     onChange={e => setPromoCodeForm({ ...promoCodeForm, discountPercent: parseInt(e.target.value) || 10 })}
                     min="1"
                     max="100"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-900 mb-2">Max redemptions (optional)</label>
-                  <Input
-                    type="number"
-                    value={promoCodeForm.maxRedemptions}
-                    onChange={e => setPromoCodeForm({ ...promoCodeForm, maxRedemptions: e.target.value })}
-                    placeholder="Leave blank for unlimited"
-                    min="1"
                   />
                 </div>
               </div>
