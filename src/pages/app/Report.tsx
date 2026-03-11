@@ -473,7 +473,7 @@ export default function Report() {
                   const detailedFeedback: string = domainReport?.evidence ?? (fb.summary as string) ?? "";
 
                   return (
-                    <div key={r.domain} className="rounded-xl border border-slate-200 bg-slate-50 p-5 print-avoid-break">
+                    <div key={`${r.domain}-${idx}`} className="rounded-xl border border-slate-200 bg-slate-50 p-5 print-avoid-break">
                       {/* Domain header */}
                       <div className="flex items-start justify-between gap-3 flex-wrap mb-4">
                         <div>
