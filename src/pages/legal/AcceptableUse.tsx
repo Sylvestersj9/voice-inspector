@@ -1,4 +1,6 @@
 import MarketingLayout from "../marketing/MarketingLayout";
+import { LegalSection } from "@/components/legal/LegalSection";
+import { LEGAL_PAGES_UPDATED, CONTACT_EMAIL, LEGAL_PAGES_FOOTER } from "@/lib/legal";
 
 export default function AcceptableUse() {
   return (
@@ -16,9 +18,9 @@ export default function AcceptableUse() {
           <div className="rounded-[28px] border bg-white p-6 shadow-sm ring-2 ring-teal-200">
             <div className="max-h-[70vh] overflow-y-auto pr-2 space-y-6 text-sm text-slate-700">
               <div className="text-xs text-slate-500">
-                Last updated: 11 March 2026. If you do not agree, do not use the service.
+                Last updated: {LEGAL_PAGES_UPDATED}. {LEGAL_PAGES_FOOTER}
               </div>
-              <Section title="1. Permitted Uses">
+              <LegalSection title="1. Permitted Uses">
                 <ul className="list-disc space-y-2 pl-5 text-sm text-slate-700">
                   <li>Use the Service for lawful training, simulation, practice, and preparation for Ofsted inspection conversations.</li>
                   <li>Use the Service to prepare and build confidence as a childcare professional.</li>
@@ -27,9 +29,9 @@ export default function AcceptableUse() {
                   <li>Share findings, insights, or feedback internally within your organisation for professional development purposes.</li>
                   <li>Use the tools and features as designed and documented.</li>
                 </ul>
-              </Section>
+              </LegalSection>
 
-              <Section title="2. Prohibited Uses - Unlawful Activity">
+              <LegalSection title="2. Prohibited Uses - Unlawful Activity">
                 <ul className="list-disc space-y-2 pl-5 text-sm text-slate-700">
                   <li>Any unlawful, illegal, or criminal activity</li>
                   <li>Harassment, discrimination, abuse, bullying, or defamation of any individual or group</li>
@@ -37,9 +39,9 @@ export default function AcceptableUse() {
                   <li>Obscene, pornographic, or sexually explicit content</li>
                   <li>Activities that violate local, national, or international laws</li>
                 </ul>
-              </Section>
+              </LegalSection>
 
-              <Section title="3. Prohibited Uses - Safeguarding & Data Protection">
+              <LegalSection title="3. Prohibited Uses - Safeguarding & Data Protection">
                 <ul className="list-disc space-y-2 pl-5 text-sm text-slate-700">
                   <li><strong>Identifiable child data:</strong> Do not submit names, ages, photos, or identifiable information about children</li>
                   <li><strong>Confidential case details:</strong> Do not share safeguarding concerns, incident records, or confidential case information</li>
@@ -49,9 +51,9 @@ export default function AcceptableUse() {
                   <li><strong>Breach of confidentiality:</strong> Do not use the Service in ways that breach privacy obligations or professional confidentiality duties</li>
                   <li><strong>Unauthorised data processing:</strong> Do not upload data without appropriate authority or necessary consents</li>
                 </ul>
-              </Section>
+              </LegalSection>
 
-              <Section title="4. Prohibited Uses - AI System Misuse">
+              <LegalSection title="4. Prohibited Uses - AI System Misuse">
                 <ul className="list-disc space-y-2 pl-5 text-sm text-slate-700">
                   <li>Attempting to manipulate, trick, or poison the AI system (prompt injection, jailbreaking)</li>
                   <li>Attempting to extract, reverse engineer, or steal AI models, training data, or system prompts</li>
@@ -60,9 +62,9 @@ export default function AcceptableUse() {
                   <li>Attempting to bypass security, rate limits, authentication, or other technical controls</li>
                   <li>Automated scraping, bulk downloading, or mass extraction of content or outputs</li>
                 </ul>
-              </Section>
+              </LegalSection>
 
-              <Section title="5. Prohibited Uses - Platform Misuse">
+              <LegalSection title="5. Prohibited Uses - Platform Misuse">
                 <ul className="list-disc space-y-2 pl-5 text-sm text-slate-700">
                   <li>Unauthorized account access; sharing credentials; allowing others to use your account</li>
                   <li>Creating multiple accounts to circumvent limits, trial restrictions, or payment obligations</li>
@@ -73,9 +75,9 @@ export default function AcceptableUse() {
                   <li>Attempting to exploit security vulnerabilities or access restricted areas</li>
                   <li>Using automation, bots, or scripts to access the Service without authorization</li>
                 </ul>
-              </Section>
+              </LegalSection>
 
-              <Section title="6. Prohibited Uses - Content & Harmful Material">
+              <LegalSection title="6. Prohibited Uses - Content & Harmful Material">
                 <ul className="list-disc space-y-2 pl-5 text-sm text-slate-700">
                   <li>Uploading malware, viruses, or any code designed to harm systems or users</li>
                   <li>Submitting content that promotes illegal activity, violence, or discrimination</li>
@@ -84,18 +86,18 @@ export default function AcceptableUse() {
                   <li>Content violating intellectual property, copyright, or trademark rights</li>
                   <li>Spam, phishing, or social engineering attempts</li>
                 </ul>
-              </Section>
+              </LegalSection>
 
-              <Section title="7. Prohibited Uses - Commercial Misuse">
+              <LegalSection title="7. Prohibited Uses - Commercial Misuse">
                 <ul className="list-disc space-y-2 pl-5 text-sm text-slate-700">
                   <li>Reselling or commercial redistribution of MockOfsted or its outputs</li>
                   <li>Using MockOfsted outputs to create competing commercial products or services</li>
                   <li>Using MockOfsted to provide professional consultation or services to third parties</li>
                   <li>Licensure violations: attempting to claim MockOfsted as evidence of professional certification or qualification</li>
                 </ul>
-              </Section>
+              </LegalSection>
 
-              <Section title="8. Fair Usage">
+              <LegalSection title="8. Fair Usage">
                 <p className="text-sm text-slate-700 mb-3">
                   To ensure fair access for all users:
                 </p>
@@ -108,11 +110,11 @@ export default function AcceptableUse() {
                 <p className="text-sm text-slate-700 mt-3">
                   We reserve the right to throttle, rate-limit, or restrict usage that violates fair use principles. Rate limits are applied per IP and per account.
                 </p>
-              </Section>
+              </LegalSection>
 
-              <Section title="9. Reporting Requirements">
+              <LegalSection title="9. Reporting Requirements">
                 <p className="text-sm text-slate-700">
-                  If you become aware of a breach of this policy, security vulnerability, or misuse of the Service, you must report it promptly to info@mockofsted.co.uk. Provide:
+                  If you become aware of a breach of this policy, security vulnerability, or misuse of the Service, you must report it promptly to {CONTACT_EMAIL}. Provide:
                 </p>
                 <ul className="list-disc space-y-2 pl-5 text-sm text-slate-700">
                   <li>Detailed description of the issue or violation</li>
@@ -120,9 +122,9 @@ export default function AcceptableUse() {
                   <li>Your contact information</li>
                   <li>Any other context that would help investigation</li>
                 </ul>
-              </Section>
+              </LegalSection>
 
-              <Section title="10. Monitoring & Enforcement">
+              <LegalSection title="10. Monitoring & Enforcement">
                 <p className="text-sm text-slate-700 mb-3">
                   MockOfsted reserves the right to:
                 </p>
@@ -133,9 +135,9 @@ export default function AcceptableUse() {
                   <li>Preserve evidence related to violations</li>
                   <li>Cooperate with law enforcement when legally required</li>
                 </ul>
-              </Section>
+              </LegalSection>
 
-              <Section title="11. Suspension & Termination">
+              <LegalSection title="11. Suspension & Termination">
                 <p className="text-sm text-slate-700 mb-3">
                   For violations of this Acceptable Use Policy, we may:
                 </p>
@@ -150,32 +152,23 @@ export default function AcceptableUse() {
                 <p className="text-sm text-slate-700 mt-3">
                   Account termination may result in loss of all session data, reports, and user content. Repeated or severe violations may result in permanent bans.
                 </p>
-              </Section>
+              </LegalSection>
 
-              <Section title="12. No Compensation for Enforcement">
+              <LegalSection title="12. No Compensation for Enforcement">
                 <p className="text-sm text-slate-700">
                   You acknowledge that enforcement actions (including suspension or termination) may occur without advance notice for serious violations, and that you will not be compensated for loss of service access, data, or trial days due to enforcement actions.
                 </p>
-              </Section>
+              </LegalSection>
 
-              <Section title="13. Policy Changes">
+              <LegalSection title="13. Policy Changes">
                 <p className="text-sm text-slate-700">
                   We may update this Acceptable Use Policy at any time. Material changes will be communicated via email or in-app notification. Continued use of the Service after changes indicates your acceptance of the updated policy.
                 </p>
-              </Section>
+              </LegalSection>
             </div>
           </div>
         </div>
       </main>
     </MarketingLayout>
-  );
-}
-
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <section className="space-y-2">
-      <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
-      <div className="text-sm text-slate-700">{children}</div>
-    </section>
   );
 }

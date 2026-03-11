@@ -1,4 +1,6 @@
 import MarketingLayout from "../marketing/MarketingLayout";
+import { LegalSection } from "@/components/legal/LegalSection";
+import { LEGAL_PAGES_UPDATED, CONTACT_EMAIL, LEGAL_PAGES_FOOTER } from "@/lib/legal";
 
 export default function Terms() {
   return (
@@ -20,103 +22,103 @@ export default function Terms() {
           <div className="rounded-[28px] border bg-white p-6 shadow-sm ring-2 ring-teal-200">
             <div className="max-h-[70vh] overflow-y-auto pr-2 space-y-6">
               <div className="text-xs text-slate-500">
-                Last updated: 11 March 2026. If you do not agree, do not use the service.
+                Last updated: {LEGAL_PAGES_UPDATED}. {LEGAL_PAGES_FOOTER}
               </div>
-              <Section title="1. Introduction">
+              <LegalSection title="1. Introduction">
                 <ul className="list-disc space-y-2 pl-5 text-sm text-slate-700">
                   <li>These Terms of Use form a binding agreement between you and MockOfsted (&quot;we&quot;, &quot;us&quot;, &quot;our&quot;).</li>
                   <li>By accessing or using MockOfsted, you confirm you accept these terms. If you do not agree, do not use the service.</li>
                   <li>Definitions: &quot;Service&quot; means the MockOfsted SaaS platform; &quot;Content&quot; means prompts, outputs, and materials made available by the Service; &quot;You&quot; or &quot;User&quot; means the organisation or individual using the Service.</li>
                 </ul>
-              </Section>
+              </LegalSection>
 
-              <Section title="2. Description of the Service">
+              <LegalSection title="2. Description of the Service">
                 <p className="text-sm text-slate-700">
                   MockOfsted is an AI-assisted practice, simulation, and evaluation platform for Ofsted-style inspection questions. It is provided solely for training, preparation, and support. It does not replace professional advice or regulatory processes.
                 </p>
-              </Section>
+              </LegalSection>
 
-              <Section title="3. No Professional Advice">
+              <LegalSection title="3. No Professional Advice">
                 <p className="text-sm text-slate-700">
                   The Service does not provide legal, regulatory, safeguarding, compliance, or professional advice. You must seek independent professional judgement for any decisions affecting children, staff, or regulatory compliance.
                 </p>
-              </Section>
+              </LegalSection>
 
-              <Section title="4. No Guarantee of Outcomes">
+              <LegalSection title="4. No Guarantee of Outcomes">
                 <p className="text-sm text-slate-700">
                   We do not guarantee Ofsted ratings, judgements, compliance results, or inspection outcomes. Ofsted inspections rely on human judgement, context, and evidence outside the Service.
                 </p>
-              </Section>
+              </LegalSection>
 
-              <Section title="5. Human-in-the-Loop Requirement">
+              <LegalSection title="5. Human-in-the-Loop Requirement">
                 <p className="text-sm text-slate-700">
                   All AI outputs must be reviewed, validated, and contextualised by qualified humans. You must apply your own professional judgement at all times.
                 </p>
-              </Section>
+              </LegalSection>
 
-              <Section title="6. User Accounts & Responsibilities">
+              <LegalSection title="6. User Accounts & Responsibilities">
                 <ul className="list-disc space-y-2 pl-5 text-sm text-slate-700">
                   <li>Provide accurate information and keep account credentials secure.</li>
                   <li>You are responsible for all activity under your account.</li>
                   <li>Do not share credentials or allow unauthorised access.</li>
                 </ul>
-              </Section>
+              </LegalSection>
 
-              <Section title="7. Subscriptions & Payments">
+              <LegalSection title="7. Subscriptions & Payments">
                 <ul className="list-disc space-y-2 pl-5 text-sm text-slate-700">
                   <li>Paid plans, when available, use recurring billing via Stripe.</li>
                   <li>Prices and features may change; no pricing guarantees.</li>
                   <li>No refunds unless required by law. Taxes and fees may apply.</li>
                 </ul>
-              </Section>
+              </LegalSection>
 
-              <Section title="8. Acceptable Use">
+              <LegalSection title="8. Acceptable Use">
                 <p className="text-sm text-slate-700">
                   You must comply with our Acceptable Use Policy. Do not use the Service unlawfully, to share identifiable child data, to reverse engineer, to abuse AI systems, or to build competing services.
                 </p>
-              </Section>
+              </LegalSection>
 
-              <Section title="9. Intellectual Property">
+              <LegalSection title="9. Intellectual Property">
                 <p className="text-sm text-slate-700">
                   The Service, content, and technology are owned by MockOfsted or its licensors. You receive a limited, revocable, non-transferable license to use the Service. No ownership is transferred.
                 </p>
-              </Section>
+              </LegalSection>
 
-              <Section title="10. Data & AI Outputs">
+              <LegalSection title="10. Data & AI Outputs">
                 <p className="text-sm text-slate-700">
                   AI-generated outputs may be inaccurate, incomplete, or inappropriate. You are responsible for verifying outputs and ensuring they are suitable for your use.
                 </p>
-              </Section>
+              </LegalSection>
 
-              <Section title="11. Availability & Changes">
+              <LegalSection title="11. Availability & Changes">
                 <p className="text-sm text-slate-700">
                   The Service is provided "as is" and "as available". We do not guarantee uptime. Features may change, be suspended, or removed at any time.
                 </p>
-              </Section>
+              </LegalSection>
 
-              <Section title="12. Suspension & Termination">
+              <LegalSection title="12. Suspension & Termination">
                 <p className="text-sm text-slate-700">
                   We may suspend or terminate access for breach of these terms, misuse, or non-payment. You may stop using the Service at any time. Provisions on liability, intellectual property, and indemnity survive termination.
                 </p>
-              </Section>
+              </LegalSection>
 
-              <Section title="13. Limitation of Liability">
+              <LegalSection title="13. Limitation of Liability">
                 <p className="text-sm text-slate-700">
                   To the fullest extent permitted by law, we are not liable for indirect, consequential, special, or punitive damages; loss of revenue, data, or business; or any inspection outcomes, Ofsted ratings, enforcement action, or reputational damage. The Service is an assistance tool only.
                 </p>
-              </Section>
+              </LegalSection>
 
-              <Section title="14. Indemnity">
+              <LegalSection title="14. Indemnity">
                 <p className="text-sm text-slate-700">
                   You agree to indemnify and hold harmless MockOfsted from claims, losses, and costs arising from your misuse of the Service, breach of these terms, or violation of law.
                 </p>
-              </Section>
+              </LegalSection>
 
-              <Section title="15. Governing Law">
+              <LegalSection title="15. Governing Law">
                 <p className="text-sm text-slate-700">These terms are governed by the laws of England and Wales. Courts of England and Wales have exclusive jurisdiction.</p>
-              </Section>
+              </LegalSection>
 
-              <Section title="16. Third-Party Services & Links">
+              <LegalSection title="16. Third-Party Services & Links">
                 <p className="text-sm text-slate-700 mb-3">
                   MockOfsted integrates with or links to third-party services including:
                 </p>
@@ -131,9 +133,9 @@ export default function Terms() {
                 <p className="text-sm text-slate-700 mt-3">
                   These third parties operate under their own terms of service and privacy policies. We are not responsible for their content, availability, or conduct. Your use of third-party services is at your own risk and subject to their terms. We recommend reviewing their policies before use.
                 </p>
-              </Section>
+              </LegalSection>
 
-              <Section title="17. Limitation of Liability - CRITICAL">
+              <LegalSection title="17. Limitation of Liability - CRITICAL">
                 <p className="text-sm text-slate-700 mb-3">
                   <strong>TO THE FULLEST EXTENT PERMITTED BY LAW:</strong>
                 </p>
@@ -156,9 +158,9 @@ export default function Terms() {
                 <p className="text-sm text-slate-700 mt-3">
                   This limitation applies even if we have been advised of the possibility of such damages.
                 </p>
-              </Section>
+              </LegalSection>
 
-              <Section title="18. Indemnification">
+              <LegalSection title="18. Indemnification">
                 <p className="text-sm text-slate-700">
                   You agree to indemnify, defend, and hold harmless MockOfsted, its officers, directors, employees, and agents from any claims, damages, losses, liabilities, and expenses (including legal fees) arising from or related to:
                 </p>
@@ -171,11 +173,11 @@ export default function Terms() {
                   <li>Claims related to inspection outcomes or regulatory action arising from your use of the Service</li>
                   <li>Safeguarding decisions made based on MockOfsted outputs</li>
                 </ul>
-              </Section>
+              </LegalSection>
 
-              <Section title="19. Dispute Resolution & Arbitration">
+              <LegalSection title="19. Dispute Resolution & Arbitration">
                 <p className="text-sm text-slate-700 mb-2">
-                  <strong>Informal Resolution:</strong> Before pursuing formal legal action, you agree to attempt informal resolution by contacting info@mockofsted.co.uk within 30 days of the dispute. We will attempt to resolve the matter within 60 days.
+                  <strong>Informal Resolution:</strong> Before pursuing formal legal action, you agree to attempt informal resolution by contacting {CONTACT_EMAIL} within 30 days of the dispute. We will attempt to resolve the matter within 60 days.
                 </p>
                 <p className="text-sm text-slate-700 mb-2">
                   <strong>Jurisdiction & Governing Law:</strong> These terms are governed by and construed in accordance with the laws of England and Wales, without regard to its conflict of law principles.
@@ -183,30 +185,30 @@ export default function Terms() {
                 <p className="text-sm text-slate-700">
                   <strong>Exclusive Jurisdiction:</strong> You irrevocably submit to the exclusive jurisdiction of the courts of England and Wales for any legal proceedings arising from these terms or your use of the Service.
                 </p>
-              </Section>
+              </LegalSection>
 
-              <Section title="20. Waiver & Severability">
+              <LegalSection title="20. Waiver & Severability">
                 <p className="text-sm text-slate-700 mb-2">
                   Our failure to enforce any provision of these terms does not constitute a waiver of that provision or any other provision.
                 </p>
                 <p className="text-sm text-slate-700">
                   If any provision of these terms is held invalid or unenforceable, the remaining provisions continue in full force. The invalid provision is severed and construed to the maximum extent legally possible.
                 </p>
-              </Section>
+              </LegalSection>
 
-              <Section title="21. Assignment">
+              <LegalSection title="21. Assignment">
                 <p className="text-sm text-slate-700">
                   You may not assign these terms or your rights/obligations under them without our written consent. We may assign these terms to affiliates, successors, or acquirers without restriction. Any attempted assignment by you without consent is void.
                 </p>
-              </Section>
+              </LegalSection>
 
-              <Section title="22. Entire Agreement">
+              <LegalSection title="22. Entire Agreement">
                 <p className="text-sm text-slate-700">
                   These Terms, along with our Privacy Policy, Disclaimer, Acceptable Use Policy, and any other policies referenced, constitute the entire agreement between you and MockOfsted regarding the Service. They supersede all prior agreements, understandings, and representations. No prior conversations, representations, or agreements modify these terms.
                 </p>
-              </Section>
+              </LegalSection>
 
-              <Section title="23. Service Modifications & Discontinuation">
+              <LegalSection title="23. Service Modifications & Discontinuation">
                 <p className="text-sm text-slate-700 mb-2">
                   We reserve the right to:
                 </p>
@@ -219,44 +221,35 @@ export default function Terms() {
                 <p className="text-sm text-slate-700 mt-3">
                   We will not be liable for any loss, damage, or inconvenience caused by modifications or discontinuation.
                 </p>
-              </Section>
+              </LegalSection>
 
-              <Section title="24. Government & Regulatory Compliance">
+              <LegalSection title="24. Government & Regulatory Compliance">
                 <p className="text-sm text-slate-700">
                   Your use of MockOfsted must comply with all applicable laws, regulations, and statutory duties, including but not limited to UK GDPR, Data Protection Act 2018, Childcare Act 2006, Children Act 1989 and 2004, Care Act 2014, Ofsted regulations, and all equalities legislation. MockOfsted does not provide legal or regulatory advice.
                 </p>
-              </Section>
+              </LegalSection>
 
-              <Section title="25. No Employment or Partnership">
+              <LegalSection title="25. No Employment or Partnership">
                 <p className="text-sm text-slate-700">
                   These terms do not create an employment relationship, partnership, joint venture, or agency between you and MockOfsted. You are an independent user of the Service.
                 </p>
-              </Section>
+              </LegalSection>
 
-              <Section title="26. Acknowledgement & Acceptance">
+              <LegalSection title="26. Acknowledgement & Acceptance">
                 <p className="font-semibold text-slate-900 text-sm">
                   BY ACCESSING OR USING MOCKOFSTED, YOU ACKNOWLEDGE THAT YOU HAVE READ THESE TERMS IN FULL, UNDERSTAND ALL LIMITATIONS AND DISCLAIMERS, ACCEPT ALL ASSOCIATED RISKS, AND AGREE TO BE BOUND BY THESE TERMS. IF YOU DO NOT AGREE WITH ANY PART OF THESE TERMS, DO NOT USE THE SERVICE.
                 </p>
-              </Section>
+              </LegalSection>
 
-              <Section title="Contact & Legal Inquiries">
+              <LegalSection title="Contact & Legal Inquiries">
                 <p className="text-sm text-slate-700">
-                  <strong>For legal or contractual matters:</strong> Contact info@mockofsted.co.uk or use the contact form at /contact. For formal legal notices, you may send correspondence to the registered office address on file.
+                  <strong>For legal or contractual matters:</strong> Contact {CONTACT_EMAIL} or use the contact form at /contact. For formal legal notices, you may send correspondence to the registered office address on file.
                 </p>
-              </Section>
+              </LegalSection>
             </div>
           </div>
         </div>
       </main>
     </MarketingLayout>
-  );
-}
-
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <section className="space-y-2">
-      <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
-      {children}
-    </section>
   );
 }

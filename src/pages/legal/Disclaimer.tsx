@@ -1,4 +1,6 @@
 import MarketingLayout from "../marketing/MarketingLayout";
+import { LegalSection } from "@/components/legal/LegalSection";
+import { LEGAL_PAGES_UPDATED, CONTACT_EMAIL, LEGAL_PAGES_FOOTER } from "@/lib/legal";
 
 export default function Disclaimer() {
   return (
@@ -20,16 +22,16 @@ export default function Disclaimer() {
           <div className="rounded-[28px] border bg-white p-6 shadow-sm ring-2 ring-teal-200">
             <div className="max-h-[70vh] overflow-y-auto pr-2 space-y-6 text-sm text-slate-700">
               <div className="text-xs text-slate-500">
-                Last updated: 11 March 2026. If you do not agree, do not use the service.
+                Last updated: {LEGAL_PAGES_UPDATED}. {LEGAL_PAGES_FOOTER}
               </div>
 
-              <Section title="1. Nature of Service">
+              <LegalSection title="1. Nature of Service">
                 <p>
                   MockOfsted is a practice, simulation, and training platform designed to help childcare professionals prepare for Ofsted inspections. It is <strong>not</strong> an official Ofsted product, is not endorsed by Ofsted, and does not replace official inspection processes, professional advice, or compliance with regulatory requirements.
                 </p>
-              </Section>
+              </LegalSection>
 
-              <Section title="2. No Guarantee of Outcomes">
+              <LegalSection title="2. No Guarantee of Outcomes">
                 <p className="mb-3">
                   <strong>You acknowledge and accept that:</strong>
                 </p>
@@ -41,9 +43,9 @@ export default function Disclaimer() {
                   <li>High scores in MockOfsted do NOT guarantee a high Ofsted rating. Low scores do NOT guarantee a low rating</li>
                   <li>Improvement on MockOfsted does NOT guarantee improved Ofsted outcomes</li>
                 </ul>
-              </Section>
+              </LegalSection>
 
-              <Section title="3. No Professional or Legal Advice">
+              <LegalSection title="3. No Professional or Legal Advice">
                 <p className="mb-2">
                   <strong>MockOfsted does NOT provide:</strong>
                 </p>
@@ -58,9 +60,9 @@ export default function Disclaimer() {
                 <p className="mt-3">
                   All advice, guidance, and regulatory decisions must be made by qualified, accountable professionals within your setting. MockOfsted is a supplement only.
                 </p>
-              </Section>
+              </LegalSection>
 
-              <Section title="4. AI Limitations & Errors">
+              <LegalSection title="4. AI Limitations & Errors">
                 <p className="mb-3">
                   <strong>AI-generated outputs may:</strong>
                 </p>
@@ -76,15 +78,15 @@ export default function Disclaimer() {
                 <p className="mt-3">
                   <strong>You are entirely responsible for verifying, interpreting, and contextualising all AI outputs before relying on them for any decision.</strong>
                 </p>
-              </Section>
+              </LegalSection>
 
-              <Section title="5. Human Review is Mandatory">
+              <LegalSection title="5. Human Review is Mandatory">
                 <p>
                   All outputs from MockOfsted (feedback, scores, suggestions, insights) <strong>must be reviewed and validated by qualified humans</strong> within your organisation before any reliance or action. Do not treat any MockOfsted output as definitive or substitute for human professional judgement.
                 </p>
-              </Section>
+              </LegalSection>
 
-              <Section title="6. Safeguarding Disclaimer">
+              <LegalSection title="6. Safeguarding Disclaimer">
                 <p className="mb-3">
                   <strong>Critical:</strong> This platform cannot and must not be used as the primary basis for safeguarding decisions. Safeguarding is a serious responsibility that requires:
                 </p>
@@ -98,9 +100,9 @@ export default function Disclaimer() {
                 <p className="mt-3">
                   If you have safeguarding concerns regarding any child, contact your local safeguarding team, local authority children's services, or the NSPCC immediately. Do not rely on MockOfsted for safeguarding decisions.
                 </p>
-              </Section>
+              </LegalSection>
 
-              <Section title="7. Regulatory Compliance">
+              <LegalSection title="7. Regulatory Compliance">
                 <p className="mb-2">
                   MockOfsted is a practice tool only. <strong>Regulatory compliance is your responsibility.</strong>
                 </p>
@@ -111,15 +113,15 @@ export default function Disclaimer() {
                   <li>Practice on MockOfsted does not relieve you of compliance obligations</li>
                   <li>You must obtain independent professional advice and maintain proper evidence for regulatory compliance</li>
                 </ul>
-              </Section>
+              </LegalSection>
 
-              <Section title="8. Data Quality & Accuracy">
+              <LegalSection title="8. Data Quality & Accuracy">
                 <p>
                   We make no representations regarding the accuracy, completeness, or currency of information provided in the Service, including Ofsted framework data, SCCIF standards summaries, or quality indicators. You are responsible for verifying information against official Ofsted publications and legislation.
                 </p>
-              </Section>
+              </LegalSection>
 
-              <Section title="9. No Confidentiality for Child Data">
+              <LegalSection title="9. No Confidentiality for Child Data">
                 <p className="mb-2">
                   <strong>Important:</strong> Do not submit identifiable information about children, families, or staff to MockOfsted.
                 </p>
@@ -130,9 +132,9 @@ export default function Disclaimer() {
                   <li>Submitting identifiable child data may breach GDPR, data protection laws, and safeguarding obligations</li>
                   <li>We strongly recommend anonymisation and review of data before submission</li>
                 </ul>
-              </Section>
+              </LegalSection>
 
-              <Section title="10. No Liability for Inspection Outcomes">
+              <LegalSection title="10. No Liability for Inspection Outcomes">
                 <p>
                   We accept <strong>no liability whatsoever</strong> for:
                 </p>
@@ -144,9 +146,9 @@ export default function Disclaimer() {
                   <li>Loss of employment, income, or professional standing of staff members</li>
                   <li>Impact on children, families, or settings as a consequence of inspection outcomes</li>
                 </ul>
-              </Section>
+              </LegalSection>
 
-              <Section title="11. No Liability for AI Errors">
+              <LegalSection title="11. No Liability for AI Errors">
                 <p>
                   We accept <strong>no liability</strong> for errors, omissions, inaccuracies, or harms arising from AI-generated outputs, including:
                 </p>
@@ -157,9 +159,9 @@ export default function Disclaimer() {
                   <li>Time wasted, costs incurred, or decisions made based on AI outputs</li>
                   <li>Misinterpretation of SCCIF standards or regulatory requirements</li>
                 </ul>
-              </Section>
+              </LegalSection>
 
-              <Section title="12. User Responsibility">
+              <LegalSection title="12. User Responsibility">
                 <p>
                   By using MockOfsted, you accept full responsibility for:
                 </p>
@@ -172,9 +174,9 @@ export default function Disclaimer() {
                   <li>Data quality and appropriateness of information submitted to the Service</li>
                   <li>Compliance with applicable laws, regulations, and our Terms of Use</li>
                 </ul>
-              </Section>
+              </LegalSection>
 
-              <Section title="13. No Warranties">
+              <LegalSection title="13. No Warranties">
                 <p>
                   MockOfsted is provided &quot;as is&quot; and &quot;as available&quot;. We make no warranties, representations, or guarantees regarding:
                 </p>
@@ -185,9 +187,9 @@ export default function Disclaimer() {
                   <li>Outcomes, results, or improvements in inspection performance</li>
                   <li>Security or confidentiality of data submitted</li>
                 </ul>
-              </Section>
+              </LegalSection>
 
-              <Section title="14. Regulatory & Professional Standards">
+              <LegalSection title="14. Regulatory & Professional Standards">
                 <p>
                   Nothing in MockOfsted replaces your obligations under:
                 </p>
@@ -200,38 +202,29 @@ export default function Disclaimer() {
                   <li>Employment and equality law</li>
                   <li>Any relevant professional codes of conduct</li>
                 </ul>
-              </Section>
+              </LegalSection>
 
-              <Section title="15. Changes & Updates">
+              <LegalSection title="15. Changes & Updates">
                 <p>
                   We reserve the right to modify, update, or discontinue MockOfsted or any part of it at any time without notice. We are not responsible for impacts of such changes on your practice or preparation.
                 </p>
-              </Section>
+              </LegalSection>
 
-              <Section title="16. Acknowledgement">
+              <LegalSection title="16. Acknowledgement">
                 <p className="font-semibold text-slate-900">
                   By using MockOfsted, you acknowledge and agree that you have read this disclaimer in full, understand all limitations and disclaimers, accept all associated risks, and agree that you will rely on professional judgement and seek independent professional advice before making any compliance, safeguarding, or operational decisions.
                 </p>
-              </Section>
+              </LegalSection>
 
-              <Section title="Questions or Concerns">
+              <LegalSection title="Questions or Concerns">
                 <p>
-                  If you have any questions about this disclaimer or concerns about appropriate use, contact info@mockofsted.co.uk.
+                  If you have any questions about this disclaimer or concerns about appropriate use, contact {CONTACT_EMAIL}.
                 </p>
-              </Section>
+              </LegalSection>
             </div>
           </div>
         </div>
       </main>
     </MarketingLayout>
-  );
-}
-
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <section className="space-y-2">
-      <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
-      <div className="text-sm text-slate-700">{children}</div>
-    </section>
   );
 }
