@@ -128,49 +128,30 @@ Gaps: ${((fb.gaps as string[]) ?? []).join("; ") || "None noted"}`;
       })
       .join("\n\n---\n\n");
 
-    const systemPrompt = `You are a senior Ofsted inspector writing the formal narrative sections of an inspection readiness assessment report for a children's home. Write in confident, formal, third-person inspector language — as if this is an actual inspection report. Be specific and evidence-based. Reference Quality Standard numbers and domain names. Do not use generic filler. Every sentence must be grounded in the evidence provided. Respond ONLY in valid JSON — no markdown, no code fences.`;
+    const systemPrompt = `You are an Ofsted inspector. Write formal, evidence-based narrative. Return ONLY valid JSON.`;
 
-    const reportSchema = `{
-  "overallGrade": "${overallGrade}",
-  "overallScore": ${Math.round(avgScore * 10) / 10},
-  "scorePercent": ${scorePercent},
-  "summaryNarrative": "<4-6 sentences. Formal, third-person, evidence-based inspector narrative summary of the manager's performance across the domains assessed. Reference specific QS numbers. Cover strengths, areas for development, and overall standard reached. Written as it would appear in an Ofsted inspection report.>",
-  "closingVerdict": "<1-2 sentences: the inspector's honest closing verdict on this manager's readiness for a real unannounced Ofsted inspection — direct and evidence-based.>",
-  "keyStrengths": [
-    "<Strength 1: a full sentence in inspector report style identifying a cross-domain strength — specific, not generic>",
-    "<Strength 2>",
-    "<Strength 3>"
-  ],
-  "priorityActions": [
-    "<Priority action 1: specific, actionable, linked to a gap identified — written as an inspector recommendation>",
-    "<Priority action 2>",
-    "<Priority action 3>"
-  ],
-  "readinessStatement": "<One paragraph (3-4 sentences) summarising where this manager stands ahead of a real inspection — honest, balanced, constructive. Acknowledges what is in place and what needs strengthening.>",
-  "domainBreakdown": [
-    <For each domain assessed, one object:>
-    {
-      "domain": <QS number as integer>,
-      "qsName": "<Quality Standard name>",
-      "grade": "<band>",
-      "evidence": "<60-80 word summary of what the manager said and what it demonstrated — specific, written in report style>",
-      "strengths": ["<specific strength from this domain>", ...up to 3],
-      "actions": ["<specific actionable next step for this domain>", ...up to 2],
-      "inspectorNote": "<2-3 sentences in inspector voice — what does the evidence in this domain tell you about the home's practice, and how would this factor into an inspection judgement?>"
-    }
-  ]
-}`;
+    const reportSchema = JSON.stringify({
+      overallGrade,
+      overallScore: Math.round(avgScore * 10) / 10,
+      scorePercent,
+      summaryNarrative: "3-4 sentence formal summary",
+      closingVerdict: "1 sentence readiness verdict",
+      keyStrengths: ["Strength 1", "Strength 2", "Strength 3"],
+      priorityActions: ["Action 1", "Action 2"],
+      readinessStatement: "2-3 sentence statement",
+      domainBreakdown: responses.map(r => ({
+        domain: DOMAIN_META[r.domain]?.qs || 0,
+        grade: r.band,
+        evidence: "Evidence summary"
+      }))
+    });
 
-    const userMessage = `Manager: ${managerName} (${managerRole})
-Home: ${homeName}
-Date: ${sessionDate}
-Overall grade: ${overallGrade} (average ${avgScore.toFixed(2)}/4 = ${scorePercent}%)
-Domains not covered: ${notCoveredDomains.length === 0 ? "All domains covered" : notCoveredDomains.map((d) => DOMAIN_META[d]?.name ?? d).join(", ")}
+    const userMessage = `Manager: ${managerName} | Home: ${homeName} | Grade: ${overallGrade} (${avgScore.toFixed(1)}/4)
 
-Domain-by-domain evidence:
-${domainContext}
+Evidence:
+${responses.map(r => `QS${DOMAIN_META[r.domain]?.qs}: ${r.band} - "${String(r.answer_text || "").slice(0, 100)}..."`).join("\n")}
 
-Generate the report JSON now. Return ONLY the JSON object matching this schema exactly:
+Generate report JSON matching this schema:
 ${reportSchema}`;
 
     const resp = await fetch("https://api.anthropic.com/v1/messages", {
@@ -181,8 +162,8 @@ ${reportSchema}`;
         "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-6",
-        max_tokens: 4000,
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 1500,
         system: systemPrompt,
         messages: [{ role: "user", content: userMessage }],
       }),
