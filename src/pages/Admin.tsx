@@ -114,6 +114,11 @@ export default function Admin() {
   });
   const [creatingPromo, setCreatingPromo] = useState(false);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const [editingCode, setEditingCode] = useState<PromoCode | null>(null);
+  const [editForm, setEditForm] = useState({ description: "", expiresAt: "" });
+  const [updatingCode, setUpdatingCode] = useState(false);
+  const [deletingCodeId, setDeletingCodeId] = useState<string | null>(null);
+  const [deletingCode, setDeletingCode] = useState(false);
 
   // General loading
   const [loading, setLoading] = useState(true);
@@ -403,6 +408,108 @@ export default function Admin() {
     navigator.clipboard.writeText(code);
     setCopiedCode(code);
     setTimeout(() => setCopiedCode(null), 2000);
+  };
+
+  const handleEditPromoCode = (code: PromoCode) => {
+    setEditingCode(code);
+    setEditForm({
+      description: code.description || "",
+      expiresAt: code.expires_at ? code.expires_at.slice(0, 16) : "",
+    });
+  };
+
+  const handleUpdatePromoCode = async () => {
+    if (!editingCode) return;
+
+    setUpdatingCode(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) throw new Error("Not authenticated");
+
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+      const res = await fetch(`${supabaseUrl}/functions/v1/update-promo-code`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          apikey: anonKey,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          promoCodeId: editingCode.id,
+          description: editForm.description || null,
+          expiresAt: editForm.expiresAt || null,
+        }),
+      });
+
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || "Failed to update promo code");
+      }
+
+      toast({
+        title: "Promo code updated",
+        description: `${editingCode.code} updated successfully`,
+      });
+
+      setEditingCode(null);
+      loadPromoCodes();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to update promo code",
+        variant: "destructive",
+      });
+    } finally {
+      setUpdatingCode(false);
+    }
+  };
+
+  const handleDeletePromoCode = async () => {
+    if (!deletingCodeId) return;
+
+    setDeletingCode(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) throw new Error("Not authenticated");
+
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+      const res = await fetch(`${supabaseUrl}/functions/v1/delete-promo-code`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          apikey: anonKey,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ promoCodeId: deletingCodeId }),
+      });
+
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || "Failed to delete promo code");
+      }
+
+      toast({
+        title: "Promo code deleted",
+        description: "Code has been removed from Stripe and your system",
+      });
+
+      setDeletingCodeId(null);
+      loadPromoCodes();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to delete promo code",
+        variant: "destructive",
+      });
+    } finally {
+      setDeletingCode(false);
+    }
   };
 
   return (
@@ -698,7 +805,7 @@ export default function Admin() {
                         <th className="px-6 py-3 text-left font-semibold text-teal-50">Discount</th>
                         <th className="px-6 py-3 text-left font-semibold text-teal-50">Uses</th>
                         <th className="px-6 py-3 text-left font-semibold text-teal-50">Expires</th>
-                        <th className="px-6 py-3 text-left font-semibold text-teal-50"></th>
+                        <th className="px-6 py-3 text-center font-semibold text-teal-50">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -729,7 +836,26 @@ export default function Admin() {
                           <td className="px-6 py-3 text-slate-600">
                             {code.expires_at ? new Date(code.expires_at).toLocaleDateString("en-GB") : "No expiry"}
                           </td>
-                          <td className="px-6 py-3 text-right text-slate-500 text-xs">Created {new Date(code.created_at).toLocaleDateString("en-GB")}</td>
+                          <td className="px-6 py-3 text-center">
+                            <div className="flex items-center justify-center gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEditPromoCode(code)}
+                                className="h-8 px-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+                              >
+                                Edit
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setDeletingCodeId(code.id)}
+                                className="h-8 px-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -737,6 +863,99 @@ export default function Admin() {
                 </div>
               )}
             </div>
+
+            {/* Edit Modal */}
+            {editingCode && (
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4 shadow-lg">
+                  <h2 className="text-xl font-bold text-slate-900 mb-4">Edit: {editingCode.code}</h2>
+
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-900 mb-2">Description</label>
+                      <Input
+                        value={editForm.description}
+                        onChange={e => setEditForm({ ...editForm, description: e.target.value })}
+                        placeholder="e.g., Sarah's personal code"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-slate-900 mb-2">Expiry date (optional)</label>
+                      <Input
+                        type="datetime-local"
+                        value={editForm.expiresAt}
+                        onChange={e => setEditForm({ ...editForm, expiresAt: e.target.value })}
+                      />
+                    </div>
+
+                    <div className="flex gap-3 pt-4">
+                      <Button
+                        variant="outline"
+                        onClick={() => setEditingCode(null)}
+                        className="flex-1"
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        onClick={handleUpdatePromoCode}
+                        disabled={updatingCode}
+                        className="flex-1"
+                      >
+                        {updatingCode ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                            Saving...
+                          </>
+                        ) : (
+                          "Save changes"
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Delete Confirmation Modal */}
+            {deletingCodeId && (
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4 shadow-lg">
+                  <h2 className="text-xl font-bold text-slate-900 mb-2">Delete promo code?</h2>
+                  <p className="text-slate-600 mb-6">
+                    This will revoke the code from Stripe Checkout and remove it from your system. This action cannot be undone.
+                  </p>
+
+                  <div className="flex gap-3">
+                    <Button
+                      variant="outline"
+                      onClick={() => setDeletingCodeId(null)}
+                      className="flex-1"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      onClick={handleDeletePromoCode}
+                      disabled={deletingCode}
+                      className="flex-1"
+                    >
+                      {deletingCode ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                          Deleting...
+                        </>
+                      ) : (
+                        <>
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
           </TabsContent>
 
           {/* Knowledge Base Tab */}
