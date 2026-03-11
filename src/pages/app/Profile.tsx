@@ -119,19 +119,28 @@ export default function Profile() {
     setSaveOk(false);
     setSaveErr(null);
 
-    const { error } = await supabase.from("users").upsert({
-      id: user.id,
-      name: profile.name.trim(),
-      role: profile.role,
-      home_name: profile.home_name.trim(),
-    });
+    try {
+      const { error } = await supabase
+        .from("users")
+        .update({
+          name: profile.name.trim(),
+          role: profile.role,
+          home_name: profile.home_name.trim(),
+        })
+        .eq("id", user.id);
 
-    setSaving(false);
-    if (error) {
-      setSaveErr(error.message);
-    } else {
-      setSaveOk(true);
-      setTimeout(() => setSaveOk(false), 3000);
+      if (error) {
+        setSaveErr(error.message);
+      } else {
+        // Reload to confirm changes were saved
+        await load();
+        setSaveOk(true);
+        setTimeout(() => setSaveOk(false), 3000);
+      }
+    } catch (err) {
+      setSaveErr(err instanceof Error ? err.message : "Failed to save profile");
+    } finally {
+      setSaving(false);
     }
   };
 
