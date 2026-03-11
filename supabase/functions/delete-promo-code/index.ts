@@ -51,25 +51,40 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Promo code not found" }), { status: 404 });
     }
 
+    console.log("[Delete] Promo code found:", promoCode.code);
+
     // Delete from Stripe if it has a coupon ID
     if (promoCode.stripe_coupon_id) {
       try {
+        console.log("[Delete] Deleting Stripe coupon:", promoCode.stripe_coupon_id);
         await stripe.coupons.del(promoCode.stripe_coupon_id);
+        console.log("[Delete] Stripe coupon deleted successfully");
       } catch (stripeError) {
-        console.warn("Failed to delete Stripe coupon:", stripeError);
+        console.warn("[Delete] Failed to delete Stripe coupon:", stripeError);
         // Continue anyway - delete database record
       }
     }
 
     // Delete from database
-    const { error: deleteError } = await supabase
+    console.log("[Delete] Deleting from database, ID:", promoCodeId);
+    const { data: deleteResult, error: deleteError } = await supabase
       .from("promo_codes")
       .delete()
-      .eq("id", promoCodeId);
+      .eq("id", promoCodeId)
+      .select();
 
-    if (deleteError) throw deleteError;
+    console.log("[Delete] Delete result:", { deleteResult, deleteError });
 
-    return new Response(JSON.stringify({ success: true, message: "Promo code deleted" }), {
+    if (deleteError) {
+      console.error("[Delete] Delete error:", deleteError);
+      throw deleteError;
+    }
+
+    if (!deleteResult || deleteResult.length === 0) {
+      console.warn("[Delete] No rows deleted - ID may not exist");
+    }
+
+    return new Response(JSON.stringify({ success: true, message: "Promo code deleted", deleted: deleteResult }), {
       status: 200,
       headers: {
         "Content-Type": "application/json",
@@ -79,8 +94,12 @@ serve(async (req) => {
       },
     });
   } catch (error) {
-    console.error("Delete promo code error:", error);
-    return new Response(JSON.stringify({ error: "Failed to delete promo code" }), {
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    console.error("[Delete] Error:", errorMsg);
+    return new Response(JSON.stringify({
+      error: "Failed to delete promo code",
+      details: errorMsg
+    }), {
       status: 500,
       headers: {
         "Content-Type": "application/json",

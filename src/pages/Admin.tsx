@@ -548,11 +548,19 @@ export default function Admin() {
 
       console.log("[Promo Delete] Response status:", res.status);
 
-      const data = await res.json();
-      console.log("[Promo Delete] Response data:", data);
+      let data: any;
+      try {
+        data = await res.json();
+        console.log("[Promo Delete] Response data:", data);
+      } catch (parseErr) {
+        console.error("[Promo Delete] Failed to parse response:", parseErr);
+        throw new Error("Invalid response from server");
+      }
 
       if (!res.ok) {
-        throw new Error(data.error || `Failed to delete promo code (${res.status})`);
+        const errorMsg = data.details || data.error || `Failed to delete promo code (${res.status})`;
+        console.error("[Promo Delete] API error:", errorMsg);
+        throw new Error(errorMsg);
       }
 
       toast({
