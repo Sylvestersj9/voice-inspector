@@ -146,15 +146,19 @@ export default function Pricing() {
                 <div className="inline-flex items-center rounded-full bg-teal-600 px-3 py-0.5 text-xs font-bold text-white">
                   Team
                 </div>
-                <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-700">
-                  Manual setup
+                <span className="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">
+                  Save 54%
                 </span>
               </div>
               <div className="mt-3 flex items-baseline gap-1">
                 <span className="text-4xl font-bold text-slate-900">£69</span>
                 <span className="text-slate-500">/month</span>
               </div>
-              <p className="mt-1 text-sm text-slate-500">Up to 5 staff. We set it up for you.</p>
+              <p className="mt-1 text-sm text-slate-500">Up to 5 staff (£13.80 per person vs £29 solo)</p>
+              <div className="mt-4 rounded-lg bg-emerald-50 border border-emerald-200 p-3">
+                <p className="text-xs font-semibold text-emerald-900">✓ Best for homes with multiple managers</p>
+                <p className="text-xs text-emerald-700 mt-1">All staff practice together, see team progress</p>
+              </div>
 
               <ul className="mt-7 space-y-3">
                 {TEAM_FEATURES.map((f) => (

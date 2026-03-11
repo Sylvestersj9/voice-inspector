@@ -334,13 +334,12 @@ export default function Dashboard() {
                   "Trial ended"
                 ) : (
                   <>
-                    Trial:{" "}
-                    <span>
-                      {trialInfo.usedToday}/{TRIAL_DAILY_LIMIT} today
+                    <span className="font-bold">
+                      {trialInfo.remainingTotal} sessions left
                     </span>
-                    <span className="opacity-40">|</span>
+                    <span className="opacity-40">•</span>
                     <span>
-                      {trialInfo.usedTotal}/{TRIAL_TOTAL_LIMIT} total
+                      {trialInfo.remainingToday} today
                     </span>
                   </>
                 )}
@@ -390,6 +389,28 @@ export default function Dashboard() {
             >
               Subscribe now <ArrowRight className="h-3.5 w-3.5" />
             </Link>
+          </div>
+        )}
+
+        {/* Trial Usage Card */}
+        {trialInfo && !paid && (
+          <div className="rounded-2xl border border-teal-200 bg-gradient-to-r from-teal-50 to-teal-100/50 p-6 mb-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-teal-900 opacity-75">Free trial remaining</p>
+                <p className="text-3xl font-bold text-teal-900 mt-1">
+                  {trialInfo.remainingTotal} session{trialInfo.remainingTotal !== 1 ? 's' : ''}
+                </p>
+                <p className="text-sm text-teal-800 mt-2">
+                  {trialInfo.remainingToday} available today · Trial expires {trialInfo.trialEndsAt?.toLocaleDateString('en-GB')}
+                </p>
+              </div>
+              <div className="text-right">
+                <div className="inline-flex items-center rounded-full bg-white/60 px-3 py-1.5 text-xs font-semibold text-teal-700 border border-teal-200">
+                  {Math.round((trialInfo.remainingTotal / 6) * 100)}% remaining
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
