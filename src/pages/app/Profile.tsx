@@ -167,11 +167,24 @@ export default function Profile() {
   const handlePasswordReset = async () => {
     if (!user?.email) return;
     setPwSending(true);
-    await supabase.auth.resetPasswordForEmail(user.email, {
-      redirectTo: `${window.location.origin}/login`,
-    });
-    setPwSending(false);
-    setPwSent(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
+        redirectTo: `${window.location.origin}/login`,
+      });
+
+      if (error) {
+        console.error("Password reset error:", error);
+        setSaveErr("Failed to send reset email. Please try again.");
+        return;
+      }
+
+      setPwSent(true);
+    } catch (err) {
+      console.error("Password reset error:", err);
+      setSaveErr("Failed to send reset email. Please try again.");
+    } finally {
+      setPwSending(false);
+    }
   };
 
   const handleBillingPortal = async () => {
@@ -437,8 +450,18 @@ export default function Profile() {
                     const next = { ...emailPrefs, trial_warnings: !emailPrefs.trial_warnings };
                     setEmailPrefs(next);
                     setPrefsSaving(true);
-                    await supabase.from("users").update({ email_preferences: next }).eq("id", user!.id);
-                    setPrefsSaving(false);
+                    try {
+                      const { error } = await supabase.from("users").update({ email_preferences: next }).eq("id", user!.id);
+                      if (error) {
+                        console.error("Failed to update preferences:", error);
+                        setEmailPrefs(emailPrefs); // revert on error
+                      }
+                    } catch (err) {
+                      console.error("Error updating preferences:", err);
+                      setEmailPrefs(emailPrefs); // revert on error
+                    } finally {
+                      setPrefsSaving(false);
+                    }
                   }}
                   disabled={prefsSaving}
                   className="absolute h-5 w-5 rounded-full bg-white shadow-md transition-transform"

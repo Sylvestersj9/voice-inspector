@@ -492,11 +492,21 @@ function NoteButton({ sessionId, currentNote }: { sessionId: string; currentNote
   const handleSave = async () => {
     setSaving(true);
     try {
-      await supabase
+      const { error } = await supabase
         .from("sessions")
         .update({ notes: note.trim() || null })
         .eq("id", sessionId);
+
+      if (error) {
+        console.error("Failed to save note:", error);
+        alert("Failed to save note. Please try again.");
+        return;
+      }
+
       setOpen(false);
+    } catch (err) {
+      console.error("Error saving note:", err);
+      alert("Failed to save note. Please try again.");
     } finally {
       setSaving(false);
     }

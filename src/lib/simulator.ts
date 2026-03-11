@@ -50,23 +50,38 @@ export async function generateReportAndWait(options: GenerateReportOptions) {
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
   const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
-  await fetch(`${supabaseUrl}/functions/v1/generate-report`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-      apikey: anonKey ?? "",
-    },
-    body: JSON.stringify({ session_id: sessionId, sessionId }),
-  });
+  try {
+    const res = await fetch(`${supabaseUrl}/functions/v1/generate-report`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+        apikey: anonKey ?? "",
+      },
+      body: JSON.stringify({ session_id: sessionId, sessionId }),
+    });
+
+    if (!res.ok) {
+      console.error(`Report generation failed: ${res.status} ${res.statusText}`);
+      return false;
+    }
+  } catch (err) {
+    console.error("Failed to trigger report generation:", err);
+    return false;
+  }
 
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("sessions")
       .select("report_json")
       .eq("id", sessionId)
       .maybeSingle();
+
+    if (error) {
+      console.error("Error polling report status:", error);
+      return false;
+    }
 
     if (data?.report_json) return true;
     await new Promise((r) => setTimeout(r, pollMs));

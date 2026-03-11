@@ -153,12 +153,20 @@ export default function Index() {
 
   const loadGate = async () => {
     if (!user) return;
-      setGateLoading(true);
-      const { data: sub } = await supabase
+    setGateLoading(true);
+    try {
+      const { data: sub, error: subErr } = await supabase
         .from("subscriptions")
         .select("status,stripe_subscription_id,created_at")
         .eq("user_id", user.id)
         .maybeSingle();
+
+      if (subErr) {
+        console.error("Failed to load subscription:", subErr);
+        setError("Failed to load subscription status. Please refresh.");
+        setGateLoading(false);
+        return;
+      }
 
       const status = sub?.status ?? null;
       const stripeId = sub?.stripe_subscription_id ?? null;
@@ -172,15 +180,30 @@ export default function Index() {
         return;
       }
 
-      const trialStart = sub?.created_at ? new Date(sub.created_at) : new Date();
-      const { data: sessions } = await supabase
+      // Use subscription created_at or user auth creation date for trial start
+      // Never default to "now" as that breaks trial expiry calculations
+      const trialStart = sub?.created_at
+        ? new Date(sub.created_at)
+        : user.created_at
+          ? new Date(user.created_at)
+          : new Date(Date.now() - 3 * 24 * 60 * 60 * 1000); // Assume 3 days ago if no dates available
+
+      const { data: sessions, error: sessErr } = await supabase
         .from("sessions")
         .select("started_at")
         .eq("user_id", user.id)
         .gte("started_at", trialStart.toISOString());
 
+      if (sessErr) {
+        console.error("Failed to load trial sessions:", sessErr);
+      }
+
       setTrialInfo(computeTrialUsage(trialStart, sessions ?? []));
+    } catch (err) {
+      console.error("Failed to load gate:", err);
+    } finally {
       setGateLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -251,9 +274,15 @@ export default function Index() {
     setError(null);
 
     // Ensure public.users row exists (in case trigger didn't fire at signup)
-    await supabase
+    const { error: userErr } = await supabase
       .from("users")
       .upsert({ id: user.id }, { onConflict: "id" });
+
+    if (userErr) {
+      console.error("Failed to ensure user row exists:", userErr);
+      setError("Failed to initialize session. Please refresh and try again.");
+      return;
+    }
 
     // Create session row
     const { data: sess, error: sErr } = await supabase
@@ -357,7 +386,7 @@ export default function Index() {
       };
 
       // Save to DB
-      await supabase.from("responses").insert({
+      const { error: insertErr } = await supabase.from("responses").insert({
         session_id: sessionId,
         domain: q.question.domain,
         question_text: q.question.text,
@@ -366,6 +395,11 @@ export default function Index() {
         band: result.band,
         feedback_json: result,
       });
+
+      if (insertErr) {
+        console.error("Failed to save response:", insertErr);
+        throw new Error("Failed to save your answer. Please try again.");
+      }
 
       // Update question state
       setQuestions((prev) => {
