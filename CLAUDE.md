@@ -224,6 +224,81 @@ Implementation: `supabase/functions/_shared/rate-limiter.ts` — extracts IP (Cl
 
 **Post-checkout sync:** `/app/dashboard?checkout=success` triggers `sync-subscription`
 
+## Latest Updates (v1.4 — March 11, 2026)
+
+### ⚖️ Comprehensive Legal Documentation Expansion
+- ✅ **All dates updated** to 11 March 2026 across all legal pages
+- ✅ **Privacy Policy significantly expanded:**
+  - Added detailed Data Processors & Third Parties section (Supabase, Claude API, Deepgram, Google OAuth, Stripe, Resend, PostHog, Sentry)
+  - Added specific Data Retention Schedules (account 30 days, sessions 12 months, voice instant, forms 12 months, analytics 30 days, billing 6 years, logs 90 days)
+  - Added Automated Decision-Making & Profiling section
+  - Added comprehensive Data Subject Rights section (SAR, rectification, erasure, restriction, portability, object, withdraw consent)
+  - Added Children's Data protection section with anonymisation guidance
+  - Added Breach Notification procedures (without undue delay, within 72 hours)
+  - Added Data Protection Officer & ICO complaint information
+  - Expanded from 13 to 20 sections with much more detail
+
+- ✅ **Disclaimer completely redesigned (16 comprehensive sections):**
+  - Added "Nature of Service" clarification (not official Ofsted product, not endorsed by Ofsted)
+  - Detailed "No Guarantee of Outcomes" with multiple explicit caveats
+  - Expanded "No Professional or Legal Advice" with exhaustive list of exclusions
+  - Added "AI Limitations & Errors" with specific error types (factual errors, missing context, generic feedback, inappropriate responses, etc)
+  - Added mandatory "Human Review is Mandatory" requirement
+  - **Critical** "Safeguarding Disclaimer" with NSPCC references and escalation procedures
+  - Added "Regulatory Compliance" section clarifying user responsibility
+  - Added "Data Quality & Accuracy" disclaimer
+  - Added "No Confidentiality for Child Data" with warnings about third-party processors
+  - Detailed "No Liability for Inspection Outcomes" (ratings, enforcement, business loss, employment impact, etc)
+  - Detailed "No Liability for AI Errors" (incorrect scores, inappropriate responses, etc)
+  - Comprehensive "User Responsibility" section
+  - Added "No Warranties" statement
+  - Added "Regulatory & Professional Standards" acknowledgement
+  - Added explicit "Acknowledgement" section at end with bold acknowledgement requirement
+
+- ✅ **Terms of Use expanded with 10 new sections:**
+  - Added "Third-Party Services & Links" with list of all integrated services
+  - Added critical "Limitation of Liability" section (caps damages, excludes indirect/consequential, inspection outcomes, regulatory action, business loss, AI errors, etc)
+  - Added comprehensive "Indemnification" clause with specific trigger events
+  - Added "Dispute Resolution & Arbitration" with informal resolution requirement
+  - Added "Waiver & Severability" provision
+  - Added "Assignment" rights clarification
+  - Added "Entire Agreement" clause
+  - Added "Service Modifications & Discontinuation" with 30/90-day notice periods
+  - Added "Government & Regulatory Compliance" section
+  - Added "No Employment or Partnership" clarification
+  - Added final "Acknowledgement & Acceptance" with all-caps legal language
+  - Added "Contact & Legal Inquiries" section for formal notices
+
+- ✅ **Acceptable Use Policy expanded from 5 to 13 sections:**
+  - Added detailed "Permitted Uses" section
+  - Added "Prohibited Uses - Unlawful Activity" (harassment, discrimination, threats, obscene content, etc)
+  - Added "Prohibited Uses - Safeguarding & Data Protection" with explicit child data warning and confidentiality clause
+  - Added "Prohibited Uses - AI System Misuse" (prompt injection, model theft, jailbreaking, reverse engineering, competing models)
+  - Added "Prohibited Uses - Platform Misuse" (account sharing, credential abuse, multiple accounts, impersonation, automation abuse)
+  - Added "Prohibited Uses - Content & Harmful Material" (malware, illegal content, hate speech, misinformation, IP violations, spam)
+  - Added "Prohibited Uses - Commercial Misuse" (reselling, commercial redistribution, consultation use, licensure misrepresentation)
+  - Added "Fair Usage" section with rate limiting guidance
+  - Added "Reporting Requirements" with detailed instructions
+  - Added "Monitoring & Enforcement" section
+  - Added "Suspension & Termination" with detailed enforcement actions (warn, restrict, suspend, terminate, report, pursue legal action)
+  - Added "No Compensation for Enforcement" clause
+  - Added "Policy Changes" section
+
+**Overall Legal Coverage:**
+All pages now include comprehensive protection including:
+- Explicit AI limitations and error disclaimers
+- Safeguarding warnings with escalation procedures
+- Child data protection language
+- Professional advice disclaimers (legal, safeguarding, compliance)
+- Regulatory compliance references (Childcare Act, Children Act, Care Act, Ofsted regulations, UK GDPR, DPA 2018)
+- GDPR-specific provisions (data subject rights, processing legal basis, retention, breach notification)
+- Liability limitations and caps
+- Indemnification clauses
+- User responsibility acknowledgements
+- Third-party processor information
+- Dispute resolution procedures
+- Updated dates: **11 March 2026** across all four legal pages
+
 ## Latest Updates (v1.3 — March 11–12, 2026)
 
 ### 🔐 User Signup Flow Fixes
