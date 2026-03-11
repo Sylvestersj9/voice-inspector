@@ -16,7 +16,7 @@ export default function Privacy() {
           <div className="rounded-[28px] border bg-white p-6 shadow-sm ring-2 ring-teal-200">
             <div className="max-h-[70vh] overflow-y-auto pr-2 space-y-6">
               <div className="text-xs text-slate-500">
-                Last updated: March 2026. UK GDPR compliant. If you do not agree, do not use the service.
+                Last updated: 11 March 2026. UK GDPR and Data Protection Act 2018 compliant. If you do not agree, do not use the service.
               </div>
               <Section title="1. Introduction & Scope">
                 <p className="text-sm text-slate-700">
@@ -95,9 +95,88 @@ export default function Privacy() {
                 </p>
               </Section>
 
-              <Section title="13. Contact Details">
+              <Section title="13. Data Processors & Third Parties">
+                <p className="text-sm text-slate-700 mb-3">
+                  We use the following third-party processors to deliver the Service:
+                </p>
+                <ul className="list-disc space-y-2 pl-5 text-sm text-slate-700">
+                  <li><strong>Supabase (Authentication & Storage)</strong> — stores account data, session data, and responses under Data Processing Agreement</li>
+                  <li><strong>Anthropic Claude API</strong> — processes your responses and transcripts to generate feedback; data is not retained for model training</li>
+                  <li><strong>Deepgram (Speech-to-Text)</strong> — transcribes voice recordings; audio is deleted after processing</li>
+                  <li><strong>Google OAuth</strong> — facilitates third-party authentication via your Google account</li>
+                  <li><strong>Stripe</strong> — processes payment information under Payment Card Industry (PCI) compliance</li>
+                  <li><strong>Resend (Email Delivery)</strong> — sends transactional emails (welcome, notifications, confirmations)</li>
+                  <li><strong>PostHog Analytics</strong> — collects anonymised usage analytics (US-hosted, consent-gated)</li>
+                  <li><strong>Sentry (Error Tracking)</strong> — monitors platform errors and performance issues</li>
+                </ul>
+                <p className="text-sm text-slate-700 mt-3">
+                  All processors maintain appropriate safeguards under UK GDPR. You can request details of our Data Processing Agreements.
+                </p>
+              </Section>
+
+              <Section title="14. Data Retention Schedules">
+                <ul className="list-disc space-y-2 pl-5 text-sm text-slate-700">
+                  <li><strong>Account Data:</strong> Retained for duration of service; deleted within 30 days of account termination</li>
+                  <li><strong>Session & Response Data:</strong> Retained for 12 months from creation for compliance and audit purposes; deleted on request</li>
+                  <li><strong>Voice Recordings:</strong> Transcribed by Deepgram and deleted immediately; transcripts retained per session retention policy</li>
+                  <li><strong>Contact Form Submissions:</strong> Retained for 12 months; deleted on request</li>
+                  <li><strong>Analytics Data:</strong> PostHog retention policy applies (30 days default, configurable)</li>
+                  <li><strong>Payment & Billing Data:</strong> Retained for 6 years per UK tax and accounting regulations</li>
+                  <li><strong>Access Logs & Error Logs:</strong> Retained for 90 days for security and debugging purposes</li>
+                </ul>
+              </Section>
+
+              <Section title="15. Automated Decision-Making & Profiling">
                 <p className="text-sm text-slate-700">
-                  For privacy questions or requests, email info@mockofsted.co.uk or use the contact form at /contact. We aim to respond within 5 business days.
+                  We do not use fully automated decision-making for consequential decisions about you (e.g., account suspension). Trial eligibility checks and scoring are algorithmic but not profiling. You have the right to request human review of any automated decision.
+                </p>
+              </Section>
+
+              <Section title="16. Data Subject Rights Requests">
+                <p className="text-sm text-slate-700 mb-3">
+                  Under UK GDPR, you have the right to:
+                </p>
+                <ul className="list-disc space-y-2 pl-5 text-sm text-slate-700">
+                  <li><strong>Access (SAR):</strong> Obtain a copy of your personal data in a portable format</li>
+                  <li><strong>Rectification:</strong> Correct inaccurate or incomplete data</li>
+                  <li><strong>Erasure (Right to be Forgotten):</strong> Delete data where no legal basis remains (subject to exceptions)</li>
+                  <li><strong>Restrict Processing:</strong> Suspend processing of your data while you dispute it</li>
+                  <li><strong>Data Portability:</strong> Receive your data in a structured, machine-readable format</li>
+                  <li><strong>Object to Processing:</strong> Opt-out of legitimate interest processing (where an alternative exists)</li>
+                  <li><strong>Withdraw Consent:</strong> Revoke consent-based processing at any time</li>
+                </ul>
+                <p className="text-sm text-slate-700 mt-3">
+                  Submit requests via /contact or info@mockofsted.co.uk. We aim to respond within 30 calendar days. Requests may require proof of identity. Some rights are subject to legal exceptions (e.g., contractual retention, legal obligation).
+                </p>
+              </Section>
+
+              <Section title="17. Children's Data">
+                <p className="text-sm text-slate-700">
+                  MockOfsted is intended for adults (18+) managing childcare settings. We do not knowingly collect data from children. If a child's identifiable information is submitted within responses, you are responsible for obtaining appropriate parental/guardian consent and for anonymisation. We recommend avoiding submission of any personal data relating to identified children.
+                </p>
+              </Section>
+
+              <Section title="18. Breach Notification">
+                <p className="text-sm text-slate-700">
+                  If we discover a data breach affecting your personal data, we will notify you without undue delay (and, where legally required, within 72 hours of discovery) via email or in-app notification. Notifications will include information on the breach, likely impact, and steps to mitigate risk.
+                </p>
+              </Section>
+
+              <Section title="19. Data Protection Officer & Complaints">
+                <p className="text-sm text-slate-700 mb-2">
+                  <strong>Questions & Complaints:</strong> Email info@mockofsted.co.uk with &quot;Privacy Request&quot; in the subject line.
+                </p>
+                <p className="text-sm text-slate-700">
+                  <strong>ICO Complaint:</strong> If dissatisfied with our response, you can lodge a complaint with the Information Commissioner's Office (ICO) at www.ico.org.uk.
+                </p>
+              </Section>
+
+              <Section title="20. Contact Details">
+                <p className="text-sm text-slate-700">
+                  <strong>Data Controller:</strong> MockOfsted Ltd, info@mockofsted.co.uk
+                </p>
+                <p className="text-sm text-slate-700 mt-2">
+                  For privacy questions, data subject access requests, or complaints, contact us at info@mockofsted.co.uk or use /contact. We aim to respond within 5 business days.
                 </p>
               </Section>
             </div>
