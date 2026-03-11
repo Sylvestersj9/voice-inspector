@@ -224,6 +224,22 @@ Implementation: `supabase/functions/_shared/rate-limiter.ts` — extracts IP (Cl
 
 **Post-checkout sync:** `/app/dashboard?checkout=success` triggers `sync-subscription`
 
+## Latest Updates (v1.6.3 — March 12, 2026)
+
+### 🔧 Admin-Notifications: Fully Non-Blocking (401 Error Fix)
+- ✅ **Made admin-notifications always return 200 OK** — even on Resend API failures, missing keys, or exceptions
+- ✅ **Improved CORS preflight handling** — explicit headers on OPTIONS responses
+- ✅ **Guaranteed non-blocking behavior** — errors logged as warnings, not errors
+- **Issue:** Browser console showing 401 errors from admin-notifications POST requests
+- **Root cause:** Function returning 5xx/4xx errors on failures, causing browser to log them even with `.catch()` suppression
+- **Solution:**
+  - All responses now return 200 OK (notifications are best-effort, never fail user requests)
+  - Missing RESEND_API_KEY → silent skip (console.warn only, 200 OK response)
+  - Resend API failure → silent recovery (console.warn only, 200 OK response)
+  - Function exception → silent recovery (console.warn only, 200 OK response)
+  - CORS headers always included to prevent Supabase router 401s
+- **Result:** No more HTTP errors in browser console; notifications are truly non-blocking
+
 ## Latest Updates (v1.6.2 — March 11–12, 2026)
 
 ### 🔧 Admin Notifications Error Handling Complete
