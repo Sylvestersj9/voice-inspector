@@ -166,6 +166,8 @@ export default function Dashboard() {
       ]);
 
       // Fetch responses for all sessions separately to avoid nested query issues
+      let sessionsWithResponses: DashboardSessionRow[] = (sess as DashboardSessionRow[]) ?? [];
+
       if (sess && sess.length > 0) {
         const sessionIds = sess.map(s => s.id);
         const { data: responses, error: respError } = await supabase
@@ -175,10 +177,10 @@ export default function Dashboard() {
 
         if (!respError && responses) {
           // Attach responses to sessions
-          sess = sess.map(s => ({
+          sessionsWithResponses = sess.map(s => ({
             ...s,
             responses: responses.filter(r => r.session_id === s.id),
-          }));
+          })) as DashboardSessionRow[];
         }
       }
 
@@ -194,7 +196,7 @@ export default function Dashboard() {
 
       setProfile(prof ?? null);
       setSubscription(sub ?? null);
-      setSessions((sess as DashboardSessionRow[]) ?? []);
+      setSessions(sessionsWithResponses);
 
       const paid = isPaidSub(sub ?? null);
       if (!paid) {
