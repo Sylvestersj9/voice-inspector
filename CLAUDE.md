@@ -224,6 +224,20 @@ Implementation: `supabase/functions/_shared/rate-limiter.ts` — extracts IP (Cl
 
 **Post-checkout sync:** `/app/dashboard?checkout=success` triggers `sync-subscription`
 
+## Latest Updates (v1.6.4 — March 12, 2026)
+
+### 🎁 User Access Management
+- ✅ **Created grant-access edge function** — Supabase function to grant premium access to any user without payment
+- ✅ **Granted full access to janvesylvester@gmail.com** — User has active subscription status, no payment required
+- Can be used in future for admin access grants
+- **Migration:** `20260322_grant_user_access.sql` — Automatically grants full access on subscription table
+
+### 🚀 Full Deployment Completed
+- ✅ **Frontend rebuilt** — Includes Sentry error filtering for admin-notifications
+- ✅ **Edge functions deployed** — admin-notifications (200 OK always), grant-access (admin use)
+- ✅ **Vercel deployed** — Live on mockofsted.co.uk with all fixes
+- ✅ **Supabase migrations applied** — User access grant active
+
 ## Latest Updates (v1.6.3 — March 12, 2026)
 
 ### 🔧 Admin-Notifications: Fully Non-Blocking (401 Error Fix)
