@@ -12,6 +12,16 @@ Sentry.init({
   tracesSampleRate: 1.0,
   sendDefaultPii: true,
   enabled: !!import.meta.env.VITE_SENTRY_DSN,
+  beforeSend(event) {
+    // Ignore non-critical admin-notifications network errors
+    if (
+      event.exception &&
+      event.exception.values?.[0]?.value?.includes("admin-notifications")
+    ) {
+      return null;
+    }
+    return event;
+  },
 });
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
