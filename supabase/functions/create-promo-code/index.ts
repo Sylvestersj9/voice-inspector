@@ -31,15 +31,16 @@ serve(async (req: Request) => {
 
     if (!stripeSecretKey) throw new Error("STRIPE_SECRET_KEY not set");
 
-    // Verify user is authenticated
+    // Verify user is authenticated AND admin
     const userClient = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
     });
     const { data: { user }, error: authError } = await userClient.auth.getUser();
     if (authError || !user) return json(401, { error: "Invalid token" });
 
-    // TODO: Restore admin role check after setting up proper admin roles
-    // For now, just require authentication
+    // Check admin role
+    const isAdmin = user?.user_metadata?.role === "admin";
+    if (!isAdmin) return json(403, { error: "Admin access required" });
 
     const serviceClient = createClient(supabaseUrl, supabaseServiceKey);
 

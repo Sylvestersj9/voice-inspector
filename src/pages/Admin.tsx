@@ -297,15 +297,9 @@ export default function Admin() {
     }
   }, [uploading, statsLoading, usersLoading, feedbackLoading, promoCodesLoading]);
 
-  // Auth guard - after all hooks
-  // TODO: Restore admin role check after setting up proper auth
-  // if (user?.user_metadata?.role !== "admin") {
-  //   return <Navigate to="/app" replace />;
-  // }
-
-  // Temporary: Allow access if logged in
-  if (!user) {
-    return <Navigate to="/login" replace />;
+  // Auth guard - admin only
+  if (!user || user?.user_metadata?.role !== "admin") {
+    return <Navigate to="/app" replace />;
   }
 
   const handleDelete = async (docId: string) => {
