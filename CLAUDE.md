@@ -137,6 +137,11 @@ Migrations in `supabase/migrations/`:
 - `20260312_blog_autopilot.sql` — blog_posts table
 - `20260313_trial_2sessions_per_day.sql` — updated trial limits (2/day, 6 total)
 - `20260314_welcome_email_trigger.sql` — signup email trigger
+- `20260316_add_feedback_table.sql` — contact form feedback table
+- `20260317_disable_welcome_email_trigger.sql` — disabled problematic trigger
+- `20260319_reset_auth_users.sql` — cleared auth.users and orphaned tables
+- `20260320_recreate_user_subscription_triggers.sql` — restored user creation triggers
+- `20260321_sync_missing_users.sql` — syncs orphaned auth.users to public.users
 
 **Tables:**
 - `public.users` — mirrors `auth.users`, stores `name`, `role`, `home_name`
@@ -185,7 +190,7 @@ Static file: `public/tools/question-bank.csv` (18 rows, 2 questions per domain).
 - **Supabase project:** `hedxbcpqcgtsqjogedru` (https://hedxbcpqcgtsqjogedru.supabase.co)
 - **Stripe:** LIVE mode — accepting real payments
 
-### Rate Limiting (NEW — v1.1)
+### Rate Limiting
 Code-based, in-memory rate limiting on 3 core edge functions:
 - `evaluate`: 100 req/min/IP (Claude API protection)
 - `generate-report`: 100 req/min/IP (Claude API protection)
@@ -219,60 +224,48 @@ Implementation: `supabase/functions/_shared/rate-limiter.ts` — extracts IP (Cl
 
 **Post-checkout sync:** `/app/dashboard?checkout=success` triggers `sync-subscription`
 
-### Legacy & Cleanup
-- Skipped/unused migrations: `.20260312_feature_additions.sql.skip` (already applied to remote)
-- Deprecated files (if present): `Account.tsx`, `Sessions.tsx`, `History.tsx`, `Onboarding.tsx` (prefer Dashboard)
+## Latest Updates (v1.3 — March 11–12, 2026)
 
-## Latest Updates (v1.2 — March 11, 2026)
-
-### 🎯 Console Error Fixes
-- ✅ **React Router v7 warnings** — Added future flags (`v7_startTransition`, `v7_relativeSplatPath`) to BrowserRouter
-- ✅ **PostHog analytics** — Fixed API endpoint from `eu.i.posthog.com` to `us.i.posthog.com`
-- ✅ **Sentry error tracking** — Configured with new DSN, enabled `sendDefaultPii` for better error context
-- ✅ **Contact form 502 errors** — Fixed by creating `public.feedback` table and configuring Resend integration
-
-### 📧 Contact Form & Email Integration
-- Created `public.feedback` table for contact form submissions (status tracking: received/sent/failed)
-- Integrated Resend API for email delivery
-- Added message length validation (≥5 characters) both client & server-side
-- Implemented reply-to functionality: emails sent from verified domain with user's email in `reply_to` field
-- Rate limiting: 1 request/min per email or IP to prevent spam
-- Environment variables: `RESEND_API_KEY`, `CONTACT_TO_EMAIL`, `CONTACT_FROM_EMAIL`
-
-### 🗄️ Database Migrations
-- `20260316_add_feedback_table.sql` — feedback table for contact form
-- Fixed & skipped conflicting `20260312_feature_additions.sql` (already applied to remote)
+### 🔐 User Signup Flow Fixes
+- ✅ **Database signup issues resolved** — Recreated database triggers (`handle_new_user`, `handle_new_subscription`) that auto-populate `public.users` and `public.subscriptions` when `auth.users` created
+- ✅ **Google OAuth signups now work** — Users who sign up via Google OAuth now properly recorded in database
+- ✅ **Auth user sync** — Migration syncs any orphaned `auth.users` to `public.users` and ensures subscriptions exist for all users
+- ✅ **422/500 errors fixed** — Disabled problematic welcome-email trigger, welcome emails now sent manually from frontend
+- ✅ **Auth reset complete** — Cleared all `auth.users` to allow fresh testing (20260319 migration)
 
 ### 📬 Admin Notifications System (NEW)
-- Created `admin-notifications` edge function to send formatted emails to `info@mockofsted.co.uk` for all key events
-- Integrated notifications into signup, login, session lifecycle, and feedback flows
-- Non-blocking, best-effort delivery to avoid blocking user experience
-- Events tracked: signup (email & OAuth), login, session_started, session_completed (with score/domain), feedback
-- Fixed Google OAuth signup: now sends welcome email and admin notifications (was missing before)
-- AuthProvider detects new users via `onAuthStateChange` and triggers welcome email for all signup methods
+- ✅ Created `admin-notifications` edge function sending to `info@mockofsted.co.uk`
+- ✅ Non-blocking, best-effort delivery (silent failures to not disrupt UX)
+- ✅ Tracks: signup (email & OAuth), login, session_started, session_completed (with score/domain), feedback submissions
+- ✅ Integrated into Login.tsx (email/OAuth), Index.tsx (session flow), Contact.tsx (feedback), AuthProvider (OAuth detection)
 
-### 🎨 Legal Pages & Email Template Fixes
-- Fixed Terms.tsx & Privacy.tsx: replaced "Ziantra Ltd" → "MockOfsted" (3 instances in Terms, 1 in Privacy)
-- Fixed email addresses: changed `hello@inspectready.co.uk` → `info@mockofsted.co.uk` (2 instances in Privacy)
-- Fixed PostHog endpoint reference: `eu.i.posthog.com` → `us.i.posthog.com` in Privacy Policy
-- Redesigned welcome-email template: added MockOfsted shield+checkmark logo (inline SVG), improved styling, better spacing
-- Updated footer links to point to correct domain and email
+### 📧 Email System Complete Overhaul
+- ✅ **Welcome email redesigned** — Added MockOfsted shield+checkmark logo, improved HTML/CSS styling
+- ✅ **CORS fixed** — Both `welcome-email` and `send-feedback` functions now include CORS headers for browser requests
+- ✅ **Email delivery to Inbox (not Promotions)** — Verified domain sender `info@mockofsted.co.uk`, SPF/DKIM/DMARC configured
+- ✅ **Contact form transactional** — Reply-to set to user's email, rate limited (1 req/min per email or IP)
+- ✅ **Feedback table** — `public.feedback` table tracks submission status (received/sent/failed)
 
-### 🔧 Email Delivery & Configuration
-- Verified `CONTACT_FROM_EMAIL` set to `info@mockofsted.co.uk` (confirmed as verified sender in Resend)
-- DMARC record added to domain for authentication (SPF/DKIM already configured)
-- All transactional emails now sent from verified domain to avoid Promotions folder
-- Contact form email replies use `reply_to` field set to user's email
+### 🎨 Legal & Branding Fixes
+- ✅ **Terms.tsx & Privacy.tsx corrected** — Replaced "Ziantra Ltd" → "MockOfsted" (3 in Terms, 1 in Privacy)
+- ✅ **Email references fixed** — Changed `hello@inspectready.co.uk` → `info@mockofsted.co.uk` (2 instances in Privacy)
+- ✅ **PostHog endpoint corrected** — Privacy policy now references `us.i.posthog.com` (not EU endpoint)
+- ✅ **Smart quotes removed** — Fixed JSX syntax errors caused by Unicode smart quotes (U+201C/U+201D)
 
-### ✅ Quality Checks & Deployments
-- ESLint: PASSING
-- TypeScript type check: PASSING
-- Production build: PASSING
-- Vercel: Environment variables configured (`RESEND_API_KEY`)
-- Supabase: All secrets configured and deployed
-- Resend: Domain verified and integrated with Supabase + Vercel
-- Auth database reset: cleared `auth.users` and `public.users` (20260319 migration)
-- New user signups now working without 422 errors
+### 🗄️ Recent Database Migrations
+- `20260317_disable_welcome_email_trigger.sql` — Dropped problematic trigger, emails now sent manually
+- `20260319_reset_auth_users.sql` — Cleared auth.users and orphaned inspection tables
+- `20260320_recreate_user_subscription_triggers.sql` — Restored triggers for auto-creating users/subscriptions
+- `20260321_sync_missing_users.sql` — Syncs orphaned auth.users to public.users and ensures subscriptions exist
+
+### ✅ Build & Deployment Status
+- Production build: **PASSING** ✓
+- ESLint: **PASSING** ✓
+- TypeScript: **PASSING** ✓
+- Supabase: All migrations deployed ✓
+- Resend: Verified domain, all secrets configured ✓
+- Vercel: Environment variables set ✓
+- Git: All 6 latest commits pushed to main ✓
 
 ## Branding & Design
 
