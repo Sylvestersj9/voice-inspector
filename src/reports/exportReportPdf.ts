@@ -1,13 +1,13 @@
 import type { InspectionReport, ReportBand } from "./types";
 import { DOMAIN_LABELS, DOMAIN_ORDER } from "@/lib/questions";
 
-const TEAL = "#0D9488";
-
-const BAND_COLORS: Record<string, string> = {
-  Outstanding: "#22c55e",
-  Good: "#f59e0b",
-  "Requires Improvement": "#f97316",
-  Inadequate: "#ef4444",
+// RGB colors
+const TEAL_RGB = [13, 148, 136];
+const BAND_COLORS: Record<string, number[]> = {
+  Outstanding: [34, 197, 94],
+  Good: [245, 158, 11],
+  "Requires Improvement": [249, 115, 22],
+  Inadequate: [239, 68, 68],
 };
 
 type DomainSummary = { domain: string; avg_score: number; band: ReportBand };
@@ -74,8 +74,8 @@ export function truncateWords(text: string, maxWords: number) {
   return `${words.slice(0, maxWords).join(" ")}...`;
 }
 
-function getBandColor(band?: string | null) {
-  return BAND_COLORS[band ?? ""] ?? "#64748b";
+function getBandColor(band?: string | null): number[] {
+  return BAND_COLORS[band ?? ""] ?? [100, 116, 139];
 }
 
 type JsPdfLike = {
@@ -118,20 +118,23 @@ export async function exportReportPdf(params: NewParams | LegacyParams) {
   const margin = 20;
   const lineHeight = 16.5;
 
-  const addHeader = (title: string) => {
+  const addHeader = (title: string, y: number) => {
     doc.setFontSize(14);
-    doc.setTextColor(TEAL);
-    doc.text(title, margin, margin);
-    doc.setDrawColor(200, 200, 200);
-    doc.line(margin, margin + 2, pageWidth - margin, margin + 2);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...TEAL_RGB);
+    doc.text(title, margin, y);
+    doc.setFont("helvetica", "normal");
+    doc.setDrawColor(220, 220, 220);
+    doc.line(margin, y + 2, pageWidth - margin, y + 2);
   };
 
   const addParagraph = (text: string, startY: number, maxWidth: number) => {
     doc.setFontSize(11);
-    doc.setTextColor(20, 20, 20);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(40, 40, 40);
     const lines = splitLines(doc, text, maxWidth);
-    doc.text(lines, margin, startY, { lineHeightFactor: 1.5 });
-    return startY + lines.length * (lineHeight / 2);
+    doc.text(lines, margin, startY, { lineHeightFactor: 1.6 });
+    return startY + lines.length * 6.5;
   };
 
   if (isLegacyParams(params)) {
@@ -140,32 +143,39 @@ export async function exportReportPdf(params: NewParams | LegacyParams) {
     const date = new Date(params.report.created_at).toLocaleDateString("en-GB");
 
     // Cover page
-    doc.setFontSize(22);
-    doc.setTextColor(TEAL);
-    doc.text("MockOfsted Practice Report", margin, 40);
+    doc.setFontSize(26);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...TEAL_RGB);
+    doc.text("MockOfsted", margin, 35);
+    doc.setFontSize(18);
+    doc.text("Practice Report", margin, 45);
+
+    doc.setFont("helvetica", "normal");
     doc.setFontSize(12);
-    doc.setTextColor(60, 60, 60);
-    doc.text(`Home: ${params.homeName || "N/A"}`, margin, 55);
-    doc.text(`Date: ${date}`, margin, 63);
+    doc.setTextColor(80, 80, 80);
+    doc.text(`Home: ${params.homeName || "N/A"}`, margin, 60);
+    doc.text(`Date: ${date}`, margin, 68);
 
     doc.setFontSize(16);
-    doc.setTextColor(getBandColor(overallBand));
-    doc.text(`Overall: ${overallBand}`, margin, 78);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...getBandColor(overallBand));
+    doc.text(`Overall: ${overallBand}`, margin, 85);
     if (overallScore != null) {
-      doc.setFontSize(11);
-      doc.setTextColor(60, 60, 60);
-      doc.text(`Score: ${overallScore.toFixed(1)} / 4.0`, margin, 86);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(12);
+      doc.setTextColor(80, 80, 80);
+      doc.text(`Score: ${overallScore.toFixed(1)} / 4.0`, margin, 93);
     }
 
     doc.addPage();
-    addHeader("Executive Summary");
+    addHeader("Executive Summary", margin);
     let y = margin + 12;
     y = addParagraph(params.report.strengths || "", y, pageWidth - margin * 2);
     y += 6;
     y = addParagraph(params.report.recommended_actions || "", y, pageWidth - margin * 2);
 
     doc.addPage();
-    addHeader("Domain Breakdown");
+    addHeader("Domain Breakdown", margin);
     const body = params.domains.map((d) => [d.domain, d.avg_score.toFixed(1), d.band, "-", "-", "-"]);
     if (autoTable) {
       autoTable(doc, {
@@ -179,7 +189,7 @@ export async function exportReportPdf(params: NewParams | LegacyParams) {
     }
 
     doc.addPage();
-    addHeader("Action Plan");
+    addHeader("Action Plan", margin);
     y = margin + 12;
     y = addParagraph(params.report.recommended_actions || "", y, pageWidth - margin * 2);
 
@@ -195,27 +205,33 @@ export async function exportReportPdf(params: NewParams | LegacyParams) {
   const date = header.date ?? new Date().toLocaleDateString("en-GB");
 
   // Cover page
-  doc.setFontSize(22);
-  doc.setTextColor(TEAL);
-  doc.text("MockOfsted Practice Report", margin, 40);
+  doc.setFontSize(26);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...TEAL_RGB);
+  doc.text("MockOfsted", margin, 35);
+  doc.setFontSize(18);
+  doc.text("Practice Report", margin, 45);
 
+  doc.setFont("helvetica", "normal");
   doc.setFontSize(12);
-  doc.setTextColor(60, 60, 60);
-  doc.text(`Home: ${homeName}`, margin, 55);
-  doc.text(`Date: ${date}`, margin, 63);
+  doc.setTextColor(80, 80, 80);
+  doc.text(`Home: ${homeName}`, margin, 60);
+  doc.text(`Date: ${date}`, margin, 68);
 
   doc.setFontSize(16);
-  doc.setTextColor(getBandColor(overallBand));
-  doc.text(`Overall: ${overallBand}`, margin, 78);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...getBandColor(overallBand));
+  doc.text(`Overall: ${overallBand}`, margin, 85);
   if (overallScore != null) {
-    doc.setFontSize(11);
-    doc.setTextColor(60, 60, 60);
-    doc.text(`Score: ${Number(overallScore).toFixed(1)} / 4.0`, margin, 86);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(12);
+    doc.setTextColor(80, 80, 80);
+    doc.text(`Score: ${Number(overallScore).toFixed(1)} / 4.0`, margin, 93);
   }
 
   // Page 2: Executive Summary
   doc.addPage();
-  addHeader("Executive Summary");
+  addHeader("Executive Summary", margin);
   let y = margin + 12;
   if (report.summaryNarrative) {
     y = addParagraph(report.summaryNarrative, y, pageWidth - margin * 2);
@@ -233,24 +249,27 @@ export async function exportReportPdf(params: NewParams | LegacyParams) {
   const strengths = report.keyStrengths ?? [];
   const actions = report.priorityActions ?? [];
   if (strengths.length > 0) {
-    doc.setFontSize(12);
-    doc.setTextColor(13, 148, 136);
-    doc.text("Key Strengths", margin, y);
     y += 6;
-    doc.setFontSize(11);
-    doc.setTextColor(20, 20, 20);
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...TEAL_RGB);
+    doc.text("Key Strengths", margin, y);
+    y += 7;
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(40, 40, 40);
     strengths.forEach((s) => {
       y = addParagraph(`• ${s}`, y, pageWidth - margin * 2);
     });
-    y += 4;
   }
   if (actions.length > 0) {
+    y += 8;
     doc.setFontSize(12);
-    doc.setTextColor(245, 158, 11);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...BAND_COLORS["Good"]);
     doc.text("Priority Actions", margin, y);
-    y += 6;
-    doc.setFontSize(11);
-    doc.setTextColor(20, 20, 20);
+    y += 7;
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(40, 40, 40);
     actions.forEach((a) => {
       y = addParagraph(`• ${a}`, y, pageWidth - margin * 2);
     });
@@ -258,7 +277,7 @@ export async function exportReportPdf(params: NewParams | LegacyParams) {
 
   // Domain table
   doc.addPage();
-  addHeader("Domain Breakdown");
+  addHeader("Domain Breakdown", margin);
 
   const responsesByDomain = new Map<string, ResponseRow>();
   params.responses.forEach((r) => responsesByDomain.set(r.domain, r));
@@ -300,13 +319,13 @@ export async function exportReportPdf(params: NewParams | LegacyParams) {
   } else {
     let tableY = margin + 10;
     doc.setFontSize(10);
-    doc.setTextColor(20, 20, 20);
+    doc.setTextColor(40, 40, 40);
     rows.forEach((row) => {
       const line = row.join(" | ");
       const lines = splitLines(doc, line, pageWidth - margin * 2);
       if (tableY + lines.length * 5 > pageHeight - margin) {
         doc.addPage();
-        addHeader("Domain Breakdown (cont.)");
+        addHeader("Domain Breakdown (cont.)", margin);
         tableY = margin + 10;
       }
       doc.text(lines, margin, tableY);
@@ -316,7 +335,7 @@ export async function exportReportPdf(params: NewParams | LegacyParams) {
 
   // Final page: Action plan
   doc.addPage();
-  addHeader("Action Plan");
+  addHeader("Action Plan", margin);
   y = margin + 12;
   const devPoints = report.developmentPoints ?? report.priorityActions ?? [];
   if (devPoints.length === 0) {
@@ -327,13 +346,15 @@ export async function exportReportPdf(params: NewParams | LegacyParams) {
     });
   }
 
-  y += 6;
+  y += 10;
   doc.setFontSize(12);
-  doc.setTextColor(13, 148, 136);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...TEAL_RGB);
   doc.text("Next Steps", margin, y);
-  y += 6;
+  y += 7;
+  doc.setFont("helvetica", "normal");
   doc.setFontSize(11);
-  doc.setTextColor(20, 20, 20);
+  doc.setTextColor(40, 40, 40);
   if (report.readinessStatement) {
     addParagraph(report.readinessStatement, y, pageWidth - margin * 2);
   } else if (report.closingVerdict) {
