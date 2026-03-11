@@ -258,17 +258,21 @@ export default function Profile() {
     navigate("/");
   };
 
-  const subLabel = isPaid(subscription)
-    ? "Active — unlimited access"
-    : trialInfo?.expired
-      ? "Trial ended"
-      : `Free trial`;
+  const subLabel = subscription?.status === "cancelled"
+    ? "Cancelled"
+    : isPaid(subscription)
+      ? "Active — unlimited access"
+      : trialInfo?.expired
+        ? "Trial ended"
+        : `Free trial`;
 
-  const subColour = isPaid(subscription)
-    ? "bg-teal-50 text-teal-700 border-teal-200"
-    : trialInfo?.expired
-      ? "bg-red-50 text-red-700 border-red-200"
-      : "bg-amber-50 text-amber-700 border-amber-200";
+  const subColour = subscription?.status === "cancelled"
+    ? "bg-slate-50 text-slate-700 border-slate-200"
+    : isPaid(subscription)
+      ? "bg-teal-50 text-teal-700 border-teal-200"
+      : trialInfo?.expired
+        ? "bg-red-50 text-red-700 border-red-200"
+        : "bg-amber-50 text-amber-700 border-amber-200";
 
   if (loading) {
     return (
@@ -329,8 +333,18 @@ export default function Profile() {
               {isPaid(subscription) && (
                 <p className="text-sm text-slate-500">£29/month · unlimited sessions</p>
               )}
+              {subscription?.status === "cancelled" && (
+                <p className="text-sm text-slate-500">Your subscription was cancelled and has ended.</p>
+              )}
             </div>
-            {isPaid(subscription) ? (
+            {subscription?.status === "cancelled" ? (
+              <Link
+                to="/app/paywall"
+                className="inline-flex items-center rounded-xl bg-teal-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-teal-700 transition-colors"
+              >
+                Resubscribe — £29/month
+              </Link>
+            ) : isPaid(subscription) ? (
               <div className="space-y-2">
                 <button
                   onClick={handleBillingPortal}
