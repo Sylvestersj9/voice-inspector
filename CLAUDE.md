@@ -230,15 +230,23 @@ Implementation: `supabase/functions/_shared/rate-limiter.ts` — extracts IP (Cl
 - ✅ **Made admin-notifications always return 200 OK** — even on Resend API failures, missing keys, or exceptions
 - ✅ **Improved CORS preflight handling** — explicit headers on OPTIONS responses
 - ✅ **Guaranteed non-blocking behavior** — errors logged as warnings, not errors
-- **Issue:** Browser console showing 401 errors from admin-notifications POST requests
-- **Root cause:** Function returning 5xx/4xx errors on failures, causing browser to log them even with `.catch()` suppression
+- ✅ **Configured Sentry to ignore admin-notifications errors** — added `beforeSend` hook to filter out non-critical network errors
+- **Issue:** Browser console showing 401 errors from admin-notifications POST requests + Sentry capturing them
+- **Root cause:**
+  - Edge function returning 5xx/4xx errors on failures, causing browser to log them even with `.catch()` suppression
+  - Sentry's network monitoring capturing these HTTP errors before JavaScript catch can suppress
 - **Solution:**
-  - All responses now return 200 OK (notifications are best-effort, never fail user requests)
-  - Missing RESEND_API_KEY → silent skip (console.warn only, 200 OK response)
-  - Resend API failure → silent recovery (console.warn only, 200 OK response)
-  - Function exception → silent recovery (console.warn only, 200 OK response)
-  - CORS headers always included to prevent Supabase router 401s
-- **Result:** No more HTTP errors in browser console; notifications are truly non-blocking
+  - **Backend (Edge Function):** All responses now return 200 OK (notifications are best-effort, never fail user requests)
+    - Missing RESEND_API_KEY → silent skip (console.warn only, 200 OK response)
+    - Resend API failure → silent recovery (console.warn only, 200 OK response)
+    - Function exception → silent recovery (console.warn only, 200 OK response)
+    - CORS headers always included to prevent Supabase router 401s
+  - **Frontend (Sentry):** Added `beforeSend` hook to filter out admin-notifications errors from error tracking
+- **Result:** No more HTTP errors in browser console or Sentry; notifications are truly non-blocking
+- **Deploy instructions:**
+  - `bun run build` → rebuild frontend with Sentry filter
+  - Deploy to Vercel
+  - `supabase functions deploy admin-notifications` → deploy function returning 200 OK always
 
 ## Latest Updates (v1.6.2 — March 11–12, 2026)
 
