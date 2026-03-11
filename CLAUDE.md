@@ -224,6 +224,16 @@ Implementation: `supabase/functions/_shared/rate-limiter.ts` — extracts IP (Cl
 
 **Post-checkout sync:** `/app/dashboard?checkout=success` triggers `sync-subscription`
 
+## Latest Updates (v1.6.1 — March 11, 2026)
+
+### 🔧 Delete Account 401 Error Fix
+- ✅ **Removed admin-notifications call** from delete-account function
+- **Issue:** Edge function was calling admin-notifications without proper authentication headers → 401 error
+- **Solution:** Removed non-critical notification call; confirmation email and database records provide adequate user feedback and audit trail
+- Email confirmation already notifies user of successful deletion
+- Session/response records in database serve as permanent audit trail
+- No functional change to user experience, only removed unnecessary backend call
+
 ## Latest Updates (v1.6 — March 11, 2026)
 
 ### 🗑️ Account Deletion Feature with Status Tracking
