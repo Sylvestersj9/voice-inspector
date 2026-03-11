@@ -40,6 +40,7 @@ type Subscription = {
   status: string;
   stripe_subscription_id: string | null;
   created_at: string | null;
+  current_period_end: string | null;
 };
 
 function isPaid(sub: Subscription | null) {
@@ -87,7 +88,7 @@ export default function Profile() {
         { count: ansCount, error: ansError },
       ] = await Promise.all([
         supabase.from("users").select("name,role,home_name,email_preferences").eq("id", user.id).single(),
-        supabase.from("subscriptions").select("status,stripe_subscription_id,created_at").eq("user_id", user.id).maybeSingle(),
+        supabase.from("subscriptions").select("status,stripe_subscription_id,created_at,current_period_end").eq("user_id", user.id).maybeSingle(),
         supabase.from("sessions").select("started_at").eq("user_id", user.id),
         supabase.from("responses").select("id", { count: "exact", head: true }).in(
           "session_id",
@@ -333,8 +334,17 @@ export default function Profile() {
               {isPaid(subscription) && (
                 <p className="text-sm text-slate-500">£29/month · unlimited sessions</p>
               )}
-              {subscription?.status === "cancelled" && (
-                <p className="text-sm text-slate-500">Your subscription was cancelled and has ended.</p>
+              {subscription?.status === "cancelled" && subscription?.current_period_end && (
+                <p className="text-sm text-slate-500">
+                  Your subscription was cancelled. Full access until{" "}
+                  <span className="font-semibold text-slate-700">
+                    {new Date(subscription.current_period_end).toLocaleDateString("en-GB", {
+                      day: "numeric",
+                      month: "long",
+                      year: "numeric",
+                    })}
+                  </span>
+                </p>
               )}
             </div>
             {subscription?.status === "cancelled" ? (
