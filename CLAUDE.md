@@ -406,13 +406,15 @@ Implementation: `supabase/functions/_shared/rate-limiter.ts` — extracts IP (Cl
    - Backend enforces `max_redemptions: 5` at all levels
    - Fully functional ✅
 
-5. **Knowledge Base** ⭐ HOLDS YOUR KB!
-   - Upload reference documents for evaluation context
-   - Accepts: Ofsted reports, policies, action plans, evidence logs, SCCIF guidance, internal docs
-   - Auto-chunks and embeds content for semantic search
-   - Document types selector: Ofsted report, Inspection action plan, Policy/Procedure, Evidence/Logs, Internal Guidance, SCCIF/Regulations, Other
-   - Documents list with delete capability
-   - Reserved for future retrieval-augmented evaluation features
+5. **Knowledge Base** ⭐ ADMIN-MAINTAINED SHARED KB
+   - **Purpose**: Centralized knowledge base maintained by admins for all users
+   - **Upload by**: Admin only (not user-uploadable)
+   - **Used by**: All users benefit from shared organizational context
+   - **Content types**: Ofsted reports, SCCIF guidance, best practices, policies, action plans, evidence logs, internal procedures
+   - **How it works**: Auto-chunks and embeds documents for semantic search
+   - **Document types selector**: Ofsted report, Inspection action plan, Policy/Procedure, Evidence/Logs, Internal Guidance, SCCIF/Regulations, Other
+   - **Future integration**: Reserved for retrieval-augmented evaluation (will provide context to Claude when scoring answers)
+   - **Status**: Ready to use, not yet integrated into evaluations
    - Fully functional ✅
 
 **Admin Guard:** All tabs protected by JWT + admin role check
