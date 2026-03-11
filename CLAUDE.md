@@ -224,6 +224,84 @@ Implementation: `supabase/functions/_shared/rate-limiter.ts` — extracts IP (Cl
 
 **Post-checkout sync:** `/app/dashboard?checkout=success` triggers `sync-subscription`
 
+## Latest Updates (v1.8.0 — March 11, 2026)
+
+### 🎟️ Promo Codes + Interview Prep Marketing Angle
+
+**Part 1: Promo Code System**
+- ✅ **Database migration** `20260323_promo_codes.sql`
+  - New `public.promo_codes` table with Stripe integration
+  - Fields: code, description, discount_percent, max_redemptions, times_redeemed, expires_at
+  - RLS: Public read, admin-only write
+  - Tracks redemptions for analytics
+
+- ✅ **New edge function** `supabase/functions/create-promo-code/index.ts`
+  - Admin-only access (verified via user_metadata.role)
+  - Creates Stripe coupon and promotion code automatically
+  - Inserts record into promo_codes table
+  - Handles max_redemptions and expiry dates
+  - Returns coupon ID for tracking
+
+- ✅ **Admin Dashboard** — New "Promo Codes" tab (Tab 5)
+  - Form to create codes with:
+    - Code name (auto-uppercase)
+    - Description (e.g., "Sarah's personal code")
+    - Discount % (default 10%)
+    - Max redemptions (optional)
+    - Expiry date (optional)
+  - Table display: Code | Description | Discount | Uses | Expires | Created
+  - Copy-to-clipboard button for easy code sharing
+  - Refreshes on creation, lists all active codes
+  - Tab layout changed from 4 → 5 columns
+
+- ✅ **Promo code hints on checkout pages**
+  - Pricing page: "Have a promo code? You can enter it at checkout."
+  - Paywall page: Same hint for trial-expired users
+  - Users can apply codes directly in Stripe Checkout (already enabled)
+
+**Part 2: Interview Prep Marketing Angle**
+- ✅ **Home page hero updated**
+  - Badge: "Inspection Practice · **Interview Prep** · Children's Homes"
+  - Headline: "Practice Ofsted inspections. **Ace your RM interview.**"
+  - Subtitle expanded: Now mentions "fit-person interviews and SCCIF inspections"
+
+- ✅ **Pricing page — "Who is this for?" section**
+  - Two audience cards (before ROI comparison):
+    1. **Registered Managers** (🏠) — Preparing for inspections
+       - Unannounced inspection prep
+       - Protection of Children (limiting judgement) practice
+       - All 9 Quality Standards
+       - Measurable progress tracking
+    2. **Aspiring RMs & Leaders** (🎯) — Interview & career prep
+       - Fit-person interview preparation
+       - Leadership competency building
+       - SCCIF knowledge development
+       - Career advancement readiness
+
+- ✅ **About page**
+  - Added paragraph about interview prep use case
+  - Founder story now includes: "MockOfsted also helps aspiring RMs and leaders preparing for fit-person interviews and career progression"
+  - Positions tool for both inspection readiness AND leadership development
+
+- ✅ **Files modified**
+  - `src/pages/Home.tsx` — Hero badge + headline
+  - `src/pages/marketing/Pricing.tsx` — Added "Who is this for?" audience section
+  - `src/pages/app/Paywall.tsx` — Added promo hint
+  - `src/pages/About.tsx` — Added interview prep paragraph
+  - `src/pages/Admin.tsx` — New Promo Codes tab (5 new sections)
+  - `supabase/migrations/20260323_promo_codes.sql` — NEW
+  - `supabase/functions/create-promo-code/index.ts` — NEW
+
+**Next steps (pending deployment):**
+- Deploy migration: `supabase db push`
+- Deploy edge function: `supabase functions deploy create-promo-code`
+- Test admin promo code creation → Stripe coupon creation
+- Deploy frontend: `git push` to Vercel
+- Test promo codes in Stripe Checkout
+
+**Build status:** ✅ All TypeScript checks pass, bundle size OK (~839KB main bundle)
+**Git status:** ✅ Committed & pushed — Commit `783d3c6`
+
 ## Latest Updates (v1.7.0 — March 12, 2026)
 
 ### ⚡ Generate-Report Performance Critical Optimization COMPLETE
