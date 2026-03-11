@@ -21,6 +21,9 @@ import {
   Users,
   MessageSquare,
   BarChart3,
+  Tag,
+  Copy,
+  CheckCircle2,
 } from "lucide-react";
 
 interface Document {
@@ -63,6 +66,17 @@ interface AdminStats {
   totalResponses: number;
 }
 
+interface PromoCode {
+  id: string;
+  code: string;
+  description: string | null;
+  discount_percent: number;
+  max_redemptions: number | null;
+  times_redeemed: number;
+  expires_at: string | null;
+  created_at: string;
+}
+
 export default function Admin() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -88,6 +102,19 @@ export default function Admin() {
   const [feedback, setFeedback] = useState<Feedback[]>([]);
   const [feedbackLoading, setFeedbackLoading] = useState(false);
 
+  // Promo codes state
+  const [promoCodes, setPromoCodes] = useState<PromoCode[]>([]);
+  const [promoCodesLoading, setPromoCodesLoading] = useState(false);
+  const [promoCodeForm, setPromoCodeForm] = useState({
+    code: "",
+    description: "",
+    discountPercent: 10,
+    maxRedemptions: "",
+    expiresAt: "",
+  });
+  const [creatingPromo, setCreatingPromo] = useState(false);
+  const [copiedCode, setCopiedCode] = useState<string | null>(null);
+
   // General loading
   const [loading, setLoading] = useState(true);
 
@@ -100,6 +127,19 @@ export default function Admin() {
     if (!error && data) {
       setDocuments(data);
     }
+  }, []);
+
+  const loadPromoCodes = useCallback(async () => {
+    setPromoCodesLoading(true);
+    const { data, error } = await supabase
+      .from("promo_codes")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (!error && data) {
+      setPromoCodes(data);
+    }
+    setPromoCodesLoading(false);
   }, []);
 
   const loadStats = useCallback(async () => {
@@ -246,12 +286,16 @@ export default function Admin() {
     loadFeedback();
   }, [loadFeedback]);
 
+  useEffect(() => {
+    loadPromoCodes();
+  }, [loadPromoCodes]);
+
   // Mark loading as done when all initial data is loaded
   useEffect(() => {
-    if (!uploading && !statsLoading && !usersLoading && !feedbackLoading) {
+    if (!uploading && !statsLoading && !usersLoading && !feedbackLoading && !promoCodesLoading) {
       setLoading(false);
     }
-  }, [uploading, statsLoading, usersLoading, feedbackLoading]);
+  }, [uploading, statsLoading, usersLoading, feedbackLoading, promoCodesLoading]);
 
   // Auth guard - after all hooks
   if (user?.user_metadata?.role !== "admin") {
@@ -282,6 +326,77 @@ export default function Admin() {
     return "Trial";
   };
 
+  const handleCreatePromoCode = async () => {
+    if (!promoCodeForm.code.trim()) {
+      toast({
+        title: "Code required",
+        description: "Please enter a promo code",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setCreatingPromo(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) throw new Error("Not authenticated");
+
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+      const res = await fetch(`${supabaseUrl}/functions/v1/create-promo-code`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          apikey: anonKey,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          code: promoCodeForm.code.toUpperCase(),
+          description: promoCodeForm.description || null,
+          discountPercent: promoCodeForm.discountPercent,
+          maxRedemptions: promoCodeForm.maxRedemptions ? parseInt(promoCodeForm.maxRedemptions) : null,
+          expiresAt: promoCodeForm.expiresAt || null,
+        }),
+      });
+
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || "Failed to create promo code");
+      }
+
+      toast({
+        title: "Promo code created",
+        description: `${promoCodeForm.code.toUpperCase()} created successfully`,
+      });
+
+      setPromoCodeForm({
+        code: "",
+        description: "",
+        discountPercent: 10,
+        maxRedemptions: "",
+        expiresAt: "",
+      });
+
+      loadPromoCodes();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to create promo code",
+        variant: "destructive",
+      });
+    } finally {
+      setCreatingPromo(false);
+    }
+  };
+
+  const handleCopyCode = (code: string) => {
+    navigator.clipboard.writeText(code);
+    setCopiedCode(code);
+    setTimeout(() => setCopiedCode(null), 2000);
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 py-8 px-4">
       <div className="container max-w-6xl mx-auto">
@@ -298,7 +413,7 @@ export default function Admin() {
         </div>
 
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="overview" className="gap-2">
               <BarChart3 className="h-4 w-4" />
               Overview
@@ -310,6 +425,10 @@ export default function Admin() {
             <TabsTrigger value="feedback" className="gap-2">
               <MessageSquare className="h-4 w-4" />
               Feedback
+            </TabsTrigger>
+            <TabsTrigger value="promo-codes" className="gap-2">
+              <Tag className="h-4 w-4" />
+              Promo Codes
             </TabsTrigger>
             <TabsTrigger value="knowledge" className="gap-2">
               <FileText className="h-4 w-4" />
@@ -470,6 +589,146 @@ export default function Admin() {
                 <p className="text-slate-600">No feedback yet</p>
               </div>
             )}
+          </TabsContent>
+
+          {/* Promo Codes Tab */}
+          <TabsContent value="promo-codes" className="space-y-6">
+            {/* Create Form */}
+            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
+              <h2 className="font-display text-lg font-bold text-slate-900">Create promo code</h2>
+              <p className="text-sm text-slate-600">
+                Generate personalised discount codes (10% off first month). Codes are uploaded to Stripe Checkout automatically.
+              </p>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <label className="block text-sm font-medium text-slate-900 mb-2">Code *</label>
+                  <Input
+                    value={promoCodeForm.code}
+                    onChange={e => setPromoCodeForm({ ...promoCodeForm, code: e.target.value })}
+                    placeholder="e.g., SARAH-KHAN"
+                    className="uppercase"
+                  />
+                  <p className="text-xs text-slate-500 mt-1">Will be converted to uppercase</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-900 mb-2">Description</label>
+                  <Input
+                    value={promoCodeForm.description}
+                    onChange={e => setPromoCodeForm({ ...promoCodeForm, description: e.target.value })}
+                    placeholder="e.g., Sarah's personal code"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-900 mb-2">Discount %</label>
+                  <Input
+                    type="number"
+                    value={promoCodeForm.discountPercent}
+                    onChange={e => setPromoCodeForm({ ...promoCodeForm, discountPercent: parseInt(e.target.value) || 10 })}
+                    min="1"
+                    max="100"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-900 mb-2">Max redemptions (optional)</label>
+                  <Input
+                    type="number"
+                    value={promoCodeForm.maxRedemptions}
+                    onChange={e => setPromoCodeForm({ ...promoCodeForm, maxRedemptions: e.target.value })}
+                    placeholder="Leave blank for unlimited"
+                    min="1"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-900 mb-2">Expiry date (optional)</label>
+                <Input
+                  type="datetime-local"
+                  value={promoCodeForm.expiresAt}
+                  onChange={e => setPromoCodeForm({ ...promoCodeForm, expiresAt: e.target.value })}
+                />
+              </div>
+
+              <Button onClick={handleCreatePromoCode} disabled={creatingPromo} className="gap-2">
+                {creatingPromo ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Creating...
+                  </>
+                ) : (
+                  <>
+                    <Tag className="h-4 w-4" />
+                    Create Code
+                  </>
+                )}
+              </Button>
+            </div>
+
+            {/* Codes List */}
+            <div className="space-y-4">
+              <h2 className="font-display text-lg font-bold text-slate-900">
+                Active promo codes ({promoCodes.length})
+              </h2>
+
+              {promoCodesLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
+                </div>
+              ) : promoCodes.length === 0 ? (
+                <div className="rounded-xl border border-slate-200 bg-white p-8 text-center">
+                  <Tag className="h-12 w-12 text-slate-300 mx-auto mb-4" />
+                  <p className="text-slate-600">No promo codes yet</p>
+                </div>
+              ) : (
+                <div className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-slate-100 bg-teal-600">
+                        <th className="px-6 py-3 text-left font-semibold text-teal-50">Code</th>
+                        <th className="px-6 py-3 text-left font-semibold text-teal-50">Description</th>
+                        <th className="px-6 py-3 text-left font-semibold text-teal-50">Discount</th>
+                        <th className="px-6 py-3 text-left font-semibold text-teal-50">Uses</th>
+                        <th className="px-6 py-3 text-left font-semibold text-teal-50">Expires</th>
+                        <th className="px-6 py-3 text-left font-semibold text-teal-50"></th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {promoCodes.map(code => (
+                        <tr key={code.id} className="hover:bg-slate-50">
+                          <td className="px-6 py-3 font-medium text-slate-900">
+                            <div className="flex items-center gap-2">
+                              <code className="font-mono text-teal-600">{code.code}</code>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleCopyCode(code.code)}
+                                className="h-6 w-6 p-0"
+                              >
+                                {copiedCode === code.code ? (
+                                  <CheckCircle2 className="h-4 w-4 text-green-600" />
+                                ) : (
+                                  <Copy className="h-4 w-4 text-slate-400" />
+                                )}
+                              </Button>
+                            </div>
+                          </td>
+                          <td className="px-6 py-3 text-slate-600">{code.description || "—"}</td>
+                          <td className="px-6 py-3 text-slate-600">{code.discount_percent}%</td>
+                          <td className="px-6 py-3 text-slate-600">
+                            {code.max_redemptions ? `${code.times_redeemed}/${code.max_redemptions}` : code.times_redeemed}
+                          </td>
+                          <td className="px-6 py-3 text-slate-600">
+                            {code.expires_at ? new Date(code.expires_at).toLocaleDateString("en-GB") : "No expiry"}
+                          </td>
+                          <td className="px-6 py-3 text-right text-slate-500 text-xs">Created {new Date(code.created_at).toLocaleDateString("en-GB")}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
           </TabsContent>
 
           {/* Knowledge Base Tab */}

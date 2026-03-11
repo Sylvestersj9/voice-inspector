@@ -129,6 +129,9 @@ export default function Pricing() {
               <p className="mt-3 text-center text-xs text-slate-500">
                 Free trial: 3 days, 2 sessions/day (6 total).
               </p>
+              <p className="mt-2 text-center text-xs text-slate-500">
+                Have a promo code? You can enter it at checkout.
+              </p>
             </div>
 
             {/* Team — Most Popular */}
@@ -171,6 +174,45 @@ export default function Pricing() {
               <p className="mt-3 text-center text-xs text-slate-500">
                 We'll set up your team within 24 hours.
               </p>
+            </div>
+          </div>
+
+          {/* ── Section: Who is this for? ──────────────────────────────────── */}
+          <div className="mx-auto mt-16 max-w-4xl">
+            <div className="text-center mb-10">
+              <h2 className="font-display text-2xl font-bold text-slate-900">Who is this for?</h2>
+            </div>
+            <div className="grid gap-6 md:grid-cols-2">
+              <div className="rounded-2xl border border-slate-200 bg-white p-8">
+                <div className="inline-flex items-center rounded-full bg-teal-50 px-3 py-1 text-sm font-semibold text-teal-800 ring-1 ring-teal-100 mb-4">
+                  🏠 Registered Managers
+                </div>
+                <h3 className="font-semibold text-slate-900 text-lg mt-2 mb-3">Preparing for inspections</h3>
+                <p className="text-sm text-slate-600 mb-4">
+                  You need to pass unannounced inspections. Practice with realistic SCCIF scenarios, get scored feedback on all 9 Quality Standards, and build confidence before inspection day.
+                </p>
+                <ul className="space-y-2 text-sm text-slate-600">
+                  <li>✓ Unannounced inspection prep</li>
+                  <li>✓ Protection of Children (limiting judgement) practice</li>
+                  <li>✓ All 9 Quality Standards coverage</li>
+                  <li>✓ Measurable progress tracking</li>
+                </ul>
+              </div>
+              <div className="rounded-2xl border border-slate-200 bg-white p-8">
+                <div className="inline-flex items-center rounded-full bg-amber-50 px-3 py-1 text-sm font-semibold text-amber-800 ring-1 ring-amber-100 mb-4">
+                  🎯 Aspiring RMs & Leaders
+                </div>
+                <h3 className="font-semibold text-slate-900 text-lg mt-2 mb-3">Interview & career prep</h3>
+                <p className="text-sm text-slate-600 mb-4">
+                  You're interviewing for Registered Manager or leadership roles. Prepare for fit-person interviews and SCCIF readiness assessment by practising real inspection scenarios.
+                </p>
+                <ul className="space-y-2 text-sm text-slate-600">
+                  <li>✓ Fit-person interview preparation</li>
+                  <li>✓ Leadership competency building</li>
+                  <li>✓ SCCIF knowledge development</li>
+                  <li>✓ Career advancement readiness</li>
+                </ul>
+              </div>
             </div>
           </div>
 

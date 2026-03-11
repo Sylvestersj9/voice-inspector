@@ -101,6 +101,9 @@ export default function About() {
             <p className="font-medium text-slate-800">
               I use it myself. It helped accelerate one home from Good to Outstanding by exposing blind spots months before the inspection arrived.
             </p>
+            <p>
+              We've since expanded the scope. Now, MockOfsted also helps aspiring Registered Managers and leaders preparing for fit-person interviews and career progression. The same scenarios, questions, and feedback that build inspection confidence also build leadership competency and interview readiness.
+            </p>
           </div>
 
           {/* Credibility card */}
