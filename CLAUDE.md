@@ -892,6 +892,56 @@ with embedded checkmark: `<g stroke="[white|#0D9488]" strokeWidth="1.2" strokeLi
 - `manifest.json` — PWA theme color set to `#0D9488` (teal)
 - Browser favicon resolves via: favicon.svg (primary) → favicon.ico (fallback)
 
+## Latest Updates (v1.10.0 — March 12, 2026)
+
+### 🎯 Interview Prep Marketing Angle — COMPLETE
+
+**Final Component: Tools Page with Interview Prep Simulator**
+- ✅ **Created `/tools` public page** (`src/pages/marketing/Tools.tsx`)
+- ✅ **Interview Prep Simulator** — Featured tool with 3 mock fit-person interview questions:
+  1. Safeguarding & Child Protection — "Tell me about a time you reported a concern"
+  2. Leadership & Staff Development — "How have you developed a struggling staff member?"
+  3. Quality of Care & Standards — "Walk me through how you ensure consistent quality"
+- ✅ **Interactive Q&A interface**:
+  - Text inputs for user answers
+  - Key points checklist (what examiners look for)
+  - Pro tips for each question
+  - Interview preparation guidance button
+  - STAR method explanation (Situation → Action → Result)
+- ✅ **Built-in guidance**:
+  - 6 core interview preparation tips (answer structure, specific examples, self-awareness, values, honesty, clarifying questions)
+  - Question-specific guidance for each scenario
+- ✅ **Expandable/collapsible tool interface** — Users can focus on one tool at a time
+- ✅ **Future tools teaser**:
+  - QS Readiness Quiz
+  - 12-Week Prep Calendar
+  - SCCIF Audit Checklist
+  - Evidence Gallery
+- ✅ **Clear CTA linkage** — "Ready for mock inspections?" → sign up for free trial
+- ✅ **Route added to App.tsx** (`/tools` route implemented)
+- ✅ **Build successful** — 9.57 kB gzipped for Tools page chunk
+
+**Complete Marketing Angle Implementation Summary:**
+| Component | Status | Location |
+|-----------|--------|----------|
+| Hero badge/headline update | ✅ | Home.tsx |
+| "Who is this for?" audience cards | ✅ | Pricing.tsx |
+| Interview prep paragraph | ✅ | About.tsx |
+| Promo code checkout hint | ✅ | Paywall.tsx |
+| Interview Prep Simulator tool | ✅ | Tools.tsx (NEW) |
+| Route registration | ✅ | App.tsx |
+
+**Messaging Strategy Achieved:**
+- **Hero:** Broad, inclusive appeal ("Ofsted ready. Standards prepared. Confidence built.")
+- **Secondary messaging:** Interview prep positioned as career development benefit
+- **Audience segmentation:** RMs vs Aspiring Leaders (Pricing page)
+- **Tools:** Interview Prep Simulator bridges free tools → paid mock inspections
+- **Interview focus:** Dedicated Tools page shows commitment to interview/leadership prep
+
+**Git Status:** ✅ Committed & pushed — Commit `16feea8`
+
+---
+
 ## Latest Updates (v1.9.6 — March 12, 2026)
 
 ### ✅ Delete Promo Code Now Fully Working + User Overview Disabled
