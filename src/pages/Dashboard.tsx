@@ -159,11 +159,28 @@ export default function Dashboard() {
           .maybeSingle(),
         supabase
           .from("sessions")
-          .select("id,started_at,completed_at,overall_band,overall_score,notes,responses(domain)")
+          .select("id,started_at,completed_at,overall_band,overall_score,notes")
           .eq("user_id", user.id)
           .order("started_at", { ascending: false })
           .limit(10),
       ]);
+
+      // Fetch responses for all sessions separately to avoid nested query issues
+      if (sess && sess.length > 0) {
+        const sessionIds = sess.map(s => s.id);
+        const { data: responses, error: respError } = await supabase
+          .from("responses")
+          .select("session_id,domain")
+          .in("session_id", sessionIds);
+
+        if (!respError && responses) {
+          // Attach responses to sessions
+          sess = sess.map(s => ({
+            ...s,
+            responses: responses.filter(r => r.session_id === s.id),
+          }));
+        }
+      }
 
       if (profError) {
         console.error("Error loading user profile:", profError);
