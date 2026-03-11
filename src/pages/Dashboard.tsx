@@ -141,43 +141,65 @@ export default function Dashboard() {
     if (!user) return;
     setLoading(true);
 
-    const [{ data: prof }, { data: sub }, { data: sess }] = await Promise.all([
-      supabase
-        .from("users")
-        .select("name,role,home_name")
-        .eq("id", user.id)
-        .single(),
-      supabase
-        .from("subscriptions")
-        .select("status,stripe_subscription_id,created_at")
-        .eq("user_id", user.id)
-        .maybeSingle(),
-      supabase
-        .from("sessions")
-        .select("id,started_at,completed_at,overall_band,overall_score,notes,responses(domain)")
-        .eq("user_id", user.id)
-        .order("started_at", { ascending: false })
-        .limit(10),
-    ]);
+    try {
+      const [
+        { data: prof, error: profError },
+        { data: sub, error: subError },
+        { data: sess, error: sessError },
+      ] = await Promise.all([
+        supabase
+          .from("users")
+          .select("name,role,home_name")
+          .eq("id", user.id)
+          .single(),
+        supabase
+          .from("subscriptions")
+          .select("status,stripe_subscription_id,created_at")
+          .eq("user_id", user.id)
+          .maybeSingle(),
+        supabase
+          .from("sessions")
+          .select("id,started_at,completed_at,overall_band,overall_score,notes,responses(domain)")
+          .eq("user_id", user.id)
+          .order("started_at", { ascending: false })
+          .limit(10),
+      ]);
 
-    setProfile(prof ?? null);
-    setSubscription(sub ?? null);
-    setSessions((sess as DashboardSessionRow[]) ?? []);
+      if (profError) {
+        console.error("Error loading user profile:", profError);
+      }
+      if (subError) {
+        console.error("Error loading subscription:", subError);
+      }
+      if (sessError) {
+        console.error("Error loading sessions:", sessError);
+      }
 
-    const paid = isPaidSub(sub ?? null);
-    if (!paid) {
-      const trialStart = sub?.created_at ? new Date(sub.created_at) : new Date();
-      const { data: trialSessions } = await supabase
-        .from("sessions")
-        .select("started_at")
-        .eq("user_id", user.id)
-        .gte("started_at", trialStart.toISOString());
-      setTrialInfo(computeTrialUsage(trialStart, trialSessions ?? []));
-    } else {
-      setTrialInfo(null);
+      setProfile(prof ?? null);
+      setSubscription(sub ?? null);
+      setSessions((sess as DashboardSessionRow[]) ?? []);
+
+      const paid = isPaidSub(sub ?? null);
+      if (!paid) {
+        const trialStart = sub?.created_at ? new Date(sub.created_at) : new Date();
+        const { data: trialSessions, error: trialError } = await supabase
+          .from("sessions")
+          .select("started_at")
+          .eq("user_id", user.id)
+          .gte("started_at", trialStart.toISOString());
+
+        if (trialError) {
+          console.error("Error loading trial sessions:", trialError);
+        }
+        setTrialInfo(computeTrialUsage(trialStart, trialSessions ?? []));
+      } else {
+        setTrialInfo(null);
+      }
+    } catch (err) {
+      console.error("Failed to load dashboard:", err);
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   }, [user]);
 
   useEffect(() => {
