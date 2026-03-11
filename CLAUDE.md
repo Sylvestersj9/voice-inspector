@@ -251,6 +251,27 @@ Implementation: `supabase/functions/_shared/rate-limiter.ts` — extracts IP (Cl
 - Line 165: `"claude-sonnet-4-6"` → `"claude-haiku-4-5-20251001"`
 - Line 166: `max_tokens: 4000` → `max_tokens: 1500`
 
+### 🎨 PDF Export Formatting Completely Fixed
+- ✅ **Fixed color handling** — Converted all hex colors to RGB arrays for proper PDF rendering
+- ✅ **Improved typography** — Bold headers, consistent font families (Helvetica normal/bold)
+- ✅ **Enhanced spacing** — Better line heights (1.6 factor), improved paragraph spacing (6.5mm)
+- ✅ **Better visual hierarchy** — Title: 26pt bold teal, Headers: 14pt bold teal, Body: 11pt gray
+- ✅ **Cover page redesign** — Larger title layout, better spacing between sections
+- ✅ **Consistent colors throughout**:
+  - Teal RGB [13, 148, 136] for headers and brand elements
+  - Band colors: Outstanding green, Good amber, Requires Improvement orange, Inadequate red
+  - Text: Dark gray [40, 40, 40] for readability
+- ✅ **Improved section spacing** — Headers, strengths, actions, and next steps now properly spaced
+- ✅ **Better bullet formatting** — Key Strengths and Priority Actions with proper indentation
+- ✅ **Fixed table fallback** — Cleaner formatted text table when jspdf-autotable unavailable
+- ✅ **Deployed to Vercel** — mockofsted.co.uk live with beautiful PDF reports
+- ✅ **Git committed & pushed** — Commit `6992721` with all PDF improvements
+
+**File modified:** `src/reports/exportReportPdf.ts`
+- ~81 lines changed across formatting, spacing, and color fixes
+- No functional changes, purely visual/presentation improvements
+- All band color references now use RGB arrays for consistency
+
 ## Latest Updates (v1.6.6 — March 12, 2026)
 
 ### 🐛 Generate-Report 500 Error Diagnostic
