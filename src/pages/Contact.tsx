@@ -30,6 +30,10 @@ export default function Contact() {
       setError("Please add your email.");
       return;
     }
+    if (!message.trim() || message.trim().length < 5) {
+      setError("Please add a message (at least 5 characters).");
+      return;
+    }
     if (!supabaseUrl || !anonKey) {
       setError("Missing Supabase configuration.");
       return;
