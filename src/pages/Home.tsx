@@ -11,11 +11,11 @@ export default function Landing() {
       <section className="px-4 pt-12 pb-16">
         <div className="mx-auto max-w-3xl text-center">
           <div className="inline-flex items-center rounded-full bg-teal-50 px-4 py-1.5 text-sm font-semibold text-teal-800 ring-1 ring-teal-100">
-            Inspection Practice · Interview Prep · Children's Homes
+            Inspection Prep · SCCIF Training · For All
           </div>
           <h1 className="mt-6 font-display text-4xl font-bold leading-tight text-slate-900 md:text-5xl lg:text-6xl">
-            Practice Ofsted inspections.{" "}
-            <span className="text-teal-600">Ace your RM interview.</span>
+            Ofsted ready.{" "}
+            <span className="text-teal-600">Standards prepared. Confidence built.</span>
           </h1>
           <p className="mt-5 text-lg leading-relaxed text-slate-600 max-w-2xl mx-auto">
             MockOfsted simulates real SCCIF inspection conversations across all 9 Quality
