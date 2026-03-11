@@ -346,6 +346,43 @@ Implementation: `supabase/functions/_shared/rate-limiter.ts` — extracts IP (Cl
 
 **Git status:** ✅ Committed & pushed — Commit `c2eb9fb`
 
+## Latest Updates (v1.8.2 — March 11, 2026)
+
+### 🎟️ Fixed Promo Code Redemption Limit to 5
+
+**Changes Made:**
+- ✅ Removed optional `maxRedemptions` input field from admin form
+  - Users no longer choose redemption limits per code
+  - All codes now have fixed limit: **5 uses maximum**
+
+- ✅ Updated `src/pages/Admin.tsx`:
+  - Removed `maxRedemptions` from form state
+  - Removed input field from UI (cleaner, simpler form)
+  - Always sends `maxRedemptions: 5` to edge function
+
+- ✅ Updated `supabase/functions/create-promo-code/index.ts`:
+  - Stripe coupon creation now enforces: `max_redemptions: 5`
+  - Database insert now enforces: `max_redemptions: 5`
+  - Backend validation ensures no code can exceed 5 uses regardless of frontend input
+
+**Why Fixed Limit:**
+- Consistent user experience: all codes behave the same way
+- Easier to manage: no confusion about different limits
+- Safety: prevents accidental unlimited codes via API calls
+- Stripe integration: max_redemptions syncs with Stripe coupon creation
+
+**User Impact:**
+- Each promo code can be used up to 5 times
+- Codes track usage via `times_redeemed` in database
+- Stripe tracks redemptions (source of truth for actual usage)
+
+**Build & Deployment:**
+- ✅ Frontend built successfully
+- ✅ Edge function deployed to Supabase
+- ✅ All changes committed and pushed
+
+**Git status:** ✅ Committed & pushed — Commit `8a6c7eb`
+
 ## Latest Updates (v1.7.0 — March 12, 2026)
 
 ### ⚡ Generate-Report Performance Critical Optimization COMPLETE
