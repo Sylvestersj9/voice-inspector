@@ -175,6 +175,8 @@ export default function Report() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
+  const [note, setNote] = useState<string>("");
+  const [noteSaving, setNoteSaving] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -183,12 +185,13 @@ export default function Report() {
       setLoading(true);
       const { data: sess, error: sErr } = await supabase
         .from("sessions")
-        .select("id,started_at,completed_at,overall_band,overall_score,report_json")
+        .select("id,started_at,completed_at,overall_band,overall_score,report_json,notes")
         .eq("id", sessionId)
         .eq("user_id", user!.id)
         .single();
       if (sErr || !sess) { setError("Session not found or access denied."); setLoading(false); return; }
       setSession(sess as SessionRow);
+      setNote(sess.notes ?? "");
 
       const { data: resps } = await supabase
         .from("responses")
@@ -350,6 +353,25 @@ export default function Report() {
                 </ul>
               </div>
             )}
+          </div>
+
+          {/* ── Section 1.5: Session Note ──────────────────────────────────── */}
+          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm print:hidden">
+            <label className="text-xs font-semibold text-slate-500 mb-2 block">Session note (private)</label>
+            <textarea
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              onBlur={async () => {
+                if (note !== (session?.notes ?? "") && session) {
+                  setNoteSaving(true);
+                  await supabase.from("sessions").update({ notes: note.trim() || null }).eq("id", session.id);
+                  setNoteSaving(false);
+                }
+              }}
+              placeholder="Add a note about this session…"
+              className="w-full min-h-[72px] text-sm rounded-lg border border-slate-300 p-3 outline-none focus:ring-2 focus:ring-teal-200"
+            />
+            {noteSaving && <p className="text-xs text-slate-400 mt-1">Saving…</p>}
           </div>
 
           {/* ── Section 2: Overall Judgement ────────────────────────────────── */}

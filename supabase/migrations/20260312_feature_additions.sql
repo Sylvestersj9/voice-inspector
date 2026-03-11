@@ -1,0 +1,25 @@
+-- Feature 3: Session notes for reflection and tracking
+ALTER TABLE public.sessions ADD COLUMN IF NOT EXISTS notes text;
+
+-- Feature 4: Email notification preferences
+ALTER TABLE public.users
+  ADD COLUMN IF NOT EXISTS email_preferences jsonb
+  DEFAULT '{"trial_warnings": true, "product_updates": true}'::jsonb;
+
+-- Feature 2: In-app announcements system
+CREATE TABLE IF NOT EXISTS public.announcements (
+  id         uuid primary key default gen_random_uuid(),
+  message    text not null,
+  type       text not null default 'info',  -- 'info' | 'warning' | 'success'
+  active     boolean not null default true,
+  created_at timestamp with time zone default now(),
+  expires_at timestamp with time zone
+);
+
+-- RLS: authenticated users can read active announcements
+ALTER TABLE public.announcements ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Authenticated users can read announcements"
+  ON public.announcements
+  FOR SELECT
+  USING (auth.uid() IS NOT NULL);

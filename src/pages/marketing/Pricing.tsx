@@ -1,4 +1,4 @@
-import { ArrowRight, CheckCircle2, Star } from "lucide-react";
+import { ArrowRight, CheckCircle2, Star, Minus, Shield, Zap, Target, HelpCircle } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import MarketingLayout from "./MarketingLayout";
 import { useAuth } from "@/auth/AuthProvider";
@@ -172,6 +172,118 @@ export default function Pricing() {
                 We'll set up your team within 24 hours.
               </p>
             </div>
+          </div>
+
+          {/* ── Section: ROI Comparison ──────────────────────────────────── */}
+          <div className="mx-auto mt-16 max-w-4xl">
+            <div className="grid gap-6 md:grid-cols-2">
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-8">
+                <p className="text-sm font-semibold text-slate-600 mb-4">The old way</p>
+                <ul className="space-y-3 text-slate-700 text-sm">
+                  <li>• 3 hours of self-study</li>
+                  <li>• Reading 40-page SCCIF documents</li>
+                  <li>• Guessing what inspectors will ask</li>
+                  <li>• Anxiety on inspection day</li>
+                </ul>
+              </div>
+              <div className="rounded-2xl border-2 border-teal-600 bg-white p-8">
+                <p className="text-sm font-semibold text-teal-700 mb-4">With MockOfsted</p>
+                <ul className="space-y-3 text-slate-700 text-sm">
+                  <li>• 20-minute practice session</li>
+                  <li>• AI inspector asks real questions</li>
+                  <li>• Instant scored feedback</li>
+                  <li>• Confidence on inspection day</li>
+                </ul>
+              </div>
+            </div>
+            <div className="mt-8 text-center rounded-2xl border-2 border-teal-200 bg-teal-50 p-6">
+              <p className="text-3xl font-bold text-teal-900">1 session = 3 hours of prep</p>
+              <p className="mt-1 text-sm text-teal-700">Compressed into 20 minutes</p>
+            </div>
+          </div>
+
+          {/* ── Section: Feature Comparison Table ────────────────────────── */}
+          <div className="mx-auto mt-16 max-w-4xl">
+            <h2 className="text-center font-display text-2xl font-bold text-slate-900 mb-8">Compare plans</h2>
+            <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-slate-100 bg-slate-50">
+                    <th className="text-left px-6 py-4 font-semibold text-slate-900">Feature</th>
+                    <th className="text-center px-6 py-4 font-semibold text-slate-900">Free Trial</th>
+                    <th className="text-center px-6 py-4 font-semibold text-teal-900">Pro — £29/mo</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {[
+                    { name: "All 9 Quality Standards", trial: true, pro: true },
+                    { name: "Voice & text responses", trial: true, pro: true },
+                    { name: "Scored feedback (bands 1–4)", trial: true, pro: true },
+                    { name: "Full inspection report", trial: false, pro: true },
+                    { name: "Session history", trial: false, pro: true },
+                    { name: "Sessions per day", trial: "2", pro: "Unlimited" },
+                    { name: "Trial duration", trial: "3 days", pro: "No expiry" },
+                  ].map((row) => (
+                    <tr key={row.name} className="hover:bg-slate-50">
+                      <td className="px-6 py-4 text-slate-700 font-medium">{row.name}</td>
+                      <td className="px-6 py-4 text-center">
+                        {typeof row.trial === "boolean" ? (
+                          row.trial ? <CheckCircle2 className="h-5 w-5 text-teal-600 mx-auto" /> : <Minus className="h-5 w-5 text-slate-300 mx-auto" />
+                        ) : (
+                          <span className="text-slate-700 font-medium">{row.trial}</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        {typeof row.pro === "boolean" ? (
+                          row.pro ? <CheckCircle2 className="h-5 w-5 text-teal-600 mx-auto" /> : <Minus className="h-5 w-5 text-slate-300 mx-auto" />
+                        ) : (
+                          <span className="text-slate-700 font-medium">{row.pro}</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* ── Section: Trust Indicators ────────────────────────────────── */}
+          <div className="mx-auto mt-16 max-w-4xl">
+            <h2 className="text-center font-display text-2xl font-bold text-slate-900 mb-8">Why managers trust MockOfsted</h2>
+            <div className="grid gap-6 md:grid-cols-3">
+              <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-teal-50 mx-auto mb-4">
+                  <Shield className="h-6 w-6 text-teal-600" />
+                </div>
+                <h3 className="font-semibold text-slate-900 mb-2">Built for SCCIF</h3>
+                <p className="text-sm text-slate-600">All 9 Quality Standards, SCCIF-aligned rubric, and evidence-based evaluation.</p>
+              </div>
+              <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-teal-50 mx-auto mb-4">
+                  <Zap className="h-6 w-6 text-teal-600" />
+                </div>
+                <h3 className="font-semibold text-slate-900 mb-2">AI evaluated</h3>
+                <p className="text-sm text-slate-600">Claude evaluates your answers against SCCIF criteria in real-time.</p>
+              </div>
+              <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-teal-50 mx-auto mb-4">
+                  <Target className="h-6 w-6 text-teal-600" />
+                </div>
+                <h3 className="font-semibold text-slate-900 mb-2">Expert-designed</h3>
+                <p className="text-sm text-slate-600">Questions and feedback reflect how real Ofsted inspectors think.</p>
+              </div>
+            </div>
+          </div>
+
+          {/* ── Section: FAQ Link Banner ────────────────────────────────── */}
+          <div className="mx-auto mt-16 max-w-4xl rounded-2xl border border-teal-200 bg-teal-50 p-6 text-center">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <HelpCircle className="h-5 w-5 text-teal-700" />
+              <p className="text-sm font-semibold text-teal-900">Have questions?</p>
+            </div>
+            <p className="text-sm text-teal-800 mb-4">
+              Read our <Link to="/faq" className="font-semibold hover:underline">full FAQ</Link> or <Link to="/contact" className="font-semibold hover:underline">contact us</Link>
+            </p>
           </div>
 
           <div className="mx-auto mt-6 max-w-4xl rounded-xl bg-slate-50 border border-slate-200 px-5 py-4 text-sm text-slate-600 text-center">

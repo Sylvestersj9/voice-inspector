@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { LogOut, Menu, X, User, CreditCard, Settings, Loader2 } from "lucide-react";
+import { LogOut, Menu, X, User, CreditCard, Settings } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,7 +29,6 @@ export default function AppNav({
   headerClassName = "",
 }: AppNavProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [billingLoading, setBillingLoading] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const { pathname } = useLocation();
   const navigate = useNavigate();
@@ -69,31 +68,6 @@ export default function AppNav({
     setMobileOpen(false);
   }, [pathname]);
 
-  const handleBillingPortal = async () => {
-    setBillingLoading(true);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("Not authenticated");
-
-      const { data, error } = await supabase.functions.invoke("billing-portal", {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
-      });
-
-      if (error) throw error;
-      if (data?.url) {
-        window.location.href = data.url;
-      } else {
-        throw new Error("Could not get billing portal URL");
-      }
-    } catch (err) {
-      console.error("Billing portal error:", err);
-      toast.error("Failed to open billing portal. Please try again.");
-    } finally {
-      setBillingLoading(false);
-    }
-  };
 
   const navLink = (to: string, label: string) => {
     const active = pathname === to || (to === "/app" && pathname === "/app");
@@ -175,12 +149,8 @@ export default function AppNav({
                   <User className="mr-2 h-4 w-4" />
                   <span>Profile</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleBillingPortal} disabled={billingLoading}>
-                  {billingLoading ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <CreditCard className="mr-2 h-4 w-4" />
-                  )}
+                <DropdownMenuItem onClick={() => navigate("/app/billing")}>
+                  <CreditCard className="mr-2 h-4 w-4" />
                   <span>Billing & Subscription</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
@@ -252,18 +222,14 @@ export default function AppNav({
                   Profile
                 </Link>
 
-                <button
-                  onClick={handleBillingPortal}
-                  disabled={billingLoading}
-                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors disabled:opacity-50"
+                <Link
+                  to="/app/billing"
+                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors"
+                  onClick={() => setMobileOpen(false)}
                 >
-                  {billingLoading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <CreditCard className="h-4 w-4" />
-                  )}
+                  <CreditCard className="h-4 w-4" />
                   Billing
-                </button>
+                </Link>
 
                 {!isPaid && (
                   <Link

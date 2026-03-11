@@ -70,6 +70,17 @@ serve(async (req: Request) => {
     return new Response(JSON.stringify({ sent: 0, reason: "no users at warning threshold" }), { status: 200 });
   }
 
+  // Fetch email preferences from users table
+  const { data: userPrefs } = await db
+    .from("users")
+    .select("id, email_preferences")
+    .in("id", warningUserIds);
+
+  const prefsMap: Record<string, { trial_warnings?: boolean }> = {};
+  for (const u of userPrefs ?? []) {
+    prefsMap[u.id] = u.email_preferences ?? {};
+  }
+
   // Fetch emails from auth.users via service role
   const { data: authUsers } = await db.auth.admin.listUsers();
   const emailMap: Record<string, string> = {};
@@ -83,6 +94,9 @@ serve(async (req: Request) => {
   for (const uid of warningUserIds) {
     const email = emailMap[uid];
     if (!email) continue;
+
+    // Check if user has opted out of trial warning emails
+    if (prefsMap[uid]?.trial_warnings === false) continue;
 
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",

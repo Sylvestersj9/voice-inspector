@@ -27,6 +27,8 @@ const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const About = lazy(() => import("./pages/About"));
 const Blog = lazy(() => import("./pages/Blog"));
 const BlogPost = lazy(() => import("./pages/BlogPost"));
+const Billing = lazy(() => import("./pages/app/Billing"));
+const Admin = lazy(() => import("./pages/Admin"));
 
 function AppRoutes() {
   const location = useLocation();
@@ -95,6 +97,17 @@ function AppRoutes() {
             </RequireAuth>
           }
         />
+        <Route
+          path="/app/billing"
+          element={
+            <RequireAuth>
+              <PageTransition><Billing /></PageTransition>
+            </RequireAuth>
+          }
+        />
+
+        {/* Admin (guards itself) */}
+        <Route path="/admin" element={<PageTransition><Admin /></PageTransition>} />
 
         {/* Default */}
         <Route path="*" element={<Navigate to="/" replace />} />

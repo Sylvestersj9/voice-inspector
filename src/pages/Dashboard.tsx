@@ -5,7 +5,11 @@ import { useAuth } from "@/auth/AuthProvider";
 import { getBandColorClass, DOMAIN_LABELS, type Domain } from "@/lib/questions";
 import { computeTrialUsage, TRIAL_DAILY_LIMIT, TRIAL_TOTAL_LIMIT } from "@/lib/trial";
 import AppNav from "@/components/AppNav";
+import AnnouncementBanner from "@/components/AnnouncementBanner";
 import ConfettiBurst from "@/components/ConfettiBurst";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
 import type { SessionRow } from "@/types/session";
 import {
   ArrowRight,
@@ -16,6 +20,7 @@ import {
   Clipboard,
   Zap,
   RotateCcw,
+  MessageSquare,
 } from "lucide-react";
 
 type UserProfile = {
@@ -125,7 +130,7 @@ export default function Dashboard() {
   const [trialInfo, setTrialInfo] = useState<ReturnType<
     typeof computeTrialUsage
   > | null>(null);
-  const [sessions, setSessions] = useState<SessionRow[]>([]);
+  const [sessions, setSessions] = useState<DashboardSessionRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [justSubscribed, setJustSubscribed] = useState(false);
@@ -149,7 +154,7 @@ export default function Dashboard() {
         .maybeSingle(),
       supabase
         .from("sessions")
-        .select("id,started_at,completed_at,overall_band,overall_score,responses(domain)")
+        .select("id,started_at,completed_at,overall_band,overall_score,notes,responses(domain)")
         .eq("user_id", user.id)
         .order("started_at", { ascending: false })
         .limit(10),
@@ -157,7 +162,7 @@ export default function Dashboard() {
 
     setProfile(prof ?? null);
     setSubscription(sub ?? null);
-    setSessions((sess as SessionRow[]) ?? []);
+    setSessions((sess as DashboardSessionRow[]) ?? []);
 
     const paid = isPaidSub(sub ?? null);
     if (!paid) {
@@ -237,6 +242,7 @@ export default function Dashboard() {
 
       <main className="mx-auto max-w-6xl px-4 py-8 space-y-6 relative">
         <ConfettiBurst active={justSubscribed} />
+        <AnnouncementBanner />
 
         {/* Syncing / confirmed banners */}
         {syncing && (
@@ -439,11 +445,64 @@ export default function Dashboard() {
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
+function NoteButton({ sessionId, currentNote }: { sessionId: string; currentNote?: string | null }) {
+  const [open, setOpen] = useState(false);
+  const [note, setNote] = useState(currentNote ?? "");
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await supabase
+        .from("sessions")
+        .update({ notes: note.trim() || null })
+        .eq("id", sessionId);
+      setOpen(false);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <button
+          title={currentNote ? "Edit note" : "Add note"}
+          className="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-200 transition-colors"
+        >
+          <MessageSquare className="h-3.5 w-3.5" />
+          {currentNote ? "Edit" : "Note"}
+        </button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Session note</DialogTitle>
+          <DialogDescription>Add a private note about this session for your records.</DialogDescription>
+        </DialogHeader>
+        <Textarea
+          value={note}
+          onChange={e => setNote(e.target.value)}
+          placeholder="Add a note…"
+          className="min-h-[100px]"
+        />
+        <div className="flex justify-end gap-2">
+          <Button variant="outline" onClick={() => setOpen(false)} disabled={saving}>
+            Cancel
+          </Button>
+          <Button onClick={handleSave} disabled={saving} className="bg-teal-600 hover:bg-teal-700">
+            {saving ? "Saving…" : "Save"}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function SessionTableRow({
   session: s,
   onRestart,
 }: {
-  session: SessionRow;
+  session: DashboardSessionRow;
   onRestart: () => void;
 }) {
   const navigate = useNavigate();
@@ -516,6 +575,7 @@ function SessionTableRow({
               Continue
             </Link>
           )}
+          <NoteButton sessionId={s.id} currentNote={s.notes} />
           <button
             onClick={onRestart}
             title="Restart with same domains"
@@ -534,7 +594,7 @@ function SessionCard({
   session: s,
   onRestart,
 }: {
-  session: SessionRow;
+  session: DashboardSessionRow;
   onRestart: () => void;
 }) {
   const navigate = useNavigate();
@@ -601,6 +661,7 @@ function SessionCard({
             Continue
           </Link>
         )}
+        <NoteButton sessionId={s.id} currentNote={s.notes} />
         <button
           onClick={onRestart}
           className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-500 hover:bg-slate-50 transition-colors"

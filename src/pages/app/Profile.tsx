@@ -14,6 +14,7 @@ import {
   CheckCircle2,
   AlertTriangle,
   KeyRound,
+  Bell,
 } from "lucide-react";
 
 const ROLES = [
@@ -66,6 +67,8 @@ export default function Profile() {
   const [pwSent, setPwSent] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
   const [portalErr, setPortalErr] = useState<string | null>(null);
+  const [emailPrefs, setEmailPrefs] = useState({ trial_warnings: true, product_updates: true });
+  const [prefsSaving, setPrefsSaving] = useState(false);
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -77,7 +80,7 @@ export default function Profile() {
       { data: sess },
       { count: ansCount },
     ] = await Promise.all([
-      supabase.from("users").select("name,role,home_name").eq("id", user.id).single(),
+      supabase.from("users").select("name,role,home_name,email_preferences").eq("id", user.id).single(),
       supabase.from("subscriptions").select("status,stripe_subscription_id,created_at").eq("user_id", user.id).maybeSingle(),
       supabase.from("sessions").select("started_at").eq("user_id", user.id),
       supabase.from("responses").select("id", { count: "exact", head: true }).in(
@@ -92,6 +95,7 @@ export default function Profile() {
       role: prof?.role ?? "",
       home_name: prof?.home_name ?? "",
     });
+    setEmailPrefs(prof?.email_preferences ?? { trial_warnings: true, product_updates: true });
     setSubscription(sub ?? null);
     setSessionCount(sess?.length ?? 0);
     setAnswerCount(ansCount ?? 0);
@@ -383,6 +387,56 @@ export default function Profile() {
               <LogOut className="h-4 w-4" />
               Sign out
             </button>
+          </div>
+        </section>
+
+        {/* ── Email Preferences card ────────────────────────────────────── */}
+        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="mb-4 flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5 text-teal-600" />
+            <h2 className="font-display text-base font-bold text-slate-900">Email preferences</h2>
+          </div>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3">
+              <div>
+                <p className="text-sm font-semibold text-slate-700">Trial session reminders</p>
+                <p className="text-xs text-slate-500">Email when you're running low on trial sessions.</p>
+              </div>
+              <div className="relative inline-flex h-6 w-11 items-center rounded-full bg-slate-300 transition-colors" style={{ backgroundColor: emailPrefs.trial_warnings ? '#0d9488' : '#cbd5e1' }}>
+                <button
+                  onClick={async () => {
+                    const next = { ...emailPrefs, trial_warnings: !emailPrefs.trial_warnings };
+                    setEmailPrefs(next);
+                    setPrefsSaving(true);
+                    await supabase.from("users").update({ email_preferences: next }).eq("id", user!.id);
+                    setPrefsSaving(false);
+                  }}
+                  disabled={prefsSaving}
+                  className="absolute h-5 w-5 rounded-full bg-white shadow-md transition-transform"
+                  style={{ left: emailPrefs.trial_warnings ? '22px' : '2px' }}
+                />
+              </div>
+            </div>
+            <div className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3">
+              <div>
+                <p className="text-sm font-semibold text-slate-700">Product updates & tips</p>
+                <p className="text-xs text-slate-500">Occasional updates about new features and inspection preparation tips.</p>
+              </div>
+              <div className="relative inline-flex h-6 w-11 items-center rounded-full bg-slate-300 transition-colors" style={{ backgroundColor: emailPrefs.product_updates ? '#0d9488' : '#cbd5e1' }}>
+                <button
+                  onClick={async () => {
+                    const next = { ...emailPrefs, product_updates: !emailPrefs.product_updates };
+                    setEmailPrefs(next);
+                    setPrefsSaving(true);
+                    await supabase.from("users").update({ email_preferences: next }).eq("id", user!.id);
+                    setPrefsSaving(false);
+                  }}
+                  disabled={prefsSaving}
+                  className="absolute h-5 w-5 rounded-full bg-white shadow-md transition-transform"
+                  style={{ left: emailPrefs.product_updates ? '22px' : '2px' }}
+                />
+              </div>
+            </div>
           </div>
         </section>
       </div>
