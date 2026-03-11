@@ -41,6 +41,18 @@ interface User {
   created_at: string;
 }
 
+interface UserDetail {
+  id: string;
+  name: string | null;
+  email: string;
+  role: string | null;
+  home_name: string | null;
+  created_at: string;
+  subscription_status: string;
+  current_period_end: string | null;
+  session_count: number;
+}
+
 interface Subscription {
   user_id: string;
   status: string;
@@ -91,6 +103,8 @@ export default function Admin() {
   // Overview state
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [statsLoading, setStatsLoading] = useState(false);
+  const [userDetails, setUserDetails] = useState<UserDetail[]>([]);
+  const [userDetailsLoading, setUserDetailsLoading] = useState(false);
 
   // Users state
   const [users, setUsers] = useState<User[]>([]);
@@ -179,6 +193,35 @@ export default function Admin() {
       setStatsLoading(false);
     }
   }, [toast]);
+
+  const loadUserDetails = useCallback(async () => {
+    setUserDetailsLoading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) throw new Error("Not authenticated");
+
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+      const res = await fetch(`${supabaseUrl}/functions/v1/get-admin-users`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          apikey: anonKey,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!res.ok) throw new Error("Failed to fetch user details");
+      const result = await res.json();
+      setUserDetails(result.data || []);
+    } catch (err) {
+      console.error("Failed to load user details:", err);
+    } finally {
+      setUserDetailsLoading(false);
+    }
+  }, []);
 
   const loadUsers = useCallback(async () => {
     setUsersLoading(true);
@@ -295,12 +338,20 @@ export default function Admin() {
     loadPromoCodes();
   }, [loadPromoCodes]);
 
+  // Load user details and set up real-time polling
+  useEffect(() => {
+    loadUserDetails();
+    // Poll for updates every 5 seconds
+    const interval = setInterval(loadUserDetails, 5000);
+    return () => clearInterval(interval);
+  }, [loadUserDetails]);
+
   // Mark loading as done when all initial data is loaded
   useEffect(() => {
-    if (!uploading && !statsLoading && !usersLoading && !feedbackLoading && !promoCodesLoading) {
+    if (!uploading && !statsLoading && !usersLoading && !feedbackLoading && !promoCodesLoading && !userDetailsLoading) {
       setLoading(false);
     }
-  }, [uploading, statsLoading, usersLoading, feedbackLoading, promoCodesLoading]);
+  }, [uploading, statsLoading, usersLoading, feedbackLoading, promoCodesLoading, userDetailsLoading]);
 
   // Auth guard - admin only (wait for auth to load first)
   if (authLoading) {
@@ -570,7 +621,8 @@ export default function Admin() {
           </TabsList>
 
           {/* Overview Tab */}
-          <TabsContent value="overview" className="space-y-4">
+          <TabsContent value="overview" className="space-y-6">
+            {/* Stats Cards */}
             {statsLoading ? (
               <div className="flex items-center justify-center py-12">
                 <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
@@ -595,6 +647,81 @@ export default function Admin() {
                 ))}
               </div>
             ) : null}
+
+            {/* Users List */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="font-display text-lg font-bold text-slate-900">All Users ({userDetails.length})</h2>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-slate-500">Updates every 5 seconds</span>
+                  {userDetailsLoading && <Loader2 className="h-4 w-4 animate-spin text-teal-600" />}
+                </div>
+              </div>
+
+              {userDetails.length > 0 ? (
+                <div className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-slate-100 bg-teal-600">
+                        <th className="px-6 py-3 text-left font-semibold text-teal-50">Name</th>
+                        <th className="px-6 py-3 text-left font-semibold text-teal-50">Email</th>
+                        <th className="px-6 py-3 text-left font-semibold text-teal-50">Role</th>
+                        <th className="px-6 py-3 text-left font-semibold text-teal-50">Home/Setting</th>
+                        <th className="px-6 py-3 text-center font-semibold text-teal-50">Sessions</th>
+                        <th className="px-6 py-3 text-left font-semibold text-teal-50">Status</th>
+                        <th className="px-6 py-3 text-left font-semibold text-teal-50">Access Until</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {userDetails.map(user => (
+                        <tr key={user.id} className="hover:bg-slate-50 transition-colors">
+                          <td className="px-6 py-4 font-medium text-slate-900">{user.name || "—"}</td>
+                          <td className="px-6 py-4 text-slate-600 text-xs font-mono">{user.email}</td>
+                          <td className="px-6 py-4 text-slate-600 text-xs">{user.role || "—"}</td>
+                          <td className="px-6 py-4 text-slate-600">{user.home_name || "—"}</td>
+                          <td className="px-6 py-4 text-center">
+                            <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+                              {user.session_count}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span
+                              className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold ${
+                                user.subscription_status === "active"
+                                  ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                                  : user.subscription_status === "trialing"
+                                    ? "border-blue-200 bg-blue-50 text-blue-700"
+                                    : user.subscription_status === "cancelled"
+                                      ? "border-slate-300 bg-slate-100 text-slate-700"
+                                      : "border-slate-200 bg-slate-50 text-slate-600"
+                              }`}
+                            >
+                              {user.subscription_status === "active"
+                                ? "Paid"
+                                : user.subscription_status === "trialing"
+                                  ? "Trial"
+                                  : user.subscription_status === "cancelled"
+                                    ? "Cancelled"
+                                    : "None"}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-slate-600 text-sm">
+                            {user.subscription_status !== "none" && user.current_period_end
+                              ? new Date(user.current_period_end).toLocaleDateString("en-GB")
+                              : "—"}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="rounded-xl border border-slate-200 bg-white p-8 text-center">
+                  <Users className="h-12 w-12 text-slate-300 mx-auto mb-4" />
+                  <p className="text-slate-600">No users yet</p>
+                </div>
+              )}
+            </div>
           </TabsContent>
 
           {/* Users Tab */}
