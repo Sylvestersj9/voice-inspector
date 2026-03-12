@@ -36,8 +36,11 @@ serve(async (req: Request) => {
     }
 
     if (!RESEND_API_KEY) {
-      console.error("RESEND_API_KEY not set");
-      return new Response(JSON.stringify({ error: "RESEND_API_KEY not set" }), { status: 500, headers: corsHeaders });
+      console.warn("[Welcome Email] RESEND_API_KEY not set — skipping email (non-blocking)");
+      return new Response(JSON.stringify({ ok: true, skipped: "RESEND_API_KEY missing" }), {
+        status: 200,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
     }
 
     // Fetch email from auth.users (requires service role)
@@ -218,18 +221,24 @@ serve(async (req: Request) => {
 
     if (!res.ok) {
       const errText = await res.text();
-      console.error("Resend error:", errText);
-      return new Response(JSON.stringify({ error: "Email send failed", detail: errText }), { status: 500, headers: corsHeaders });
+      console.warn(`[Welcome Email] Resend API error: ${errText} — skipping email (non-blocking)`);
+      return new Response(JSON.stringify({ ok: true, skipped: "Resend API error", detail: errText }), {
+        status: 200,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
     }
 
     const result = await res.json();
-    console.log(`Welcome email sent to ${email} — Resend ID: ${result.id}`);
+    console.log(`[Welcome Email] Email sent to ${email} — Resend ID: ${result.id}`);
     return new Response(JSON.stringify({ ok: true, id: result.id }), {
       status: 200,
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });
   } catch (e) {
-    console.error("welcome-email error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), { status: 500, headers: corsHeaders });
+    console.warn(`[Welcome Email] Error: ${e instanceof Error ? e.message : "Unknown error"} — skipping email (non-blocking)`);
+    return new Response(JSON.stringify({ ok: true, skipped: "Exception occurred" }), {
+      status: 200,
+      headers: { "Content-Type": "application/json", ...corsHeaders },
+    });
   }
 });
