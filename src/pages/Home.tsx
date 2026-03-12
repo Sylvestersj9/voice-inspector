@@ -328,7 +328,7 @@ export default function Landing() {
                 Team
               </div>
               <div className="flex items-baseline gap-1">
-                <span className="text-4xl font-bold text-slate-900">£69</span>
+                <span className="text-4xl font-bold text-slate-900">£89</span>
                 <span className="text-slate-500">/month</span>
               </div>
               <p className="mt-1 text-sm text-slate-500">Up to 5 staff · one home</p>
