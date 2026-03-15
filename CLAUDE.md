@@ -1465,3 +1465,106 @@ VITE_GEMINI_KEY="[your-gemini-api-key]"
 
 **Git Status:** ✅ Committed & pushed — Commit `2c7455f`
 
+
+## Latest Updates (v1.12.0 — March 15, 2026)
+
+### 🎯 5-Feature Implementation: Confirmations, Dark Mode, Nudges, Drip Emails
+
+**Feature 1: Session Delete ✅**
+- ✅ Delete buttons added to SessionTableRow (desktop) and SessionCard (mobile)
+- ✅ Trash2 icon from lucide-react with red styling
+- ✅ AlertDialog confirmation: "This cannot be undone."
+- ✅ Supabase deletion: `sessions.delete().eq("id", id).eq("user_id", user.id)`
+- ✅ Cascading delete of responses via `ON DELETE CASCADE` (already configured)
+- ✅ Instant UI update after deletion via setSessions filter
+- Files: `src/pages/Dashboard.tsx`
+
+**Feature 2: Dark Mode Theme Toggle ✅**
+- ✅ **ThemeProvider wrap** in `src/App.tsx`
+  - attribute="class", defaultTheme="system", enableSystem
+  - Respects OS dark mode preference by default
+- ✅ **Theme toggle button** in AppNav.tsx
+  - Desktop: dropdown menu with Sun/Moon icons
+  - Mobile: menu option with icon + label
+  - `onClick={() => setTheme(theme === "dark" ? "light" : "dark")}`
+- ✅ **Dark variants throughout AppNav**
+  - bg-white → dark:bg-slate-900/95
+  - border-slate-200 → dark:border-slate-700
+  - Text colors → dark:text-slate-100/slate-300/slate-400
+  - Hover states → dark:hover:bg-slate-800
+  - Dropdown menu fully dark-ready
+- ✅ **Dashboard background** → dark:bg-slate-950
+- ✅ Shadcn/ui components auto-handle dark via CSS variables
+- Note: Additional dark: variants needed in Index.tsx, DashboardSkeleton.tsx for visual completeness
+- Files: `src/App.tsx`, `src/components/AppNav.tsx`, `src/pages/Dashboard.tsx`
+
+**Feature 3: Skip Confirmation Modal ✅**
+- ✅ New state: `showSkipConfirm` in Index.tsx
+- ✅ Button onClick: `skipQuestion` → `setShowSkipConfirm(true)`
+- ✅ AlertDialog component (Radix UI):
+  - Title: "Skip this question?"
+  - Description: "You have one skip per session. This cannot be undone."
+  - Cancel + Skip buttons (Skip is teal)
+- ✅ AlertDialogAction calls skipQuestion directly (dialog auto-closes)
+- ✅ Import: AlertDialog components from @/components/ui/alert-dialog
+- Files: `src/pages/Index.tsx`
+
+**Feature 4: In-App Nudges (Partial) ✅**
+- ✅ **Nudge 1: Sessions Left** (Dashboard)
+  - Condition: trialInfo && !paid && !trialInfo.expired && remainingTotal ≤ 3
+  - Dismissible via sessionStorage ("dismiss_nudge_sessions_left")
+  - Message: "{X} sessions left. Unlimited access from £29/mo. Upgrade →"
+  - Returns on next visit (not permanent dismissal)
+  - State: `dismissNudge1` initialized from sessionStorage
+- Note: Nudges 2–4 (Score Gate, QS Master, Feedback Upsell) require Index.tsx enhancements not yet completed
+- Files: `src/pages/Dashboard.tsx`
+
+**Feature 5: Email Drip Sequence ✅**
+- ✅ **New migration** `supabase/migrations/20260315_drip_emails.sql`
+  - Create `drip_emails_sent` table
+  - Columns: id (uuid), user_id (FK), email_type (text), sent_at (timestamptz)
+  - UNIQUE constraint on (user_id, email_type) prevents duplicates
+  - RLS: users read own records, service role can insert/update/delete
+- ✅ **New edge function** `supabase/functions/send-drip-emails/index.ts`
+  - Fetch: trial users where stripe_subscription_id IS NULL && status = 'trialing'
+  - For each user:
+    - Compute daysSinceSignup from subscription.created_at
+    - Check drip_emails_sent table for already-sent types
+    - Send appropriate email based on daysSince:
+      - **day1** (≥1 day): "Your first MockOfsted score" — session score, practice CTA
+      - **day3** (≥3 days): "Mid-trial: don't lose your progress" — session count, 20% off code
+      - **day5** (≥5 days): "Trial ends tomorrow" — urgency, best band, £29/mo CTA
+      - **day7** (≥7 days, not subscribed): "Your data's waiting — reactivate" — win-back
+  - Send via Resend API (branded HTML emails)
+  - Track in drip_emails_sent on success to prevent duplicates
+  - Best-effort: returns 200 OK on error, logs failures, never disrupts UX
+- **Scheduling** (not yet deployed):
+  - Manual trigger from Index.tsx after first session completes (day1 special case)
+  - Supabase Dashboard → Cron Jobs → Create:
+    - Name: "drip-emails-daily"
+    - Schedule: "0 8 * * *" (08:00 UTC daily)
+    - SQL: `select net.http_post(url := '{SUPABASE_URL}/functions/v1/send-drip-emails', headers := '{"Authorization": "Bearer {SERVICE_ROLE_KEY}", "Content-Type": "application/json"}', body := '{}');`
+- Files: `supabase/migrations/20260315_drip_emails.sql`, `supabase/functions/send-drip-emails/index.ts`
+
+**Build & Deployment:**
+- ✅ TypeScript compilation: PASSING ✓
+- ✅ No type errors or missing imports
+- ✅ Ready for frontend deployment (Vercel)
+- ⏳ Pending Supabase deployment:
+  - `supabase db push` (migration)
+  - `supabase functions deploy send-drip-emails` (edge function)
+- ⏳ Pending manual Cron job setup in Supabase dashboard
+
+**Git Status:** ✅ Committed & pushed — Commit `da7cfa8`
+
+**Next Steps:**
+1. Deploy migration: `supabase db push`
+2. Deploy edge function: `supabase functions deploy send-drip-emails`
+3. Set up cron job in Supabase dashboard (optional for now, can trigger manually)
+4. Complete Nudges 2–4 in Index.tsx (Score Gate, QS Master, Feedback Upsell)
+5. Add remaining dark: variants for full dark mode coverage
+6. Test session deletion flow (desktop + mobile)
+7. Test dark mode toggle (check all components)
+8. Test skip confirmation modal
+9. Test drip email edge function manually
+
