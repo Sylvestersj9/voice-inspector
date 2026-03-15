@@ -224,6 +224,69 @@ Implementation: `supabase/functions/_shared/rate-limiter.ts` — extracts IP (Cl
 
 **Post-checkout sync:** `/app/dashboard?checkout=success` triggers `sync-subscription`
 
+## Latest Updates (v1.13.0 — March 15, 2026)
+
+### 🎯 P0 — Critical Regulatory Fix: Supported Accommodation (England 2023 Regulations)
+
+**Supported Accommodation Facility Type Added:**
+- ✅ **Database**: Migration `20260325_add_facility_type.sql` adds `facility_type` column to users (childrens_home | supported_accommodation)
+- ✅ **4 SA Standards** (not 9 QS):
+  - SA_LeadershipManagement (oversight, staffing, fitness)
+  - SA_Protection (safeguarding, risk assessment)
+  - SA_Accommodation (suitable, safe physical environment)
+  - SA_Support (independent living skills, transition planning)
+- ✅ **12 SA Questions** (3 per standard, mode: inspection):
+  - sa-lm-a/b/c (Leadership & Management)
+  - sa-pc-a/b/c (Protection)
+  - sa-ac-a/b/c (Accommodation)
+  - sa-sp-a/b/c (Support)
+- ✅ **Frontend Logic**:
+  - Index.tsx: Load facility_type from profile, pass to pickSessionQuestions
+  - pickSessionQuestions: Filter questions by facility_type (SA questions only for SA facilities)
+  - pickReplacementQuestion: Updated to filter by facility_type
+  - Idle UI: Show "All 4 SA Standards" (not 9) when facility_type=supported_accommodation
+  - SA_DOMAIN_ORDER exported from questions.ts
+- ✅ **Profile Page**: New "Facility Type" dropdown field (Children's Home | Supported Accommodation)
+- ✅ **Impact**: Half the target market (supported accommodation) now has correct standards instead of wrong 9 QS
+
+**Legacy Mode Fixes (P2):**
+- ✅ cv-b, cv-d, lm-c, lm-d, lm-e: mode: "interview" → mode: "fit_person"
+- ✅ These 5 questions now reachable in Fit Person mode (15 total)
+
+### 🎨 P1 — AI Scoring Improvement: Golden Thread + Placement Stability
+
+**Enhanced Evaluate Prompt:**
+- ✅ Updated `SYSTEM_PROMPT` in `supabase/functions/evaluate/index.ts` with 5 critical evaluation rules:
+
+1. **Golden Thread (MUST REWARD)**: Concern → Action → Outcome for specific child = Outstanding/Good
+2. **Policy Recitation (MUST PENALISE)**: Policy without real examples = capped at Requires Improvement (2)
+3. **Generic Statements (PENALISE)**: "We always ensure..." without specific instances = marked vague
+4. **Placement Stability Focus**: For behaviour/safeguarding — reward proportionate judgement preventing breakdown
+5. **Safeguarding Specificity**: Always reward specificity about escalation routes, actual decisions, outcomes
+
+- ✅ Deployed to Supabase: `supabase functions deploy evaluate`
+
+### 📋 Files Changed
+| File | Change |
+|------|--------|
+| `src/lib/questions.ts` | +SA domains, +SA_DOMAIN_ORDER, +FacilityType, +12 SA questions, fix legacy mode (5 questions) |
+| `src/pages/Index.tsx` | +facilityType state, load from profile, pass to pickSessionQuestions, update idle UI |
+| `src/pages/app/Profile.tsx` | +facility_type field in profile form, save to database |
+| `supabase/functions/evaluate/index.ts` | Enhanced SYSTEM_PROMPT with golden thread + placement stability rules |
+| `supabase/migrations/20260325_add_facility_type.sql` | NEW — add facility_type column to users |
+
+### ✅ Build & Deployment
+- ✅ TypeScript: PASSING ✓ (0 type errors)
+- ✅ Migration: Applied to Supabase (20260325_add_facility_type.sql)
+- ✅ Edge function: Deployed (evaluate with new prompt)
+- ✅ Git: Committed & pushed — Commit `8d7365f`
+
+### 🔄 Next Steps (P3 — Annual Plan)
+- Requires Stripe annual price ID configuration before frontend deployment
+- Can be planned now, deployed after Stripe setup
+
+---
+
 ## Latest Updates (v1.8.0 — March 11, 2026)
 
 ### 🎟️ Promo Codes + Interview Prep Marketing Angle
