@@ -30,48 +30,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data: listener } = supabase.auth.onAuthStateChange((event, newSession) => {
       setSession(newSession);
 
-      // Send welcome email on SIGNED_UP (email) and SIGNED_IN (first-time OAuth)
-      if ((event === "SIGNED_UP" || event === "SIGNED_IN") && newSession?.user?.email) {
+      // Send welcome email ONLY on SIGNED_UP (new account signup)
+      // Do NOT send on SIGNED_IN (existing login) — prevents duplicate emails on every login
+      if (event === "SIGNED_UP" && newSession?.user?.email) {
         const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
         const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
         const name = newSession.user.user_metadata?.name || newSession.user.email.split("@")[0];
 
-        // Check if we've already sent welcome email for this user in this session
-        const welcomeEmailKey = `welcomed_${newSession.user.id}`;
-        if (!sessionStorage.getItem(welcomeEmailKey)) {
-          sessionStorage.setItem(welcomeEmailKey, "true");
+        // Send welcome email (SIGNED_UP fires once, only on signup)
+        fetch(`${supabaseUrl}/functions/v1/welcome-email`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${newSession.access_token}`,
+            apikey: anonKey,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ user_id: newSession.user.id, name }),
+        }).catch((err) => {
+          console.error("Welcome email error:", err);
+        });
 
-          // Send welcome email
-          fetch(`${supabaseUrl}/functions/v1/welcome-email`, {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${newSession.access_token}`,
-              apikey: anonKey,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ user_id: newSession.user.id, name }),
-          }).catch((err) => {
-            console.error("Welcome email error:", err);
-          });
-
-          // Send admin signup notification (non-blocking, errors ignored)
-          fetch(`${supabaseUrl}/functions/v1/admin-notifications`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              apikey: anonKey,
-              Authorization: `Bearer ${newSession.access_token}`,
-            },
-            body: JSON.stringify({
-              type: "signup",
-              userName: name,
-              userEmail: newSession.user.email,
-              userId: newSession.user.id,
-            }),
-          }).catch(() => {
-            // Non-critical notification - ignore errors
-          });
-        }
+        // Send admin signup notification (non-blocking, errors ignored)
+        fetch(`${supabaseUrl}/functions/v1/admin-notifications`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            apikey: anonKey,
+            Authorization: `Bearer ${newSession.access_token}`,
+          },
+          body: JSON.stringify({
+            type: "signup",
+            userName: name,
+            userEmail: newSession.user.email,
+            userId: newSession.user.id,
+          }),
+        }).catch(() => {
+          // Non-critical notification - ignore errors
+        });
       }
     });
 
