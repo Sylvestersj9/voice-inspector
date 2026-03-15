@@ -1,8 +1,12 @@
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY") || "";
+const CONTACT_TO_EMAIL = Deno.env.get("CONTACT_TO_EMAIL") || "info@mockofsted.co.uk";
+const CONTACT_FROM_EMAIL = Deno.env.get("CONTACT_FROM_EMAIL") || "MockOfsted <onboarding@resend.dev>";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -13,6 +17,76 @@ const corsHeaders = {
 const db = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false },
 });
+
+// Send email via Resend (best-effort, non-blocking)
+async function sendFeedbackNotificationEmail(feedbackData: {
+  title: string;
+  feedbackType: string;
+  description: string;
+  outcome?: string;
+  userName?: string;
+  userEmail?: string;
+}) {
+  if (!RESEND_API_KEY) {
+    console.warn("[Send Feedback Email] RESEND_API_KEY not configured, skipping email");
+    return;
+  }
+
+  try {
+    const feedbackTypeLabel = {
+      inspection: "Inspection Feedback",
+      interview: "Interview Feedback",
+      practice: "Practice Feedback",
+    }[feedbackData.feedbackType] || "User Feedback";
+
+    const emailHtml = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #0D9488; border-bottom: 2px solid #0D9488; padding-bottom: 10px;">
+          New ${feedbackTypeLabel}
+        </h2>
+
+        <p><strong>Title:</strong> ${feedbackData.title}</p>
+        <p><strong>Type:</strong> ${feedbackTypeLabel}</p>
+        ${feedbackData.outcome ? `<p><strong>Outcome:</strong> ${feedbackData.outcome}</p>` : ""}
+        ${feedbackData.userName ? `<p><strong>From:</strong> ${feedbackData.userName}</p>` : ""}
+        ${feedbackData.userEmail ? `<p><strong>Email:</strong> ${feedbackData.userEmail}</p>` : ""}
+
+        <h3 style="color: #334155; margin-top: 20px;">Feedback:</h3>
+        <div style="background: #f1f5f9; padding: 15px; border-radius: 8px; border-left: 4px solid #0D9488;">
+          <p style="white-space: pre-wrap; margin: 0; color: #475569;">${feedbackData.description}</p>
+        </div>
+
+        <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;">
+        <p style="text-align: center; font-size: 12px; color: #94a3b8;">
+          Feedback from MockOfsted Platform
+        </p>
+      </div>
+    `;
+
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${RESEND_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: CONTACT_FROM_EMAIL,
+        to: CONTACT_TO_EMAIL,
+        subject: `[MockOfsted] New ${feedbackTypeLabel}: "${feedbackData.title}"`,
+        html: emailHtml,
+      }),
+    });
+
+    if (!response.ok) {
+      console.warn(`[Send Feedback Email] Resend API error: ${response.status} ${response.statusText}`);
+    } else {
+      console.log("[Send Feedback Email] Email sent successfully");
+    }
+  } catch (error) {
+    console.warn(`[Send Feedback Email] Error sending email: ${error instanceof Error ? error.message : "Unknown error"}`);
+    // Non-blocking: don't throw
+  }
+}
 
 serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
@@ -111,6 +185,25 @@ serve(async (req: Request) => {
     console.log(
       `[Submit Feedback] Feedback submitted successfully, ID: ${feedback?.[0]?.id || "unknown"}`
     );
+
+    // Send notification email (non-blocking, best-effort)
+    const userProfile = await db
+      .from("users")
+      .select("name, email")
+      .eq("id", userId)
+      .maybeSingle()
+      .catch(() => ({ data: null }));
+
+    sendFeedbackNotificationEmail({
+      title,
+      feedbackType,
+      description,
+      outcome,
+      userName: userProfile?.data?.name,
+      userEmail: userProfile?.data?.email,
+    }).catch(() => {
+      // Error already logged in sendFeedbackNotificationEmail
+    });
 
     return new Response(
       JSON.stringify({
