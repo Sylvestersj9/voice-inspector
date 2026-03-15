@@ -7,11 +7,13 @@ import {
   DOMAIN_LABELS,
   DOMAIN_ORDER,
   DOMAIN_TAGS,
+  SA_DOMAIN_ORDER,
   getBandColorClass,
   type Domain,
   type BankQuestion,
   type JudgementBand,
   type PracticeMode,
+  type FacilityType,
 } from "@/lib/questions";
 import { computeTrialUsage, TRIAL_DAILY_LIMIT, TRIAL_TOTAL_LIMIT } from "@/lib/trial";
 import { clearPaused, generateReportAndWait, loadPaused, progressColor, savePaused } from "@/lib/simulator";
@@ -86,14 +88,23 @@ function fisherYates<T>(arr: T[], rng: () => number): T[] {
   return result;
 }
 
-function pickSessionQuestions(sessionId: string, mode: PracticeMode = "inspection", focusStandard: Domain | "all" = "all"): BankQuestion[] {
+function pickSessionQuestions(
+  sessionId: string,
+  mode: PracticeMode = "inspection",
+  focusStandard: Domain | "all" = "all",
+  facilityType: FacilityType = "childrens_home"
+): BankQuestion[] {
   const rng = mulberry32(sessionId);
   const grouped: Record<string, BankQuestion[]> = {};
+
   for (const q of questionBank) {
     // Default legacy questions without mode to "inspection"
     const questionMode = q.mode || "inspection";
     // Filter questions by mode if specified
     if (mode && questionMode !== mode) continue;
+    // Filter by facility type: SA questions only for SA facilities
+    if (facilityType === "supported_accommodation" && !q.domain.startsWith("SA_")) continue;
+    if (facilityType === "childrens_home" && q.domain.startsWith("SA_")) continue;
     // Filter by focus standard if specified
     if (focusStandard !== "all" && q.domain !== focusStandard) continue;
     if (!grouped[q.domain]) grouped[q.domain] = [];
@@ -105,8 +116,11 @@ function pickSessionQuestions(sessionId: string, mode: PracticeMode = "inspectio
     return fisherYates(Object.values(grouped).flat(), rng);
   }
 
-  // If focusing on one standard, use just that domain; otherwise all 9 domains
-  const selectedDomains = focusStandard !== "all" ? [focusStandard] : DOMAIN_ORDER;
+  // Choose domain order based on facility type
+  const domainOrder = facilityType === "supported_accommodation" ? SA_DOMAIN_ORDER : DOMAIN_ORDER;
+
+  // If focusing on one standard, use just that domain; otherwise use all appropriate domains
+  const selectedDomains = focusStandard !== "all" ? [focusStandard] : domainOrder;
 
   // Pick more questions when focused on a single domain (5 per domain), fewer when broad (2 per domain)
   const qPerDomain = focusStandard !== "all" ? QUESTIONS_PER_DOMAIN_FOCUSED : QUESTIONS_PER_DOMAIN;
@@ -147,6 +161,7 @@ export default function Index() {
   const [gateLoading, setGateLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [justSubscribed, setJustSubscribed] = useState(false);
+  const [facilityType, setFacilityType] = useState<FacilityType>("childrens_home");
 
   // Session state
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -206,6 +221,17 @@ export default function Index() {
       const stripeId = sub?.stripe_subscription_id ?? null;
       setSubscriptionStatus(status);
       setStripeSubscriptionId(stripeId);
+
+      // Load facility type from user profile
+      const { data: userProfile } = await supabase
+        .from("users")
+        .select("facility_type")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (userProfile?.facility_type) {
+        setFacilityType(userProfile.facility_type as FacilityType);
+      }
 
       const isPaid = status === "active" || (!!stripeId && status === "trialing");
       if (isPaid) {
@@ -346,7 +372,7 @@ export default function Index() {
       // Best-effort localStorage
     }
 
-    const picked = pickSessionQuestions(sid, practiceMode, focusStandard);
+    const picked = pickSessionQuestions(sid, practiceMode, focusStandard, facilityType);
     setQuestions(picked.map((q) => ({ question: q, transcript: "", result: null })));
     trackSessionStart(picked.length);
     setQIndex(0);
@@ -513,9 +539,13 @@ export default function Index() {
     if (focusStandard !== "all") {
       const pool = questionBank.filter((q) => {
         const questionMode = q.mode || "inspection";
+        const isCorrectFacility = facilityType === "supported_accommodation"
+          ? q.domain.startsWith("SA_")
+          : !q.domain.startsWith("SA_");
         return (
           q.domain === focusStandard &&
           questionMode === practiceMode &&
+          isCorrectFacility &&
           !questions.some((qs) => qs.question.id === q.id)
         );
       });
@@ -526,8 +556,9 @@ export default function Index() {
     }
 
     // For "all" mode, pick from unused domains as before
+    const domainOrder = facilityType === "supported_accommodation" ? SA_DOMAIN_ORDER : DOMAIN_ORDER;
     const usedDomains = new Set(questions.map((q) => q.question.domain));
-    const availableDomains = DOMAIN_ORDER.filter((d) => !usedDomains.has(d));
+    const availableDomains = domainOrder.filter((d) => !usedDomains.has(d));
     if (availableDomains.length === 0) return null;
     const rng = mulberry32(`${sessionId}-skip`);
     const domain = availableDomains[Math.floor(rng() * availableDomains.length)];
@@ -538,7 +569,7 @@ export default function Index() {
     if (pool.length === 0) return null;
     const idx = Math.floor(rng() * pool.length);
     return pool[idx];
-  }, [sessionId, focusStandard, practiceMode, questions]);
+  }, [sessionId, focusStandard, practiceMode, questions, facilityType]);
 
   const skipQuestion = async () => {
     if (skipUsed) return;
@@ -875,26 +906,46 @@ export default function Index() {
                     <label className="block text-sm font-semibold text-slate-900">
                       Focus area
                     </label>
-                    <select
-                      value={focusStandard}
-                      onChange={(e) => setFocusStandard(e.target.value as Domain | "all")}
-                      className="w-full px-3 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm font-medium bg-white"
-                    >
-                      <option value="all">All 9 Quality Standards</option>
-                      {DOMAIN_ORDER.map((domain) => (
-                        <option key={domain} value={domain}>
-                          {DOMAIN_LABELS[domain as Domain]}
-                        </option>
-                      ))}
-                    </select>
+                    {facilityType === "supported_accommodation" ? (
+                      <select
+                        value={focusStandard}
+                        onChange={(e) => setFocusStandard(e.target.value as Domain | "all")}
+                        className="w-full px-3 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm font-medium bg-white"
+                      >
+                        <option value="all">All 4 SA Standards</option>
+                        {SA_DOMAIN_ORDER.map((domain) => (
+                          <option key={domain} value={domain}>
+                            {DOMAIN_LABELS[domain as Domain]}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <select
+                        value={focusStandard}
+                        onChange={(e) => setFocusStandard(e.target.value as Domain | "all")}
+                        className="w-full px-3 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm font-medium bg-white"
+                      >
+                        <option value="all">All 9 Quality Standards</option>
+                        {DOMAIN_ORDER.map((domain) => (
+                          <option key={domain} value={domain}>
+                            {DOMAIN_LABELS[domain as Domain]}
+                          </option>
+                        ))}
+                      </select>
+                    )}
                   </div>
 
                   {/* Info Text */}
                   <p className="text-xs text-slate-500 text-center">
-                    {focusStandard === "all"
-                      ? "18 questions across all standards"
-                      : `Focused practice: 5 questions on ${DOMAIN_LABELS[focusStandard as Domain]}`
-                    }
+                    {facilityType === "supported_accommodation" ? (
+                      focusStandard === "all"
+                        ? "8 questions across 4 SA standards"
+                        : `Focused practice: 5 questions on ${DOMAIN_LABELS[focusStandard as Domain]}`
+                    ) : (
+                      focusStandard === "all"
+                        ? "18 questions across all standards"
+                        : `Focused practice: 5 questions on ${DOMAIN_LABELS[focusStandard as Domain]}`
+                    )}
                   </p>
                 </div>
 

@@ -11,7 +11,14 @@ export type Domain =
   | "PositiveRelationships"
   | "ProtectionChildren"
   | "LeadershipManagement"
-  | "CarePlanning";
+  | "CarePlanning"
+  // Supported Accommodation domains (England 2023 Regulations):
+  | "SA_LeadershipManagement"
+  | "SA_Protection"
+  | "SA_Accommodation"
+  | "SA_Support";
+
+export type FacilityType = "childrens_home" | "supported_accommodation";
 
 export const DOMAIN_LABELS: Record<Domain, string> = {
   QualityPurpose: "Quality and Purpose of Care",
@@ -23,6 +30,11 @@ export const DOMAIN_LABELS: Record<Domain, string> = {
   ProtectionChildren: "Protection of Children",
   LeadershipManagement: "Leadership and Management",
   CarePlanning: "Care Planning",
+  // Supported Accommodation domains:
+  SA_LeadershipManagement: "Leadership and Management",
+  SA_Protection: "Protection",
+  SA_Accommodation: "Accommodation",
+  SA_Support: "Support",
 };
 
 export const DOMAIN_TAGS: Record<Domain, string> = {
@@ -35,6 +47,11 @@ export const DOMAIN_TAGS: Record<Domain, string> = {
   ProtectionChildren: "LIMITING JUDGEMENT",
   LeadershipManagement: "Core Standard",
   CarePlanning: "Core Standard",
+  // Supported Accommodation:
+  SA_LeadershipManagement: "Core Standard",
+  SA_Protection: "LIMITING JUDGEMENT",
+  SA_Accommodation: "Core Standard",
+  SA_Support: "Core Standard",
 };
 
 export const DOMAIN_ORDER: Domain[] = [
@@ -47,6 +64,13 @@ export const DOMAIN_ORDER: Domain[] = [
   "ProtectionChildren",
   "LeadershipManagement",
   "CarePlanning",
+];
+
+export const SA_DOMAIN_ORDER: Domain[] = [
+  "SA_LeadershipManagement",
+  "SA_Protection",
+  "SA_Accommodation",
+  "SA_Support",
 ];
 
 export type PracticeMode = "inspection" | "fit_person" | "ri";
@@ -99,7 +123,7 @@ export const questionBank: BankQuestion[] = [
     ],
   },
   {
-    mode: "interview",
+    mode: "fit_person",
     id: "cv-b",
     domain: "ChildrenViews",
     text: "If I spoke to a young person in your home today, what would they tell me about how staff listen to them?",
@@ -367,7 +391,7 @@ export const questionBank: BankQuestion[] = [
     ],
   },
   {
-    mode: "interview",
+    mode: "fit_person",
     id: "cv-d",
     domain: "ChildrenViews",
     text: "How do you ensure young people in your home understand their rights — including the right to independent advocacy?",
@@ -693,7 +717,7 @@ export const questionBank: BankQuestion[] = [
 
   // ── Domain 8 additional ───────────────────────────────────────────────────
   {
-    mode: "interview",
+    mode: "fit_person",
     id: "lm-c",
     domain: "LeadershipManagement",
     text: "How do you identify and address poor practice in your staff team before it becomes embedded or causes harm to young people?",
@@ -705,7 +729,7 @@ export const questionBank: BankQuestion[] = [
     ],
   },
   {
-    mode: "interview",
+    mode: "fit_person",
     id: "lm-d",
     domain: "LeadershipManagement",
     text: "How do you ensure your staffing model genuinely supports the needs of the specific young people in your home — including at night, at weekends, and during school hours?",
@@ -717,7 +741,7 @@ export const questionBank: BankQuestion[] = [
     ],
   },
   {
-    mode: "interview",
+    mode: "fit_person",
     id: "lm-e",
     domain: "LeadershipManagement",
     text: "Describe a recent finding from your Regulation 44 or 45 independent visitor or Regulatory report. How did that finding drive improvement and what evidence shows the outcome has changed children's experience?",
@@ -1187,6 +1211,161 @@ export const questionBank: BankQuestion[] = [
     text: "Describe evidence for how staff support a child when they are preparing to leave the home, ensuring the transition promotes a positive ending and helps build their life story.",
     hint: "Transition planning, life story work, leaving care support, celebration of achievements, staying connected if possible, aftercare contact, preparing for next placement.",
     followUpQuestions: ["How do you prepare children for leaving?", "What life story work is done?", "How do you maintain connection after leaving?"],
+    mode: "inspection",
+  },
+
+  // ── Supported Accommodation (SA) Questions ─────────────────────────────────────
+  // England Regulations 2023 — 4 standards for 16/17-year-olds in supported accommodation
+
+  // SA_LeadershipManagement
+  {
+    id: "sa-lm-a",
+    domain: "SA_LeadershipManagement",
+    text: "How do you ensure your senior workers have the skills to support young people approaching adulthood, and how do you identify development gaps?",
+    hint: "Consider induction, training, supervision, competency frameworks, and how you assess readiness to support semi-independent living. Think about what skills differ from traditional children's homes.",
+    followUpQuestions: [
+      "What specific skills do staff need for SA?",
+      "How do you assess whether a staff member is ready for this level of responsibility?",
+      "Can you describe a development need you've identified and how you addressed it?",
+    ],
+    mode: "inspection",
+  },
+  {
+    id: "sa-lm-b",
+    domain: "SA_LeadershipManagement",
+    text: "Walk me through how you maintain oversight records for your supported accommodation provision — what does your monitoring look like in practice?",
+    hint: "Oversight is similar to Regulation 44/45 for children's homes. Think about what records you keep, how frequently you visit, what you look for, how you respond to concerns, and how you evidence this oversight.",
+    followUpQuestions: [
+      "How often do you visit each young person's accommodation?",
+      "What specific areas do you check when you visit?",
+      "How do you record and follow up on any concerns you identify?",
+    ],
+    mode: "inspection",
+  },
+  {
+    id: "sa-lm-c",
+    domain: "SA_LeadershipManagement",
+    text: "How do you evidence that your staffing model meets the needs of 16/17-year-olds with varying levels of independence?",
+    hint: "Some young people will need significant support with daily living; others will be preparing for semi-independent living. How do you match staffing to these different needs? What flexibility do you have?",
+    followUpQuestions: [
+      "How does your staffing model adapt for different independence levels?",
+      "Can you describe how staffing would differ for a young person needing significant support vs. one preparing for independence?",
+      "How do you manage staffing during transitions when a young person's needs change?",
+    ],
+    mode: "inspection",
+  },
+
+  // SA_Protection
+  {
+    id: "sa-pc-a",
+    domain: "SA_Protection",
+    text: "Tell me about the last time you had to make a safeguarding referral for a young person in supported accommodation. What happened and what was the outcome?",
+    hint: "Safeguarding is critical and should be specific. Don't be vague. Describe the concern, your response, who you contacted, how you supported the young person, and what the outcome was. This will tell me about your safeguarding culture.",
+    followUpQuestions: [
+      "How did you make that referral?",
+      "How did you keep the young person informed?",
+      "What follow-up did you do once the referral was made?",
+    ],
+    mode: "inspection",
+  },
+  {
+    id: "sa-pc-b",
+    domain: "SA_Protection",
+    text: "How do you assess and manage risk differently for 16/17-year-old young people compared to younger children in a home?",
+    hint: "16/17-year-olds have developing independence. Risk assessment might include things like substance misuse, financial exploitation, peer relationships, independence skills gaps. How do you balance protection with age-appropriate autonomy?",
+    followUpQuestions: [
+      "What risks are specific to this age group?",
+      "How do you assess a young person's vulnerability?",
+      "Can you give an example of how you managed a risk related to their developing independence?",
+    ],
+    mode: "inspection",
+  },
+  {
+    id: "sa-pc-c",
+    domain: "SA_Protection",
+    text: "Describe how you respond when a young person in supported accommodation goes missing. What does your escalation process look like?",
+    hint: "Missing episodes are serious. Walk through your process: initial response, who you contact, timescales, how you support the young person when they return, and how you investigate the cause. Show me your protocol and your practice.",
+    followUpQuestions: [
+      "How quickly do you report someone missing to the police?",
+      "What factors determine how quickly you escalate?",
+      "After a young person returns, what do you do?",
+    ],
+    mode: "inspection",
+  },
+
+  // SA_Accommodation
+  {
+    id: "sa-ac-a",
+    domain: "SA_Accommodation",
+    text: "How do you ensure the physical accommodation is suitable for young people learning independence — what do you look for in a placement?",
+    hint: "Suitability includes: accessibility, safety features, space for dignity and privacy, proximity to support services, community links, shops, transport. How do you balance independence with safety? What checks do you do before a young person moves in?",
+    followUpQuestions: [
+      "What makes a property suitable?",
+      "How do you check accommodation before a young person moves in?",
+      "Can you describe a time you decided a property was not suitable? Why?",
+    ],
+    mode: "inspection",
+  },
+  {
+    id: "sa-ac-b",
+    domain: "SA_Accommodation",
+    text: "How do you involve young people in decisions about the accommodation and communal living environment?",
+    hint: "Young people should have voice and choice in their living space. This might include decoration, furnishing, shared rules, cleaning rotas, use of communal areas. Show me evidence of their participation and how their feedback leads to change.",
+    followUpQuestions: [
+      "How do young people have input into their accommodation?",
+      "Can you describe a change made because of a young person's request?",
+      "How do you resolve conflicts about shared spaces?",
+    ],
+    mode: "inspection",
+  },
+  {
+    id: "sa-ac-c",
+    domain: "SA_Accommodation",
+    text: "What checks do you complete to ensure the accommodation remains safe and appropriate, and how do you escalate concerns?",
+    hint: "Think about regular inspections (gas, electric, water, damp, pests, security), responsive repairs, health and safety audits, and your process for responding to concerns raised by young people or staff. How quickly do you act?",
+    followUpQuestions: [
+      "How often do you inspect the accommodation?",
+      "What would make you deem accommodation unsuitable?",
+      "Tell me about a safety concern you've dealt with and how you resolved it.",
+    ],
+    mode: "inspection",
+  },
+
+  // SA_Support
+  {
+    id: "sa-sp-a",
+    domain: "SA_Support",
+    text: "Tell me about a specific young person whose independence skills improved significantly under your support. What did you do differently?",
+    hint: "Concrete example, please. Which young person? What were their starting point and goal? What support did you provide? How frequently? What evidence shows the improvement? What's the outcome now?",
+    followUpQuestions: [
+      "What specific skills were you working on?",
+      "How did you measure progress?",
+      "Where is that young person now?",
+    ],
+    mode: "inspection",
+  },
+  {
+    id: "sa-sp-b",
+    domain: "SA_Support",
+    text: "How do you develop and review the independent living skills component of a young person's support plan? Give me a specific example.",
+    hint: "What does your plan look like? Who's involved in writing it? How often do you review? What skills are you targeting (cooking, money management, health, relationships, etc.)? How do you track progress? Walk me through with a real example.",
+    followUpQuestions: [
+      "What skills are typically in a support plan?",
+      "Who reviews the plan?",
+      "How do you adjust the plan if progress isn't happening?",
+    ],
+    mode: "inspection",
+  },
+  {
+    id: "sa-sp-c",
+    domain: "SA_Support",
+    text: "What does your transition planning look like for a young person approaching 18? Walk me through the process from start to end.",
+    hint: "This is critical. When do you start? Who's involved? What's the plan — semi-independence, own tenancy, further support, other placement? How do you prepare them? What documentation guides the transition? What happens after 18?",
+    followUpQuestions: [
+      "When do you start transition planning?",
+      "What does a full transition plan include?",
+      "How do you stay connected after a young person turns 18?",
+    ],
     mode: "inspection",
   },
 ];

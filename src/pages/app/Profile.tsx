@@ -34,6 +34,7 @@ type UserProfile = {
   name: string;
   role: string;
   home_name: string;
+  facility_type?: string;
 };
 
 type Subscription = {
@@ -87,7 +88,7 @@ export default function Profile() {
         { data: sess, error: sessError },
         { count: ansCount, error: ansError },
       ] = await Promise.all([
-        supabase.from("users").select("name,role,home_name,email_preferences").eq("id", user.id).single(),
+        supabase.from("users").select("name,role,home_name,email_preferences,facility_type").eq("id", user.id).single(),
         supabase.from("subscriptions").select("status,stripe_subscription_id,created_at").eq("user_id", user.id).maybeSingle(),
         supabase.from("sessions").select("started_at").eq("user_id", user.id),
         supabase.from("responses").select("id", { count: "exact", head: true }).in(
@@ -115,6 +116,7 @@ export default function Profile() {
           name: prof.name ?? "",
           role: prof.role ?? "",
           home_name: prof.home_name ?? "",
+          facility_type: prof.facility_type ?? "childrens_home",
         });
         setEmailPrefs(prof.email_preferences ?? { trial_warnings: true, product_updates: true });
       }
@@ -152,6 +154,7 @@ export default function Profile() {
           name: profile.name.trim(),
           role: profile.role,
           home_name: profile.home_name.trim(),
+          facility_type: profile.facility_type || "childrens_home",
         })
         .eq("id", user.id);
 
@@ -427,6 +430,18 @@ export default function Profile() {
                 <option value="">Select role…</option>
                 {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
               </select>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-500 mb-1.5">Facility Type</label>
+              <select
+                value={profile.facility_type || "childrens_home"}
+                onChange={(e) => setProfile((p) => ({ ...p, facility_type: e.target.value }))}
+                className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-teal-500 bg-white"
+              >
+                <option value="childrens_home">Children's Home (9 Quality Standards)</option>
+                <option value="supported_accommodation">Supported Accommodation (4 Standards)</option>
+              </select>
+              <p className="mt-1.5 text-xs text-slate-500">This determines which inspection standards your practice sessions use.</p>
             </div>
             <div>
               <label className="block text-xs font-semibold text-slate-500 mb-1.5">Home / setting name</label>

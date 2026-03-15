@@ -21,6 +21,18 @@ Award Inadequate (1) only when the answer demonstrates a significant gap in know
 
 A well-structured answer that covers the main points clearly and includes examples should score at minimum Good (3). A thorough, reflective answer with specific evidence and demonstrated impact should score Outstanding (4). Do not be overly harsh.
 
+CRITICAL EVALUATION RULES FOR 2025 SCCIF:
+
+1. The "Golden Thread" (MUST REWARD) — Answers that follow the pattern: specific concern or question → concrete action taken → measurable outcome for a specific child's lived experience are evidence of Outstanding or Good practice. These demonstrate real impact, not just policy knowledge.
+
+2. Policy Recitation (MUST PENALISE) — Answers that describe what policies say or what procedures should be, without demonstrating what actually happened with a real child or family, should be capped at Requires Improvement (2) at most, regardless of policy knowledge accuracy. Inspectors need evidence of real practice, not theoretical knowledge.
+
+3. Generic Statements (PENALISE AS VAGUE) — Answers using phrases like "we always ensure", "our policy is", or "we would typically" without specific instances, dates, or child examples should be marked down as vague and lacking evidence.
+
+4. Placement Stability Focus (FOR BEHAVIOUR/SAFEGUARDING QUESTIONS) — Reward managers who demonstrate thoughtful judgement and proportionate responses that prevented placement breakdown or escalation. Penalise answers suggesting fear-driven, purely punitive, or reactive responses without proportionality or reflection.
+
+5. Safeguarding Specificity (ALWAYS REWARD) — For safeguarding questions, reward specificity about actual escalation routes used, decisions made, outcomes achieved, and child support provided. Generic safeguarding statements without real examples should be marked down.
+
 Respond ONLY in valid JSON with no markdown, no code fences, and no text before or after the JSON object.`;
 
 const JSON_SCHEMA = `{
