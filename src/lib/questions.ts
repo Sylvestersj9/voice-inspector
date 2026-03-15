@@ -297,6 +297,17 @@ export const questionBank: BankQuestion[] = [
       "How do you maintain contact with young people who have left to monitor how the transition went?",
     ],
   },
+  {
+    id: "cp-e",
+    domain: "CarePlanning",
+    text: "Describe how you assess and match the risk profile of a young person being admitted to your home — particularly young people showing challenging behaviour — and what proactive steps ensure placement stability?",
+    hint: "Inspector wants to see evidence-based placement decisions that minimise unplanned endings. Show how you assess compatibility with existing young people, what support structures you put in place, and how you prevent placement breakdown.",
+    followUpQuestions: [
+      "How do you decide whether your home is the right placement for a young person with specific risk factors or challenging needs?",
+      "What early warning signs would tell you a placement is beginning to break down — and what interventions would you implement?",
+      "How do you measure and evidence the stability of your placements over time?",
+    ],
+  },
 
   // ── Domain 1 additional ───────────────────────────────────────────────────
   {
@@ -319,6 +330,17 @@ export const questionBank: BankQuestion[] = [
       "How do young people influence the food, routines, and household decisions in your home?",
       "What would a young person say makes your home feel different from other placements they've had?",
       "How do you balance the regulatory requirements of running a registered home with creating a normal home environment?",
+    ],
+  },
+  {
+    id: "qp-e",
+    domain: "QualityPurpose",
+    text: "How does your day-to-day practice reflect the ethos in your Statement of Purpose, particularly for young people with complex or challenging needs?",
+    hint: "Inspector wants to see lived values, not just written statements. Reference specific ways your care approach translates your stated purpose into action for individual young people's identified needs.",
+    followUpQuestions: [
+      "Walk me through how your Statement of Purpose guides the care of a young person with significant trauma or behavioural needs.",
+      "How do your daily records demonstrate that you're delivering on your stated purpose?",
+      "How do you adapt your approach to ensure your purpose is achieved for each individual young person?",
     ],
   },
 
@@ -345,6 +367,17 @@ export const questionBank: BankQuestion[] = [
       "How do you ensure young people know their rights without it feeling like a legal briefing?",
     ],
   },
+  {
+    id: "cv-e",
+    domain: "ChildrenViews",
+    text: "Describe the feedback loop when a young person raises a concern — from the moment they express it through to the action taken and feedback back to them?",
+    hint: "Inspector wants to see evidence of a complete cycle: listening, responding, explaining why action was or wasn't taken, and showing the young person they were genuinely heard. Non-speaking children must have alternative communication methods documented.",
+    followUpQuestions: [
+      "How do you ensure young people understand the outcome of their feedback, even if you couldn't do exactly what they asked?",
+      "Walk me through how you gather feedback from young people with complex communication needs.",
+      "How do you evidence that feedback from young people has shaped decisions in your home?",
+    ],
+  },
 
   // ── Domain 3 additional ───────────────────────────────────────────────────
   {
@@ -367,6 +400,17 @@ export const questionBank: BankQuestion[] = [
       "How often do you speak directly with the virtual school head and what do those conversations cover?",
       "Have you ever disagreed with the virtual school head's approach — and if so, how did you handle it?",
       "How do you ensure PEPs reflect the young person's actual aspirations and not just school targets?",
+    ],
+  },
+  {
+    id: "ed-e",
+    domain: "Education",
+    text: "Describe how you track and measure a specific young person's educational progress in their Personal Education Plan, and what impact have you had on improving their outcomes?",
+    hint: "Inspector wants to see active tracking of PEP goals, your advocacy when progress stalls, and concrete evidence of impact. You should be able to cite specific improvements attributable to your involvement.",
+    followUpQuestions: [
+      "How do you hold the school and Virtual School Head accountable if a young person isn't progressing towards their PEP targets?",
+      "What support do you provide at home to reinforce educational progress made at school?",
+      "How do you document your contribution to educational outcomes in case records?",
     ],
   },
 
@@ -393,6 +437,17 @@ export const questionBank: BankQuestion[] = [
       "How do you ensure these activities aren't cancelled when staffing is tight?",
     ],
   },
+  {
+    id: "ea-e",
+    domain: "EnjoymentAchievement",
+    text: "Describe evidence of meaningful community participation for a young person in your home — how have you prevented them becoming isolated and what talents or interests have developed since their arrival?",
+    hint: "Inspector wants to see pro-active work to build young people's social networks and identity within their community. Evidence could include clubs, voluntary work, community events, peer groups, mentoring, or newly discovered talents.",
+    followUpQuestions: [
+      "How do you assess a young person's risk of isolation and what actions do you take to prevent it?",
+      "Tell me about a specific young person whose interests or talents have expanded during their time with you.",
+      "How do you evidence young people's participation in community activities in their care records?",
+    ],
+  },
 
   // ── Domain 5 additional ───────────────────────────────────────────────────
   {
@@ -415,6 +470,17 @@ export const questionBank: BankQuestion[] = [
       "What happens when a medication error occurs — walk me through the process from discovery to resolution?",
       "How do you ensure young people are involved in decisions about their own medication?",
       "How do you manage medication for young people who refuse to take it?",
+    ],
+  },
+  {
+    id: "hw-e",
+    domain: "HealthWellbeing",
+    text: "Describe how you would identify and escalate a young person's mental health delay or deterioration to CAMHS, and what you do while waiting for assessment or if the wait is too long?",
+    hint: "Inspector wants to see knowledge of escalation pathways, documentation of deteriorating mental health, evidence of advocacy when access is delayed, and interim trauma-informed support measures in place.",
+    followUpQuestions: [
+      "How do you document and evidence mental health concerns that haven't yet been formally diagnosed?",
+      "Who would you escalate to if CAMHS wait times were putting a young person at risk?",
+      "What interim support and monitoring do you put in place while a young person waits for specialist mental health intervention?",
     ],
   },
 
@@ -441,6 +507,17 @@ export const questionBank: BankQuestion[] = [
       "How do you ensure the relationships young people build in your home can continue when they leave?",
     ],
   },
+  {
+    id: "pr-e",
+    domain: "PositiveRelationships",
+    text: "Describe a recent incident involving conflict or escalation between young people. Walk me through your trauma-informed de-escalation approach and how you supported restorative work afterwards?",
+    hint: "Inspector wants to see understanding of trauma-informed practice, de-escalation techniques, and restorative approaches (not punishment). Show how you help young people repair relationships and learn from incidents.",
+    followUpQuestions: [
+      "How do you teach your staff the difference between de-escalation and confrontation?",
+      "What does restorative work look like for young people who have harmed each other in your home?",
+      "How do you evidence and record the impact of your restorative approaches in case files?",
+    ],
+  },
 
   // ── Domain 7 additional ───────────────────────────────────────────────────
   {
@@ -465,6 +542,17 @@ export const questionBank: BankQuestion[] = [
       "How do you support the young person through the night while also meeting your statutory obligations?",
     ],
   },
+  {
+    id: "pc-e",
+    domain: "ProtectionChildren",
+    text: "Describe the full evidence trail for a recent missing from care episode in your home — from initial absence through to return, escalations, safeguarding concerns raised, and the return home interview outcome?",
+    hint: "Inspector wants to see clear accountability at each stage: initial decision (who, when, actions taken), multi-agency communication, risk identification, escalation decision-making, and learning captured from the episode.",
+    followUpQuestions: [
+      "How do you distinguish between a young person being safely at a known location versus a genuine missing episode requiring police involvement?",
+      "What safeguarding concerns were identified or explored during this missing episode?",
+      "What patterns have you identified in this young person's missing episodes and how are they being addressed?",
+    ],
+  },
 
   // ── Domain 8 additional ───────────────────────────────────────────────────
   {
@@ -487,6 +575,17 @@ export const questionBank: BankQuestion[] = [
       "How do you adjust your staffing model when the needs of young people in the home change significantly?",
       "How do you manage continuity of care during periods of high staff absence or turnover?",
       "What is your approach to managing agency use and ensuring agency staff maintain your home's standards?",
+    ],
+  },
+  {
+    id: "lm-e",
+    domain: "LeadershipManagement",
+    text: "Describe a recent finding from your Regulation 44 or 45 independent visitor or Regulatory report. How did that finding drive improvement and what evidence shows the outcome has changed children's experience?",
+    hint: "Inspector wants to see findings that translate to action and demonstrable impact on young people's lives. Show the full improvement cycle: finding identified → action plan → implementation → measurement of impact → embedding of learning.",
+    followUpQuestions: [
+      "How do you use Annex A and risk assessment data to align your daily practice with regulatory findings?",
+      "How do you ensure findings from compliance visits result in real changes, not just tokenistic actions?",
+      "How do you share learning from regulatory reports with your entire staff team and measure their understanding?",
     ],
   },
 ];
