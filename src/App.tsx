@@ -28,6 +28,7 @@ const About = lazy(() => import("./pages/About"));
 const Blog = lazy(() => import("./pages/Blog"));
 const BlogPost = lazy(() => import("./pages/BlogPost"));
 const Billing = lazy(() => import("./pages/app/Billing"));
+const FeedbackSubmission = lazy(() => import("./pages/app/FeedbackSubmission"));
 const Admin = lazy(() => import("./pages/Admin"));
 const Tools = lazy(() => import("./pages/marketing/Tools"));
 
@@ -104,6 +105,14 @@ function AppRoutes() {
           element={
             <RequireAuth>
               <PageTransition><Billing /></PageTransition>
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/app/feedback-submission"
+          element={
+            <RequireAuth>
+              <PageTransition><FeedbackSubmission /></PageTransition>
             </RequireAuth>
           }
         />

@@ -6,8 +6,10 @@ export default function Tools() {
   const [expandedTool, setExpandedTool] = useState<string | null>(null);
   const [interviewAnswers, setInterviewAnswers] = useState<Record<number, string>>({});
   const [showInterviewFeedback, setShowInterviewFeedback] = useState(false);
+  const [riAnswers, setRiAnswers] = useState<Record<number, string>>({});
+  const [showRiFeedback, setShowRiFeedback] = useState(false);
 
-  const interviewQuestions = [
+  const rmInterviewQuestions = [
     {
       id: 1,
       title: "Safeguarding & Child Protection",
@@ -28,6 +30,30 @@ export default function Tools() {
       question: "Walk me through how you ensure consistent quality of care across your home. What's your process?",
       keyPoints: ["Regular audits/observations", "Staff training", "Child feedback", "Continuous improvement"],
       tips: "Explain your quality assurance systems. Show how you measure and improve care standards systematically."
+    },
+  ];
+
+  const riInterviewQuestions = [
+    {
+      id: 1,
+      title: "Regulatory Experience & Knowledge",
+      question: "Describe your experience with inspecting or overseeing residential children's homes. What frameworks and standards guide your work?",
+      keyPoints: ["SCCIF knowledge", "Inspection experience", "Regulatory compliance", "Quality judgment"],
+      tips: "Show deep knowledge of SCCIF and how it applies in practice. Demonstrate ability to assess homes against standards fairly and accurately."
+    },
+    {
+      id: 2,
+      title: "Identifying & Addressing Safeguarding Risks",
+      question: "Tell me about a time you identified a safeguarding concern or risk in a home you inspected. How did you handle escalation and follow-up?",
+      keyPoints: ["Risk identification skills", "Clear escalation", "Child protection focus", "Proportionate action"],
+      tips: "Show you put children's safety first. Explain how you balance supporting homes with enforcing standards. Give specific examples."
+    },
+    {
+      id: 3,
+      title: "Supporting Improvement & Leadership",
+      question: "How do you approach feedback with home managers or leaders? Can you describe your approach to driving improvement?",
+      keyPoints: ["Constructive feedback", "Partnership approach", "Evidence-based judgment", "Supporting not punishing"],
+      tips: "Show you see inspection as a learning opportunity. Describe how you help homes improve while holding them to standards."
     },
   ];
 
@@ -66,8 +92,8 @@ export default function Tools() {
                   <span className="text-xl">🎯</span>
                 </div>
                 <div className="text-left">
-                  <h3 className="font-semibold text-slate-900">Fit-Person Interview Simulator</h3>
-                  <p className="text-sm text-slate-500 mt-1">Practice answering common leadership interview questions</p>
+                  <h3 className="font-semibold text-slate-900">RM Fit-Person Interview Simulator</h3>
+                  <p className="text-sm text-slate-500 mt-1">Practice answering common Registered Manager interview questions</p>
                 </div>
               </div>
               {expandedTool === "interview" ? (
@@ -90,7 +116,7 @@ export default function Tools() {
 
                 {/* Questions */}
                 <div className="space-y-4">
-                  {interviewQuestions.map((q, idx) => (
+                  {rmInterviewQuestions.map((q, idx) => (
                     <div key={q.id} className="border border-slate-200 rounded-xl p-4">
                       {/* Question */}
                       <div>
@@ -165,6 +191,130 @@ export default function Tools() {
                     <a
                       href="/login"
                       className="inline-flex items-center gap-1.5 text-sm font-semibold text-teal-700 hover:text-teal-900 mt-2"
+                    >
+                      Start free trial <ArrowRight className="h-3.5 w-3.5" />
+                    </a>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* RI Interview Prep Tool */}
+      <section className="bg-slate-50 px-4 py-14 border-b border-slate-200">
+        <div className="mx-auto max-w-4xl">
+          <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+            {/* Tool Header */}
+            <button
+              onClick={() => toggleTool("ri-interview")}
+              className="w-full px-6 py-5 flex items-center justify-between hover:bg-slate-50 transition-colors"
+            >
+              <div className="flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-100 ring-1 ring-amber-200">
+                  <span className="text-xl">📋</span>
+                </div>
+                <div className="text-left">
+                  <h3 className="font-semibold text-slate-900">RI/NI Fit-Person Interview Simulator</h3>
+                  <p className="text-sm text-slate-500 mt-1">Practice answering common Responsible Individual / Nominated Individual interview questions</p>
+                </div>
+              </div>
+              {expandedTool === "ri-interview" ? (
+                <ChevronUp className="h-5 w-5 text-slate-400" />
+              ) : (
+                <ChevronDown className="h-5 w-5 text-slate-400" />
+              )}
+            </button>
+
+            {/* Tool Content */}
+            {expandedTool === "ri-interview" && (
+              <div className="border-t border-slate-100 px-6 py-6 space-y-6">
+                {/* Instructions */}
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                  <p className="text-sm text-amber-900">
+                    <strong>How it works:</strong> Read each question carefully, take 1-2 minutes to think, then write your answer.
+                    Focus on your regulatory experience and how you've driven improvements in homes.
+                  </p>
+                </div>
+
+                {/* Questions */}
+                <div className="space-y-4">
+                  {riInterviewQuestions.map((q, idx) => (
+                    <div key={q.id} className="border border-slate-200 rounded-xl p-4">
+                      {/* Question */}
+                      <div>
+                        <div className="flex items-start gap-3 mb-3">
+                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-100 text-amber-700 font-semibold text-sm flex-shrink-0">
+                            {idx + 1}
+                          </div>
+                          <div>
+                            <h4 className="font-semibold text-slate-900">{q.title}</h4>
+                            <p className="text-sm text-slate-600 mt-1 italic">{q.question}</p>
+                          </div>
+                        </div>
+
+                        {/* Input */}
+                        <textarea
+                          value={riAnswers[q.id] || ""}
+                          onChange={(e) => setRiAnswers({ ...riAnswers, [q.id]: e.target.value })}
+                          placeholder="Type your answer here (aim for 2-3 sentences with specific examples)..."
+                          className="w-full mt-3 p-3 rounded-lg border border-slate-200 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none resize-none"
+                          rows={3}
+                        />
+
+                        {/* Guidance */}
+                        <div className="mt-3 text-xs text-slate-600">
+                          <p className="font-semibold mb-1">Examiners look for:</p>
+                          <ul className="space-y-1">
+                            {q.keyPoints.map((point) => (
+                              <li key={point} className="flex items-start gap-1.5">
+                                <CheckCircle2 className="h-3 w-3 text-amber-600 mt-0.5 flex-shrink-0" />
+                                {point}
+                              </li>
+                            ))}
+                          </ul>
+                          <p className="mt-2 text-slate-500 italic">💡 {q.tips}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Feedback Button */}
+                <button
+                  onClick={() => setShowRiFeedback(!showRiFeedback)}
+                  className="w-full px-4 py-3 rounded-lg bg-amber-600 text-white font-semibold hover:bg-amber-700 transition-colors"
+                >
+                  {showRiFeedback ? "Hide" : "Show"} Interview Preparation Tips
+                </button>
+
+                {/* Feedback */}
+                {showRiFeedback && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-3 text-sm">
+                    <h4 className="font-semibold text-slate-900">RI/NI Interview Preparation Guidance</h4>
+                    <div className="space-y-2 text-slate-700">
+                      <p>✓ <strong>Deep regulatory knowledge:</strong> Show you understand SCCIF and how it applies in practice</p>
+                      <p>✓ <strong>Demonstrate judgment:</strong> Explain how you assess homes fairly and proportionately</p>
+                      <p>✓ <strong>Child protection first:</strong> Show safeguarding is always your priority in every decision</p>
+                      <p>✓ <strong>Evidence-based approach:</strong> Describe how you use evidence to make judgments</p>
+                      <p>✓ <strong>Partnership mindset:</strong> Show you work WITH homes to improve, not just enforce</p>
+                      <p>✓ <strong>Real examples:</strong> Use specific inspection scenarios or improvements you've witnessed</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* CTA */}
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex items-start gap-3">
+                  <span className="text-2xl">🎓</span>
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">Want home-facing interview prep too?</p>
+                    <p className="text-sm text-slate-600 mt-1">
+                      Sign up for a free trial and help the homes you regulate practice their inspection responses.
+                    </p>
+                    <a
+                      href="/login"
+                      className="inline-flex items-center gap-1.5 text-sm font-semibold text-amber-700 hover:text-amber-900 mt-2"
                     >
                       Start free trial <ArrowRight className="h-3.5 w-3.5" />
                     </a>
