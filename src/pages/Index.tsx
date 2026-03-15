@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/auth/AuthProvider";
@@ -501,7 +501,8 @@ export default function Index() {
     }
   };
 
-  const pickReplacementQuestion = () => {
+  // Memoized replacement question picker (prevents recalculation on every render)
+  const pickReplacementQuestion = useCallback(() => {
     if (!sessionId) return null;
 
     // If focusing on a specific standard, only pick from that domain
@@ -533,7 +534,7 @@ export default function Index() {
     if (pool.length === 0) return null;
     const idx = Math.floor(rng() * pool.length);
     return pool[idx];
-  };
+  }, [sessionId, focusStandard, practiceMode, questions]);
 
   const skipQuestion = async () => {
     if (skipUsed) return;

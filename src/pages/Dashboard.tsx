@@ -7,6 +7,7 @@ import { computeTrialUsage, TRIAL_DAILY_LIMIT, TRIAL_TOTAL_LIMIT } from "@/lib/t
 import AppNav from "@/components/AppNav";
 import AnnouncementBanner from "@/components/AnnouncementBanner";
 import ConfettiBurst from "@/components/ConfettiBurst";
+import DashboardSkeleton from "@/components/DashboardSkeleton";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -275,6 +276,11 @@ export default function Dashboard() {
   const homeName = profile?.home_name ?? "";
   const paid = isPaidSub(subscription);
   const canStart = canStartSession(subscription, trialInfo);
+
+  // Show skeleton while loading
+  if (loading) {
+    return <DashboardSkeleton />;
+  }
 
   return (
     <div className="min-h-screen bg-slate-50">
