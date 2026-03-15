@@ -181,13 +181,30 @@ export default function FeedbackSubmission() {
   if (submitted) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-lg p-8 max-w-md text-center">
-          <CheckCircle className="h-16 w-16 text-emerald-600 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-slate-900 mb-2">Thank you!</h1>
-          <p className="text-slate-600 mb-6">
-            Your feedback has been submitted successfully. We'll review it and may feature it in our public gallery.
-          </p>
-          <p className="text-sm text-slate-500">Redirecting to dashboard...</p>
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-lg p-8 max-w-md">
+          <div className="text-center mb-6">
+            <CheckCircle className="h-16 w-16 text-emerald-600 mx-auto mb-4" />
+            <h1 className="text-2xl font-bold text-slate-900 mb-2">Thank you!</h1>
+            <p className="text-slate-600">
+              Your feedback has been submitted successfully. We'll review it and may feature it in our public gallery.
+            </p>
+          </div>
+
+          {/* Nudge 4: Feedback Upsell */}
+          <div className="border-t border-slate-200 pt-6">
+            <h3 className="font-semibold text-slate-900 mb-2">Want custom practice questions?</h3>
+            <p className="text-sm text-slate-600 mb-4">
+              Subscribe to unlock custom domain focus and personalized practice plans tailored to your challenges.
+            </p>
+            <a
+              href="/app/paywall"
+              className="inline-flex items-center justify-center w-full rounded-lg bg-teal-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-teal-700 transition-colors"
+            >
+              See pricing plans
+            </a>
+          </div>
+
+          <p className="text-xs text-slate-500 text-center mt-6">Redirecting to dashboard...</p>
         </div>
       </div>
     );

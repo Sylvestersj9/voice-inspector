@@ -162,6 +162,8 @@ export default function Index() {
   const [paused, setPaused] = useState(false);
   const [showGenerate, setShowGenerate] = useState(false);
   const [showUpsell, setShowUpsell] = useState(false);
+  const [showScoreNudge, setShowScoreNudge] = useState(false);
+  const [showQsMasterNudge, setShowQsMasterNudge] = useState(false);
   const [pendingReportId, setPendingReportId] = useState<string | null>(null);
   const [practiceMode, setPracticeMode] = useState<PracticeMode>(() => {
     try {
@@ -588,6 +590,27 @@ export default function Index() {
         ? answered.reduce((s, q) => s + (q.result?.score ?? 0), 0) / answered.length
         : 0;
       const topBand = answered[0]?.result?.band ?? "Unknown";
+
+      // Nudge 2: Score Gate — Show if avgScore >= 3.2 AND !isPaidSubscriber
+      if (avgScore >= 3.2 && !isPaidSubscriber) {
+        setShowScoreNudge(true);
+      }
+
+      // Nudge 3: QS Master — Count domains with avg score >= 3.0
+      const domainScores: Record<string, number[]> = {};
+      answered.forEach((q) => {
+        const domain = q.question.domain;
+        if (!domainScores[domain]) domainScores[domain] = [];
+        if (q.result?.score) domainScores[domain].push(q.result.score);
+      });
+      const excellentDomains = Object.entries(domainScores).filter(([, scores]) => {
+        const avg = scores.length ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
+        return avg >= 3.0;
+      }).length;
+      if (excellentDomains >= 6 && !isPaidSubscriber) {
+        setShowQsMasterNudge(true);
+      }
+
       trackSessionComplete({
         overall_band: topBand,
         overall_score: Math.round(avgScore * 10) / 10,
@@ -1264,6 +1287,64 @@ export default function Index() {
                 className="inline-flex items-center justify-center rounded-xl border border-slate-200 px-6 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
               >
                 View report
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Nudge 2: Score Gate */}
+      {showScoreNudge && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm px-4">
+          <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl text-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-50 mb-4 mx-auto">
+              <CheckCircle2 className="h-6 w-6 text-emerald-600" />
+            </div>
+            <h2 className="font-display text-xl font-bold text-slate-900 mb-2">Outstanding performance!</h2>
+            <p className="text-sm text-slate-600">
+              You're scoring 80%+ on practice. Upgrade for unlimited sessions and AI-powered certificates.
+            </p>
+            <div className="mt-6 flex flex-col gap-2">
+              <Link
+                to="/app/paywall"
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-teal-600 px-6 py-3 text-sm font-semibold text-white hover:bg-teal-700 transition-colors"
+              >
+                Upgrade to Pro
+              </Link>
+              <button
+                onClick={() => setShowScoreNudge(false)}
+                className="inline-flex items-center justify-center rounded-xl border border-slate-200 px-6 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+              >
+                Continue practicing
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Nudge 3: QS Master */}
+      {showQsMasterNudge && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm px-4">
+          <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl text-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-amber-50 mb-4 mx-auto">
+              <Target className="h-6 w-6 text-amber-600" />
+            </div>
+            <h2 className="font-display text-xl font-bold text-slate-900 mb-2">6/9 standards excellent!</h2>
+            <p className="text-sm text-slate-600">
+              You're ready for inspection. Get detailed analysis and track progress across all standards.
+            </p>
+            <div className="mt-6 flex flex-col gap-2">
+              <Link
+                to="/app/paywall"
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-teal-600 px-6 py-3 text-sm font-semibold text-white hover:bg-teal-700 transition-colors"
+              >
+                Unlock Pro Features
+              </Link>
+              <button
+                onClick={() => setShowQsMasterNudge(false)}
+                className="inline-flex items-center justify-center rounded-xl border border-slate-200 px-6 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+              >
+                Continue practicing
               </button>
             </div>
           </div>
