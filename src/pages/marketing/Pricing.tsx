@@ -89,7 +89,7 @@ export default function Pricing() {
               Simple, honest pricing
             </h1>
             <p className="mt-3 text-slate-600">
-              Start free. Subscribe when you're ready. Cancel any time.
+              For Registered Managers, Responsible Individuals, Nominated Individuals, Deputies, and Care Leaders. Start free. Subscribe when you're ready. Cancel any time.
             </p>
           </div>
 

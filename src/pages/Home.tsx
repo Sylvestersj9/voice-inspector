@@ -18,8 +18,8 @@ export default function Landing() {
             <span className="text-teal-600">Standards prepared. Confidence built.</span>
           </h1>
           <p className="mt-5 text-lg leading-relaxed text-slate-600 max-w-2xl mx-auto">
-            MockOfsted simulates real SCCIF inspection conversations across all 9 Quality
-            Standards. Perfect for inspections, fit-person interviews, and leadership preparation.
+            MockOfsted simulates real SCCIF inspection conversations and fit-person interview scenarios across all 9 Quality
+            Standards. Perfect for Registered Managers and Responsible Individuals preparing for inspections or fit-person interviews.
             Answer by voice or text, get scored feedback, and receive a full provisional report — in under 30 minutes.
           </p>
           <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">

@@ -131,7 +131,7 @@ export default function About() {
             Built for the whole team, not just one role
           </h2>
           <p className="text-slate-600 leading-relaxed max-w-2xl mb-10">
-            MockOfsted supports leaders, deputies, and teams across UK children's homes, supported living, and youth accommodation services.
+            MockOfsted supports Registered Managers, Responsible Individuals, Nominated Individuals, leaders, deputies, and teams across UK children's homes, supported living, and youth accommodation services. Perfect for inspection prep and fit-person interview preparation.
           </p>
 
           <div className="grid gap-8 md:grid-cols-2">
@@ -140,7 +140,8 @@ export default function About() {
               <p className="font-semibold text-slate-900 mb-4">Perfect for</p>
               <ul className="space-y-3">
                 {[
-                  "Small independent providers (2–20 beds) — no enterprise pricing",
+                  "Registered Managers preparing for inspections and fit-person interviews",
+                  "Responsible Individuals and Nominated Individuals preparing for fit-person interview assessments",
                   "Single homes or small groups (2–5 sites)",
                   "Residential care & supported living with young people",
                   "Anyone facing Ofsted pressure who needs realistic practice",
