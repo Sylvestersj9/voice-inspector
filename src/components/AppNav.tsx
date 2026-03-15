@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { LogOut, Menu, X, User, CreditCard, Settings, MessageSquare } from "lucide-react";
+import { useTheme } from "next-themes";
+import { LogOut, Menu, X, User, CreditCard, Settings, MessageSquare, Sun, Moon } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -32,6 +33,7 @@ export default function AppNav({
   const menuRef = useRef<HTMLDivElement>(null);
   const { pathname } = useLocation();
   const navigate = useNavigate();
+  const { theme, setTheme } = useTheme();
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [userName, setUserName] = useState<string | null>(null);
 
@@ -76,8 +78,8 @@ export default function AppNav({
         to={to}
         className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
           active
-            ? "bg-slate-100 text-slate-900"
-            : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+            ? "bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100"
+            : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100"
         }`}
       >
         {label}
@@ -91,7 +93,7 @@ export default function AppNav({
 
   return (
     <header
-      className={`sticky top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur-sm ${headerClassName}`}
+      className={`sticky top-0 z-20 border-b border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm ${headerClassName}`}
     >
       <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
 
@@ -107,7 +109,7 @@ export default function AppNav({
                 </g>
               </svg>
             </div>
-            <span className="font-display font-bold text-slate-900">MockOfsted</span>
+            <span className="font-display font-bold text-slate-900 dark:text-slate-100">MockOfsted</span>
           </Link>
 
           {/* Practice + Dashboard — hidden on mobile, flex on md+ */}
@@ -126,13 +128,13 @@ export default function AppNav({
           <div className="hidden md:block">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-2 rounded-full border border-slate-200 p-1 pr-3 hover:bg-slate-50 transition-colors outline-none">
-                  <Avatar className="h-7 w-7 border border-slate-100">
+                <button className="flex items-center gap-2 rounded-full border border-slate-200 dark:border-slate-700 p-1 pr-3 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors outline-none">
+                  <Avatar className="h-7 w-7 border border-slate-100 dark:border-slate-800">
                     <AvatarFallback className="bg-teal-50 text-teal-700 text-[10px] font-bold">
                       {initials}
                     </AvatarFallback>
                   </Avatar>
-                  <span className="text-xs font-semibold text-slate-700">Account</span>
+                  <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">Account</span>
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56 mt-1">
@@ -159,6 +161,20 @@ export default function AppNav({
                   <span>Send feedback</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
+                  {theme === "dark" ? (
+                    <>
+                      <Sun className="mr-2 h-4 w-4" />
+                      <span>Light mode</span>
+                    </>
+                  ) : (
+                    <>
+                      <Moon className="mr-2 h-4 w-4" />
+                      <span>Dark mode</span>
+                    </>
+                  )}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={onSignOut} className="text-red-600 focus:text-red-600">
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Sign out</span>
@@ -173,7 +189,7 @@ export default function AppNav({
               onClick={() => setMobileOpen((o) => !o)}
               aria-label={mobileOpen ? "Close menu" : "Open menu"}
               aria-expanded={mobileOpen}
-              className="rounded-lg border border-slate-200 p-2 text-slate-600 hover:bg-slate-50 transition-colors"
+              className="rounded-lg border border-slate-200 dark:border-slate-700 p-2 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
             >
               {mobileOpen ? (
                 <X className="h-5 w-5" />
@@ -184,7 +200,7 @@ export default function AppNav({
 
             {/* Dropdown */}
             <div
-              className={`absolute right-0 top-full mt-2 w-48 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg transition-all duration-200 ${
+              className={`absolute right-0 top-full mt-2 w-48 overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg transition-all duration-200 ${
                 mobileOpen
                   ? "pointer-events-auto translate-y-0 opacity-100"
                   : "pointer-events-none -translate-y-1 opacity-0"
@@ -196,8 +212,8 @@ export default function AppNav({
                   to="/app"
                   className={`flex w-full items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                     pathname === "/app"
-                      ? "bg-slate-100 text-slate-900"
-                      : "text-slate-600 hover:bg-slate-100"
+                      ? "bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100"
+                      : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
                   }`}
                 >
                   Practice
@@ -206,21 +222,21 @@ export default function AppNav({
                   to="/app/dashboard"
                   className={`flex w-full items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                     pathname === "/app/dashboard"
-                      ? "bg-slate-100 text-slate-900"
-                      : "text-slate-600 hover:bg-slate-100"
+                      ? "bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100"
+                      : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
                   }`}
                 >
                   Dashboard
                 </Link>
 
-                <div className="my-1 border-t border-slate-100" />
+                <div className="my-1 border-t border-slate-100 dark:border-slate-700" />
 
                 <Link
                   to="/app/profile"
                   className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                     pathname === "/app/profile"
-                      ? "bg-slate-100 text-slate-900"
-                      : "text-slate-600 hover:bg-slate-100"
+                      ? "bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100"
+                      : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
                   }`}
                 >
                   <User className="h-4 w-4" />
@@ -229,7 +245,7 @@ export default function AppNav({
 
                 <Link
                   to="/app/billing"
-                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors"
+                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                   onClick={() => setMobileOpen(false)}
                 >
                   <CreditCard className="h-4 w-4" />
@@ -238,30 +254,50 @@ export default function AppNav({
 
                 <Link
                   to="/app/feedback-submission"
-                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors"
+                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                   onClick={() => setMobileOpen(false)}
                 >
                   <MessageSquare className="h-4 w-4" />
                   Send feedback
                 </Link>
 
+                <button
+                  onClick={() => {
+                    setTheme(theme === "dark" ? "light" : "dark");
+                    setMobileOpen(false);
+                  }}
+                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors"
+                >
+                  {theme === "dark" ? (
+                    <>
+                      <Sun className="h-4 w-4" />
+                      Light mode
+                    </>
+                  ) : (
+                    <>
+                      <Moon className="h-4 w-4" />
+                      Dark mode
+                    </>
+                  )}
+                </button>
+
                 {!isPaid && (
                   <Link
                     to="/app/paywall"
-                    className="flex w-full items-center rounded-lg px-3 py-2 text-sm font-semibold text-teal-700 hover:bg-teal-50 transition-colors"
+                    className="flex w-full items-center rounded-lg px-3 py-2 text-sm font-semibold text-teal-700 dark:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-900/20 transition-colors"
                   >
                     Subscribe
                   </Link>
                 )}
 
-                <div className="my-1 border-t border-slate-100" />
+                <div className="my-1 border-t border-slate-100 dark:border-slate-700" />
 
                 <button
                   onClick={() => {
                     setMobileOpen(false);
                     onSignOut();
                   }}
-                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
+                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                 >
                   <LogOut className="h-4 w-4" />
                   Sign out

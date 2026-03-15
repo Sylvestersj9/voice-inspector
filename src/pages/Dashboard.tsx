@@ -9,6 +9,7 @@ import AnnouncementBanner from "@/components/AnnouncementBanner";
 import ConfettiBurst from "@/components/ConfettiBurst";
 import DashboardSkeleton from "@/components/DashboardSkeleton";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import type { SessionRow } from "@/types/session";
@@ -22,6 +23,7 @@ import {
   Zap,
   RotateCcw,
   MessageSquare,
+  Trash2,
 } from "lucide-react";
 
 type UserProfile = {
@@ -135,6 +137,13 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [justSubscribed, setJustSubscribed] = useState(false);
+  const [dismissNudge1, setDismissNudge1] = useState(() => {
+    try {
+      return sessionStorage.getItem("dismiss_nudge_sessions_left") === "true";
+    } catch {
+      return false;
+    }
+  });
 
   const checkoutSuccess = searchParams.get("checkout") === "success";
 
@@ -271,6 +280,21 @@ export default function Dashboard() {
     navigate("/app");
   };
 
+  const handleDelete = useCallback(async (sessionId: string) => {
+    if (!user) return;
+    try {
+      const { error } = await supabase
+        .from("sessions")
+        .delete()
+        .eq("id", sessionId)
+        .eq("user_id", user.id);
+      if (error) throw error;
+      setSessions((prev) => prev.filter((s) => s.id !== sessionId));
+    } catch (err) {
+      console.error("Failed to delete session:", err);
+    }
+  }, [user]);
+
   const displayName =
     profile?.name || user?.email?.split("@")[0] || "there";
   const homeName = profile?.home_name ?? "";
@@ -283,7 +307,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       {/* Nav */}
       <AppNav isPaid={paid} onSignOut={handleSignOut} />
 
@@ -437,6 +461,29 @@ export default function Dashboard() {
           </div>
         </Link>
 
+        {/* Sessions left nudge (low on sessions) */}
+        {trialInfo && !paid && !trialInfo.expired && trialInfo.remainingTotal <= 3 && !dismissNudge1 && (
+          <div className="rounded-xl border border-amber-200 bg-amber-50 px-5 py-4 flex items-start gap-4">
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-amber-900">
+                {trialInfo.remainingTotal} session{trialInfo.remainingTotal !== 1 ? 's' : ''} left in your trial.
+              </p>
+              <p className="mt-1 text-sm text-amber-800">
+                Unlimited access from £29/mo. <Link to="/pricing" className="font-semibold hover:underline">Upgrade →</Link>
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                setDismissNudge1(true);
+                sessionStorage.setItem("dismiss_nudge_sessions_left", "true");
+              }}
+              className="shrink-0 text-amber-600 hover:text-amber-700 text-sm font-medium"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
+
         {/* ── Session history ──────────────────────────────────────────────── */}
         <div>
           <h2 className="font-display text-lg font-bold text-slate-900 mb-4">
@@ -496,6 +543,7 @@ export default function Dashboard() {
                         key={s.id}
                         session={s}
                         onRestart={() => navigate("/app")}
+                        onDelete={() => handleDelete(s.id)}
                       />
                     ))}
                   </tbody>
@@ -509,6 +557,7 @@ export default function Dashboard() {
                     key={s.id}
                     session={s}
                     onRestart={() => navigate("/app")}
+                    onDelete={() => handleDelete(s.id)}
                   />
                 ))}
               </div>
@@ -596,11 +645,14 @@ function NoteButton({ sessionId, currentNote }: { sessionId: string; currentNote
 function SessionTableRow({
   session: s,
   onRestart,
+  onDelete,
 }: {
   session: DashboardSessionRow;
   onRestart: () => void;
+  onDelete: () => void;
 }) {
   const navigate = useNavigate();
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const completed = !!s.completed_at;
   const date = new Date(s.started_at).toLocaleDateString("en-GB", {
     day: "numeric",
@@ -616,6 +668,8 @@ function SessionTableRow({
   }
 
   return (
+    <>
+
     <tr
       onClick={handleRowClick}
       className={`transition-colors ${completed ? "cursor-pointer hover:bg-slate-50" : "hover:bg-slate-50"}`}
@@ -679,20 +733,56 @@ function SessionTableRow({
             <RotateCcw className="h-3.5 w-3.5" />
             Restart
           </button>
+          <button
+            onClick={() => setShowDeleteConfirm(true)}
+            title="Delete this session"
+            className="inline-flex items-center gap-1 rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 transition-colors"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+            Delete
+          </button>
         </div>
       </td>
     </tr>
+
+    {/* Delete Confirmation Dialog */}
+    <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete this session?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This session and all its responses will be permanently deleted. This cannot be undone.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <div className="flex gap-3 justify-end">
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={() => {
+              setShowDeleteConfirm(false);
+              onDelete();
+            }}
+            className="bg-red-600 hover:bg-red-700 text-white"
+          >
+            Delete session
+          </AlertDialogAction>
+        </div>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }
 
 function SessionCard({
   session: s,
   onRestart,
+  onDelete,
 }: {
   session: DashboardSessionRow;
   onRestart: () => void;
+  onDelete: () => void;
 }) {
   const navigate = useNavigate();
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const completed = !!s.completed_at;
   const date = new Date(s.started_at).toLocaleDateString("en-GB", {
     day: "numeric",
@@ -704,6 +794,7 @@ function SessionCard({
     getSessionTypeInfo(responses.length);
 
   return (
+    <>
     <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm space-y-3">
       {/* Top row: date + type */}
       <div className="flex items-start justify-between gap-2">
@@ -764,7 +855,39 @@ function SessionCard({
           <RotateCcw className="h-3.5 w-3.5" />
           Restart
         </button>
+        <button
+          onClick={() => setShowDeleteConfirm(true)}
+          className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg border border-red-200 px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-50 transition-colors"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+          Delete
+        </button>
       </div>
     </div>
+
+    {/* Delete Confirmation Dialog */}
+    <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete this session?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This session and all its responses will be permanently deleted. This cannot be undone.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <div className="flex gap-3 justify-end">
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={() => {
+              setShowDeleteConfirm(false);
+              onDelete();
+            }}
+            className="bg-red-600 hover:bg-red-700 text-white"
+          >
+            Delete session
+          </AlertDialogAction>
+        </div>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }

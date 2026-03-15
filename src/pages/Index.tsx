@@ -21,6 +21,7 @@ import ConfettiBurst from "@/components/ConfettiBurst";
 import { VoiceRecorder } from "@/components/VoiceRecorder";
 import { TranscriptEditor } from "@/components/TranscriptEditor";
 import { Mic, Keyboard, ArrowRight, CheckCircle2, AlertTriangle, Loader2, FileText, RotateCcw, X, BookOpen, Target, Pause, Play, SkipForward } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -153,6 +154,7 @@ export default function Index() {
   const [qIndex, setQIndex] = useState(0);
   const [step, setStep] = useState<Step>("idle");
   const [skipUsed, setSkipUsed] = useState(false);
+  const [showSkipConfirm, setShowSkipConfirm] = useState(false);
   const [inputMode, setInputMode] = useState<InputMode>("voice");
   const [textInput, setTextInput] = useState("");
   const [transcript, setTranscript] = useState("");
@@ -996,7 +998,7 @@ export default function Index() {
                       </button>
                     </div>
                     <button
-                      onClick={skipQuestion}
+                      onClick={() => setShowSkipConfirm(true)}
                       title="Skip this question"
                       disabled={skipUsed}
                       className={`flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-medium transition-colors ${
@@ -1267,6 +1269,27 @@ export default function Index() {
           </div>
         </div>
       )}
+
+      {/* Skip Confirmation Dialog */}
+      <AlertDialog open={showSkipConfirm} onOpenChange={setShowSkipConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Skip this question?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You have one skip per session. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex gap-3 justify-end">
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={skipQuestion}
+              className="bg-teal-600 hover:bg-teal-700 text-white"
+            >
+              Skip question
+            </AlertDialogAction>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
