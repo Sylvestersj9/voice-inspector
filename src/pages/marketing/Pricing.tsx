@@ -30,8 +30,12 @@ export default function Pricing() {
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [billingPeriod, setBillingPeriod] = useState<"monthly" | "annual">("monthly");
 
-  const handleCheckout = async () => {
+  const MONTHLY_PRICE_ID = import.meta.env.VITE_STRIPE_PRICE_ID;
+  const ANNUAL_PRICE_ID = import.meta.env.VITE_STRIPE_ANNUAL_PRICE_ID || "price_1TBLmuK2Jf3A4FB8HDggUkTg";
+
+  const handleCheckout = async (priceId?: string) => {
     if (!user) {
       navigate("/login?next=/pricing");
       return;
@@ -60,7 +64,7 @@ export default function Pricing() {
           apikey: anonKey,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ returnUrl }),
+        body: JSON.stringify({ returnUrl, priceId }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -100,11 +104,47 @@ export default function Pricing() {
               <div className="inline-flex items-center rounded-full bg-slate-100 px-3 py-0.5 text-xs font-bold text-slate-700">
                 Solo
               </div>
-              <div className="mt-3 flex items-baseline gap-1">
-                <span className="text-4xl font-bold text-slate-900">£29</span>
-                <span className="text-slate-500">/month</span>
+
+              {/* Monthly/Annual Toggle */}
+              <div className="mt-4 flex items-center gap-3">
+                <button
+                  onClick={() => setBillingPeriod("monthly")}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                    billingPeriod === "monthly"
+                      ? "bg-teal-600 text-white"
+                      : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                  }`}
+                >
+                  Monthly
+                </button>
+                <button
+                  onClick={() => setBillingPeriod("annual")}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                    billingPeriod === "annual"
+                      ? "bg-teal-600 text-white"
+                      : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                  }`}
+                >
+                  Annual
+                </button>
               </div>
-              <p className="mt-1 text-sm text-slate-500">Per user. Cancel any time.</p>
+
+              <div className="mt-4 flex items-baseline gap-1">
+                <span className="text-4xl font-bold text-slate-900">
+                  {billingPeriod === "monthly" ? "£29" : "£299"}
+                </span>
+                <span className="text-slate-500">
+                  {billingPeriod === "monthly" ? "/month" : "/year"}
+                </span>
+              </div>
+              <p className="mt-1 text-sm text-slate-500">
+                {billingPeriod === "annual" ? "Save 2 months worth of fees" : "Per user. Cancel any time."}
+              </p>
+              {billingPeriod === "annual" && (
+                <div className="mt-2 inline-flex items-center rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
+                  Save £49/year
+                </div>
+              )}
 
               <ul className="mt-7 space-y-3">
                 {SOLO_FEATURES.map((f) => (
@@ -116,11 +156,18 @@ export default function Pricing() {
               </ul>
 
               <button
-                onClick={handleCheckout}
+                onClick={() => {
+                  const priceId = billingPeriod === "annual" ? ANNUAL_PRICE_ID : MONTHLY_PRICE_ID;
+                  handleCheckout(priceId);
+                }}
                 disabled={busy}
                 className="mt-8 inline-flex w-full items-center justify-center rounded-xl bg-teal-600 py-3.5 text-sm font-semibold text-white shadow-sm hover:bg-teal-700 transition-colors disabled:opacity-60"
               >
-                {busy ? "Redirecting to checkout..." : user ? "Subscribe — £29/month" : "Start free trial"}
+                {busy ? "Redirecting to checkout..." : user ? (
+                  billingPeriod === "annual"
+                    ? "Subscribe — £299/year"
+                    : "Subscribe — £29/month"
+                ) : "Start free trial"}
                 {!busy && <ArrowRight className="ml-2 h-4 w-4" />}
               </button>
               {error ? (

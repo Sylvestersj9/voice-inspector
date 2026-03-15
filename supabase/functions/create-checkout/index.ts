@@ -66,11 +66,12 @@ serve(async (req: Request) => {
 
     const body = await req.json().catch(() => ({}));
     const returnUrl = String(body?.returnUrl ?? "").trim() || `${Deno.env.get("SITE_URL") ?? "https://mockofsted.co.uk"}/app/dashboard`;
+    const priceId = String(body?.priceId ?? "").trim() || stripePriceId;
 
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       mode: "subscription",
-      line_items: [{ price: stripePriceId, quantity: 1 }],
+      line_items: [{ price: priceId, quantity: 1 }],
       success_url: `${returnUrl}?checkout=success`,
       cancel_url: `${returnUrl}?checkout=cancelled`,
       metadata: { user_id: user.id },
