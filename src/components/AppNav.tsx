@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { LogOut, Menu, X, User, CreditCard, Settings } from "lucide-react";
+import { LogOut, Menu, X, User, CreditCard, Settings, MessageSquare } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -154,6 +154,11 @@ export default function AppNav({
                   <span>Billing & Subscription</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => navigate("/app/feedback-submission")}>
+                  <MessageSquare className="mr-2 h-4 w-4" />
+                  <span>Send feedback</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={onSignOut} className="text-red-600 focus:text-red-600">
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Sign out</span>
@@ -229,6 +234,15 @@ export default function AppNav({
                 >
                   <CreditCard className="h-4 w-4" />
                   Billing
+                </Link>
+
+                <Link
+                  to="/app/feedback-submission"
+                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  <MessageSquare className="h-4 w-4" />
+                  Send feedback
                 </Link>
 
                 {!isPaid && (

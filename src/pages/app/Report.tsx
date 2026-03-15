@@ -6,7 +6,7 @@ import { exportReportPdf } from "@/reports/exportReportPdf";
 import { getBandColorClass } from "@/lib/questions";
 import {
   ArrowLeft, Printer, AlertTriangle, CheckCircle2, Target,
-  BookOpen, FileText, Star, TrendingUp, Users, ShieldAlert,
+  BookOpen, FileText, Star, TrendingUp, Users, ShieldAlert, MessageSquare,
 } from "lucide-react";
 
 // ── Domain metadata ───────────────────────────────────────────────────────────
@@ -304,12 +304,20 @@ export default function Report() {
               </div>
               <span className="font-display font-bold text-slate-900">MockOfsted</span>
             </div>
-            <button
-              onClick={handleExportPdf}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
-            >
-              <Printer className="h-4 w-4" /> Export PDF
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleExportPdf}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+              >
+                <Printer className="h-4 w-4" /> Export PDF
+              </button>
+              <Link
+                to={`/app/feedback-submission?sessionId=${session.id}`}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+              >
+                <MessageSquare className="h-4 w-4" /> Share feedback
+              </Link>
+            </div>
           </div>
         </header>
 

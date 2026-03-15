@@ -414,6 +414,23 @@ export default function Dashboard() {
           </div>
         )}
 
+        {/* ── Feedback card ────────────────────────────────────────────────── */}
+        <Link
+          to="/app/feedback-submission"
+          className="block rounded-xl border border-slate-200 bg-gradient-to-r from-slate-50 to-slate-100/50 p-5 hover:border-slate-300 hover:shadow-sm transition-all"
+        >
+          <div className="flex items-start gap-4">
+            <MessageSquare className="h-6 w-6 text-slate-600 mt-0.5 shrink-0" />
+            <div className="min-w-0">
+              <h3 className="font-semibold text-slate-900">Share your feedback</h3>
+              <p className="mt-1 text-sm text-slate-600">
+                Help us improve MockOfsted. Share bugs, UI/UX ideas, feature requests, or feedback about your practice sessions.
+              </p>
+            </div>
+            <ArrowRight className="h-5 w-5 text-slate-400 mt-0.5 shrink-0" />
+          </div>
+        </Link>
+
         {/* ── Session history ──────────────────────────────────────────────── */}
         <div>
           <h2 className="font-display text-lg font-bold text-slate-900 mb-4">
