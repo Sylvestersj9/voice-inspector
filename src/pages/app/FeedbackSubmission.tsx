@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "@/auth/AuthProvider";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, CheckCircle, Loader2 } from "lucide-react";
@@ -96,8 +97,14 @@ export default function FeedbackSubmission() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-12 px-4">
       <div className="mx-auto max-w-2xl">
-        {/* Header */}
+        {/* Header with Back Button */}
         <div className="mb-8">
+          <button
+            onClick={() => navigate(sessionId ? `/app/report/${sessionId}` : "/app/dashboard")}
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors mb-4"
+          >
+            <ArrowLeft className="h-4 w-4" /> Back
+          </button>
           <h1 className="text-3xl font-bold text-slate-900 mb-2">Share Your Experience</h1>
           <p className="text-slate-600">
             Help other childcare leaders by sharing feedback from your inspection or interview.
@@ -267,21 +274,31 @@ export default function FeedbackSubmission() {
               </label>
             </div>
 
-            {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={loading || !formData.title || !formData.description}
-              className="w-full py-3 px-4 bg-teal-600 hover:bg-teal-700 disabled:bg-slate-300 text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Submitting...
-                </>
-              ) : (
-                "Submit Feedback"
-              )}
-            </button>
+            {/* Buttons */}
+            <div className="flex gap-3">
+              <button
+                type="submit"
+                disabled={loading || !formData.title || !formData.description}
+                className="flex-1 py-3 px-4 bg-teal-600 hover:bg-teal-700 disabled:bg-slate-300 text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Submitting...
+                  </>
+                ) : (
+                  "Submit Feedback"
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate(sessionId ? `/app/report/${sessionId}` : "/app/dashboard")}
+                disabled={loading}
+                className="flex-1 py-3 px-4 bg-slate-100 hover:bg-slate-200 disabled:bg-slate-200 text-slate-700 font-semibold rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
 
             {/* Help Text */}
             <p className="text-xs text-slate-500 text-center">
