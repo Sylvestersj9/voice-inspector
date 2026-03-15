@@ -1247,3 +1247,46 @@ VITE_GEMINI_KEY="[your-gemini-api-key]"
 - Shows exact date when access ends: "Your subscription was cancelled. Full access until [date]"
 - Previous issue where cancelled subscriptions showed upgrade button is resolved
 - Team pricing now reflects £89/month with updated savings calculation
+
+## Latest Updates (v1.11.0 — March 15, 2026)
+
+### 📚 Enhanced Question Bank — 5 Research Questions per Quality Standard
+
+**Comprehensive Research-Backed Questions Added:**
+- ✅ **Total questions now: 45** (9 domains × 5 questions each, up from 36)
+- ✅ **Research-driven design**: Each new 5th question targets specific inspector focus areas based on SCCIF research
+- ✅ **All 9 Quality Standards expanded**:
+
+| Domain | New Question ID | Focus Area |
+|--------|-----------------|-----------|
+| Quality & Purpose (QS1) | qp-e | Daily practice reflecting Statement of Purpose |
+| Children's Views (QS2) | cv-e | Feedback loop from concern to action |
+| Education (QS3) | ed-e | PEP tracking and advocacy impact |
+| Enjoyment & Achievement (QS4) | ea-e | Community participation and talent development |
+| Health & Wellbeing (QS5) | hw-e | CAMHS escalation and interim mental health support |
+| Positive Relationships (QS6) | pr-e | Trauma-informed de-escalation and restorative work |
+| Protection of Children (QS7) | pc-e | Missing episode evidence trail and safeguarding concerns |
+| Leadership & Management (QS8) | lm-e | Reg 44/45 findings driving improvement |
+| Care Planning (QS9) | cp-e | Risk assessment and placement stability |
+
+**Key Features of New Questions:**
+- Evidence-based on Ofsted inspection priorities
+- Specific, behavioural examples required (not generic answers)
+- Include follow-up questions for deeper exploration
+- Cover pain points identified in user beta feedback
+- Aligned with real inspection scenarios
+
+**Build & Deploy:**
+- ✅ Frontend built successfully: `bun run build`
+- ✅ Changes committed: Commit `2c7455f`
+- ✅ Pushed to feature branch: `feature/retention-improvements`
+- ✅ Ready for production deployment
+
+**Impact on Users:**
+- More practice variety across longer practice sessions
+- Deeper preparation for actual inspection scenarios
+- Better evidence of knowledge gaps in specific areas
+- Increased session engagement and practice value
+
+**Git Status:** ✅ Committed & pushed — Commit `2c7455f`
+
