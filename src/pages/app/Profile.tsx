@@ -88,7 +88,7 @@ export default function Profile() {
         { count: ansCount, error: ansError },
       ] = await Promise.all([
         supabase.from("users").select("name,role,home_name,email_preferences").eq("id", user.id).single(),
-        supabase.from("subscriptions").select("status,stripe_subscription_id,created_at,current_period_end").eq("user_id", user.id).maybeSingle(),
+        supabase.from("subscriptions").select("status,stripe_subscription_id,created_at").eq("user_id", user.id).maybeSingle(),
         supabase.from("sessions").select("started_at").eq("user_id", user.id),
         supabase.from("responses").select("id", { count: "exact", head: true }).in(
           "session_id",

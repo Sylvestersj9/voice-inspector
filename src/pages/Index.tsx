@@ -11,6 +11,7 @@ import {
   type Domain,
   type BankQuestion,
   type JudgementBand,
+  type PracticeMode,
 } from "@/lib/questions";
 import { computeTrialUsage, TRIAL_DAILY_LIMIT, TRIAL_TOTAL_LIMIT } from "@/lib/trial";
 import { clearPaused, generateReportAndWait, loadPaused, progressColor, savePaused } from "@/lib/simulator";
@@ -69,8 +70,9 @@ function mulberry32(seed: string) {
 
 // Safeguarding is a limiting judgement — always included first in the list
 const MANDATORY_DOMAINS: Domain[] = ["ProtectionChildren", "LeadershipManagement"];
-// Questions per domain per session (2 × 9 domains = 18 total)
+// Questions per domain: 2 for all standards (18 total), 5 for focused (5 total)
 const QUESTIONS_PER_DOMAIN = 2;
+const QUESTIONS_PER_DOMAIN_FOCUSED = 5;
 // Minimum answered questions before a report can be generated
 export const MIN_ANSWERS_FOR_REPORT = 3;
 
@@ -83,22 +85,36 @@ function fisherYates<T>(arr: T[], rng: () => number): T[] {
   return result;
 }
 
-function pickSessionQuestions(sessionId: string): BankQuestion[] {
+function pickSessionQuestions(sessionId: string, mode: PracticeMode = "inspection", focusStandard: Domain | "all" = "all"): BankQuestion[] {
   const rng = mulberry32(sessionId);
   const grouped: Record<string, BankQuestion[]> = {};
   for (const q of questionBank) {
+    // Default legacy questions without mode to "inspection"
+    const questionMode = q.mode || "inspection";
+    // Filter questions by mode if specified
+    if (mode && questionMode !== mode) continue;
+    // Filter by focus standard if specified
+    if (focusStandard !== "all" && q.domain !== focusStandard) continue;
     if (!grouped[q.domain]) grouped[q.domain] = [];
     grouped[q.domain].push(q);
   }
 
-  // All 9 domains, mandatory first then rest in DOMAIN_ORDER
-  const selectedDomains = DOMAIN_ORDER; // all domains always included
+  // For fit_person and ri modes, return all available questions (don't do domain-based picking)
+  if (mode === "fit_person" || mode === "ri") {
+    return fisherYates(Object.values(grouped).flat(), rng);
+  }
 
-  // Pick QUESTIONS_PER_DOMAIN random questions per domain (no repeats within domain)
+  // If focusing on one standard, use just that domain; otherwise all 9 domains
+  const selectedDomains = focusStandard !== "all" ? [focusStandard] : DOMAIN_ORDER;
+
+  // Pick more questions when focused on a single domain (5 per domain), fewer when broad (2 per domain)
+  const qPerDomain = focusStandard !== "all" ? QUESTIONS_PER_DOMAIN_FOCUSED : QUESTIONS_PER_DOMAIN;
+
+  // Pick random questions per domain (no repeats within domain)
   return selectedDomains
     .flatMap((domain) => {
       const pool = fisherYates(grouped[domain] ?? [], rng);
-      return pool.slice(0, QUESTIONS_PER_DOMAIN);
+      return pool.slice(0, qPerDomain);
     })
     .filter(Boolean);
 }
@@ -145,6 +161,20 @@ export default function Index() {
   const [showGenerate, setShowGenerate] = useState(false);
   const [showUpsell, setShowUpsell] = useState(false);
   const [pendingReportId, setPendingReportId] = useState<string | null>(null);
+  const [practiceMode, setPracticeMode] = useState<PracticeMode>(() => {
+    try {
+      return (localStorage.getItem("practiceMode") as PracticeMode) || "inspection";
+    } catch {
+      return "inspection";
+    }
+  });
+  const [focusStandard, setFocusStandard] = useState<Domain | "all">(() => {
+    try {
+      return (localStorage.getItem("focusStandard") as Domain | "all") || "all";
+    } catch {
+      return "all";
+    }
+  });
   const [error, setError] = useState<string | null>(null);
   const [reportSessionId, setReportSessionId] = useState<string | null>(null);
   const answerAreaRef = useRef<HTMLDivElement>(null);
@@ -304,7 +334,15 @@ export default function Index() {
     const sid = sess.id;
     setSessionId(sid);
 
-    const picked = pickSessionQuestions(sid);
+    // Save preferences
+    try {
+      localStorage.setItem("practiceMode", practiceMode);
+      localStorage.setItem("focusStandard", focusStandard);
+    } catch {
+      // Best-effort localStorage
+    }
+
+    const picked = pickSessionQuestions(sid, practiceMode, focusStandard);
     setQuestions(picked.map((q) => ({ question: q, transcript: "", result: null })));
     trackSessionStart(picked.length);
     setQIndex(0);
@@ -740,6 +778,79 @@ export default function Index() {
                 {error && (
                   <p className="mt-3 text-sm text-red-600">{error}</p>
                 )}
+
+                {/* Practice Mode & Standard Selector */}
+                <div className="mt-6 space-y-4">
+                  {/* Mode Selector */}
+                  <div className="space-y-2">
+                    <label className="block text-sm font-semibold text-slate-900">
+                      Practice type
+                    </label>
+                    <div className="grid grid-cols-3 gap-2">
+                      <button
+                        onClick={() => setPracticeMode("inspection")}
+                        className={`py-2.5 px-3 rounded-lg font-medium text-sm transition-colors ${
+                          practiceMode === "inspection"
+                            ? "bg-teal-600 text-white ring-2 ring-teal-600/50"
+                            : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                        }`}
+                      >
+                        <div className="text-base mb-0.5">🏠</div>
+                        <div>Inspection</div>
+                      </button>
+                      <button
+                        onClick={() => setPracticeMode("fit_person")}
+                        className={`py-2.5 px-3 rounded-lg font-medium text-sm transition-colors ${
+                          practiceMode === "fit_person"
+                            ? "bg-teal-600 text-white ring-2 ring-teal-600/50"
+                            : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                        }`}
+                      >
+                        <div className="text-base mb-0.5">🎯</div>
+                        <div>Fit Person</div>
+                      </button>
+                      <button
+                        onClick={() => setPracticeMode("ri")}
+                        className={`py-2.5 px-3 rounded-lg font-medium text-sm transition-colors ${
+                          practiceMode === "ri"
+                            ? "bg-teal-600 text-white ring-2 ring-teal-600/50"
+                            : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                        }`}
+                      >
+                        <div className="text-base mb-0.5">📋</div>
+                        <div>RI Oversight</div>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Quality Standard Selector */}
+                  <div className="space-y-2">
+                    <label className="block text-sm font-semibold text-slate-900">
+                      Focus area
+                    </label>
+                    <select
+                      value={focusStandard}
+                      onChange={(e) => setFocusStandard(e.target.value as Domain | "all")}
+                      className="w-full px-3 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm font-medium bg-white"
+                    >
+                      <option value="all">All 9 Quality Standards</option>
+                      {DOMAIN_ORDER.map((domain) => (
+                        <option key={domain} value={domain}>
+                          {DOMAIN_LABELS[domain as Domain]}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Info Text */}
+                  <p className="text-xs text-slate-500 text-center">
+                    {focusStandard === "all"
+                      ? "18 questions across all standards"
+                      : `Focused practice: 5 questions on ${DOMAIN_LABELS[focusStandard as Domain]}`
+                    }
+                  </p>
+                </div>
+
                 <button
                   onClick={startSession}
                   className="mt-6 inline-flex items-center gap-2 rounded-xl bg-teal-600 px-7 py-3.5 text-base font-semibold text-white shadow-sm hover:bg-teal-700 transition-colors"

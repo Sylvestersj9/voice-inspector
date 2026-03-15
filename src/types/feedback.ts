@@ -1,4 +1,4 @@
-export type FeedbackType = "inspection" | "interview" | "practice";
+export type FeedbackType = "inspection" | "fit_person" | "practice";
 export type FeedbackOutcome = "good" | "outstanding" | "requires_improvement" | "inadequate" | "passed" | "needs_work" | "preparing";
 
 export interface InspectionFeedback {

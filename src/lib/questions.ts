@@ -49,12 +49,15 @@ export const DOMAIN_ORDER: Domain[] = [
   "CarePlanning",
 ];
 
+export type PracticeMode = "inspection" | "fit_person" | "ri";
+
 export type BankQuestion = {
   id: string;
   domain: Domain;
   text: string;
   hint: string;
   followUpQuestions: string[];
+  mode?: PracticeMode; // inspection (RM/Deputy), interview (fit-person), ri (Responsible Individual)
 };
 
 export const questionBank: BankQuestion[] = [
@@ -84,6 +87,7 @@ export const questionBank: BankQuestion[] = [
 
   // ── Domain 2: Children's Views, Wishes and Feelings ──────────────────────
   {
+    mode: "inspection",
     id: "cv-a",
     domain: "ChildrenViews",
     text: "How do you ensure young people's views genuinely influence decisions about their care — not just recorded but acted upon?",
@@ -95,6 +99,7 @@ export const questionBank: BankQuestion[] = [
     ],
   },
   {
+    mode: "interview",
     id: "cv-b",
     domain: "ChildrenViews",
     text: "If I spoke to a young person in your home today, what would they tell me about how staff listen to them?",
@@ -204,6 +209,7 @@ export const questionBank: BankQuestion[] = [
 
   // ── Domain 7: Protection of Children (LIMITING JUDGEMENT) ────────────────
   {
+    mode: "ri",
     id: "pc-a",
     domain: "ProtectionChildren",
     text: "How do you identify and respond to signs that a young person may be at risk of child sexual exploitation, criminal exploitation, or radicalisation?",
@@ -215,6 +221,7 @@ export const questionBank: BankQuestion[] = [
     ],
   },
   {
+    mode: "ri",
     id: "pc-b",
     domain: "ProtectionChildren",
     text: "Walk me through your missing from care protocol from the moment a young person is unaccounted for to when they return and the return home interview is completed.",
@@ -228,6 +235,7 @@ export const questionBank: BankQuestion[] = [
 
   // ── Domain 8: Leadership and Management ──────────────────────────────────
   {
+    mode: "inspection",
     id: "lm-a",
     domain: "LeadershipManagement",
     text: "How do you use your Regulation 44 and Regulation 45 reports to drive genuine improvement — and give me a specific example of a change you made as a direct result?",
@@ -239,6 +247,7 @@ export const questionBank: BankQuestion[] = [
     ],
   },
   {
+    mode: "inspection",
     id: "lm-b",
     domain: "LeadershipManagement",
     text: "How do you quality assure the practice of your staff team on a day-to-day basis — beyond formal supervision?",
@@ -346,6 +355,7 @@ export const questionBank: BankQuestion[] = [
 
   // ── Domain 2 additional ───────────────────────────────────────────────────
   {
+    mode: "inspection",
     id: "cv-c",
     domain: "ChildrenViews",
     text: "What is your complaints process, and can you give me a specific example of a complaint from a young person that led to a meaningful change in your home?",
@@ -357,6 +367,7 @@ export const questionBank: BankQuestion[] = [
     ],
   },
   {
+    mode: "interview",
     id: "cv-d",
     domain: "ChildrenViews",
     text: "How do you ensure young people in your home understand their rights — including the right to independent advocacy?",
@@ -368,6 +379,7 @@ export const questionBank: BankQuestion[] = [
     ],
   },
   {
+    mode: "inspection",
     id: "cv-e",
     domain: "ChildrenViews",
     text: "Describe the feedback loop when a young person raises a concern — from the moment they express it through to the action taken and feedback back to them?",
@@ -521,6 +533,7 @@ export const questionBank: BankQuestion[] = [
 
   // ── Domain 7 additional ───────────────────────────────────────────────────
   {
+    mode: "ri",
     id: "pc-c",
     domain: "ProtectionChildren",
     text: "How do you ensure your staff are equipped to recognise and respond to online exploitation risks — including grooming, harmful content, and county lines recruitment online?",
@@ -532,6 +545,7 @@ export const questionBank: BankQuestion[] = [
     ],
   },
   {
+    mode: "ri",
     id: "pc-d",
     domain: "ProtectionChildren",
     text: "A young person returns home late at night in a distressed state and begins to make a partial disclosure about something that has happened to them. Walk me through exactly what happens next.",
@@ -543,6 +557,7 @@ export const questionBank: BankQuestion[] = [
     ],
   },
   {
+    mode: "ri",
     id: "pc-e",
     domain: "ProtectionChildren",
     text: "Describe the full evidence trail for a recent missing from care episode in your home — from initial absence through to return, escalations, safeguarding concerns raised, and the return home interview outcome?",
@@ -554,8 +569,131 @@ export const questionBank: BankQuestion[] = [
     ],
   },
 
+  // ── 10 NEW RI-SPECIFIC QUESTIONS (Regulation 44 Oversight) ─────────────────────
+  {
+    mode: "ri",
+    id: "ri-a",
+    domain: "LeadershipManagement",
+    text: "The regulations are clear that the independent person must not have a financial interest or connection that compromises their impartiality. How have you, as the Responsible Individual, rigorously assured yourself that your appointed Regulation 44 visitor remains completely independent and capable of making an impartial judgement on the quality of your home's care?",
+    hint: "Inspector wants to see evidence of due diligence: how you appointed them, what checks you ran, ongoing verification of impartiality, and what conflicts of interest safeguards are in place.",
+    followUpQuestions: [
+      "Walk me through the process you used to select and appoint your Regulation 44 visitor.",
+      "What specific checks did you conduct to verify their independence?",
+      "How do you re-verify impartiality at the start of each year?",
+    ],
+  },
+  {
+    mode: "ri",
+    id: "ri-b",
+    domain: "ProtectionChildren",
+    text: "The Regulation 44 visitor is legally required to form an opinion on whether children are being effectively safeguarded. When you read their monthly reports, how do you verify that their assessment of your safeguarding culture, including how staff reflect on incidents, is accurate and matches your own understanding of the home?",
+    hint: "Inspector wants to see cross-checking: evidence you've independently verified their findings, that you understand the safeguarding gaps they've identified, and that you're triangulating their view with other quality indicators.",
+    followUpQuestions: [
+      "Can you give me an example where the visitor's safeguarding assessment challenged or prompted you to take action?",
+      "How do you verify findings from their interviews with children and staff?",
+      "What safeguarding metrics or indicators do you track independently to validate their conclusions?",
+    ],
+  },
+  {
+    mode: "ri",
+    id: "ri-c",
+    domain: "LeadershipManagement",
+    text: "When the independent visitor recommends actions for improvement, the registered person must consider whether or not to follow them up. Can you walk me through your exact process for tracking these recommendations, and provide a recent example where you challenged the Registered Manager to ensure a Regulation 44 action was closed effectively?",
+    hint: "Inspector wants to see accountability: a tracked log of recommendations, deadlines for closure, evidence of challenge and follow-up, and learning captured from the improvement actions.",
+    followUpQuestions: [
+      "Show me your tracking system for Regulation 44 recommendations — how do you ensure none fall through the cracks?",
+      "Can you evidence a recent conversation where you held the RM accountable for closing a recommendation?",
+      "What happens if a recommendation is not implemented — how do you escalate?",
+    ],
+  },
+  {
+    mode: "ri",
+    id: "ri-d",
+    domain: "ChildrenViews",
+    text: "During their visits, the independent person must interview children in private, if they consent, to ascertain their views, wishes, and feelings. How do you assure yourself that the visitor is successfully engaging with the children—including those who are non-speaking—and not just relying on staff accounts?",
+    hint: "Inspector wants to see proactive engagement: how you've briefed the visitor on each child's communication needs, evidence of child voice captured in reports, and how you verify children felt heard.",
+    followUpQuestions: [
+      "How do you ensure the visitor understands the communication needs of non-verbal or pre-verbal children before they arrive?",
+      "What evidence is there in their reports that children have been meaningfully consulted?",
+      "How do you follow up with children after their Regulation 44 interview to verify they felt listened to?",
+    ],
+  },
+  {
+    mode: "ri",
+    id: "ri-e",
+    domain: "ProtectionChildren",
+    text: "Regulation 44 visits require the scrutiny of high-risk records, including missing-from-care logs, return home interviews, and records of physical restraint. How do you use the independent visitor's feedback on these specific records to ensure your staff are managing complex behaviour and risks safely?",
+    hint: "Inspector wants to see: evidence the visitor has reviewed high-risk records, their findings on quality/timeliness, and what action you've taken to close gaps in recording or practice.",
+    followUpQuestions: [
+      "What high-risk records has the visitor reviewed in the last 12 months, and what did they find?",
+      "Have they ever identified gaps in your restraint records or missing-episode documentation?",
+      "How have you used their feedback to drive training or practice improvement?",
+    ],
+  },
+  {
+    mode: "ri",
+    id: "ri-f",
+    domain: "LeadershipManagement",
+    text: "We require the Regulation 44 report to be sent to Ofsted before the end of the month that follows the month of the visit. What administrative grip do you have in place to ensure these reports are never delayed, and that you and the manager have commented on them promptly before submission?",
+    hint: "Inspector wants to see: a tracking system with clear deadlines, evidence of timely submission to Ofsted, documented comments on each report, and escalation procedures if delays occur.",
+    followUpQuestions: [
+      "How do you track Regulation 44 submission deadlines to Ofsted?",
+      "Can you show me the comments you and the RM have made on the last three Regulation 44 reports?",
+      "What would you do if the visitor's report was delayed and you were at risk of missing the Ofsted deadline?",
+    ],
+  },
+  {
+    mode: "ri",
+    id: "ri-g",
+    domain: "QualityPurpose",
+    text: "You receive monthly Regulation 44 reports and must also complete your own six-monthly Regulation 45 quality of care review. How do you triangulate the independent visitor's findings with your own internal audits to identify hidden weaknesses and drive continuous improvement across the service?",
+    hint: "Inspector wants to see: evidence you're using Reg 44 data to inform your Reg 45 process, gaps identified through triangulation, and improvement actions arising from combined intelligence.",
+    followUpQuestions: [
+      "How does the Regulation 44 data feed into your Regulation 45 six-monthly review?",
+      "Can you give me an example where the visitor's insights revealed a gap that your internal audit had missed?",
+      "What improvement actions have you driven specifically because of insights from Regulation 44 reports?",
+    ],
+  },
+  {
+    mode: "ri",
+    id: "ri-h",
+    domain: "ProtectionChildren",
+    text: "If the Regulation 44 visitor were to uncover a serious child protection concern or significantly poor practice during an unannounced visit, what is the agreed escalation protocol between them, the Registered Manager, and yourself to ensure immediate action is taken?",
+    hint: "Inspector wants to see: a documented protocol with clear escalation steps, defined roles and timelines, and evidence it has been used (or clear understanding of how it would work).",
+    followUpQuestions: [
+      "Walk me through the steps you would take if the visitor uncovers a serious safeguarding concern.",
+      "Who do they contact first — you, the RM, the Local Authority?",
+      "What is your absolute deadline for acting on serious concerns identified during Regulation 44 visits?",
+    ],
+  },
+  {
+    mode: "ri",
+    id: "ri-i",
+    domain: "HealthWellbeing",
+    text: "The independent visitor must inspect the premises to identify any damage, unsafe equipment, or hazards. If a Regulation 44 report highlights a delay in repairs or an environmental hazard, how do you hold your maintenance teams and the Registered Manager accountable for fixing this speedily?",
+    hint: "Inspector wants to see: a repairs tracking system, prioritization of safety-critical repairs, accountability mechanisms (timelines, escalation), and evidence of swift action on hazards.",
+    followUpQuestions: [
+      "Show me your repairs tracking system — how do priority repairs from Regulation 44 visits get prioritized?",
+      "What happens if a repair flagged in a Regulation 44 report is still outstanding weeks later?",
+      "How quickly would you expect a fire hazard or safety-critical repair to be fixed?",
+    ],
+  },
+  {
+    mode: "ri",
+    id: "ri-j",
+    domain: "LeadershipManagement",
+    text: "As the provider, you have the right to comment on the Regulation 44 report, but you must not alter the independent person's findings. If you strongly disagreed with a criticism made by the independent visitor regarding the conduct of the home, how would you formally document your response without compromising the integrity of their report?",
+    hint: "Inspector wants to see: a documented response process that protects the visitor's integrity while allowing you to present your perspective, and understanding of the regulatory boundary.",
+    followUpQuestions: [
+      "Can you walk me through the process for formally commenting on a Regulation 44 report?",
+      "How do you ensure your comments don't undermine the independence or integrity of the report?",
+      "Has there been an instance where you've felt the need to comment critically on the visitor's findings — and how did you handle it?",
+    ],
+  },
+
   // ── Domain 8 additional ───────────────────────────────────────────────────
   {
+    mode: "interview",
     id: "lm-c",
     domain: "LeadershipManagement",
     text: "How do you identify and address poor practice in your staff team before it becomes embedded or causes harm to young people?",
@@ -567,6 +705,7 @@ export const questionBank: BankQuestion[] = [
     ],
   },
   {
+    mode: "interview",
     id: "lm-d",
     domain: "LeadershipManagement",
     text: "How do you ensure your staffing model genuinely supports the needs of the specific young people in your home — including at night, at weekends, and during school hours?",
@@ -578,6 +717,7 @@ export const questionBank: BankQuestion[] = [
     ],
   },
   {
+    mode: "interview",
     id: "lm-e",
     domain: "LeadershipManagement",
     text: "Describe a recent finding from your Regulation 44 or 45 independent visitor or Regulatory report. How did that finding drive improvement and what evidence shows the outcome has changed children's experience?",
@@ -587,6 +727,467 @@ export const questionBank: BankQuestion[] = [
       "How do you ensure findings from compliance visits result in real changes, not just tokenistic actions?",
       "How do you share learning from regulatory reports with your entire staff team and measure their understanding?",
     ],
+  },
+
+  // ── FIT-PERSON QUESTIONNAIRE (10 questions, GOV.UK sources) ──────────────────
+  {
+    id: "fp-a",
+    domain: "LeadershipManagement",
+    text: "How does your previous experience in residential care transfer to the role of registered manager, and how will it enable you to lead the home effectively?",
+    hint: "Evidence of relevant experience, understanding of leadership role, clear examples of how experience translates to RM responsibilities.",
+    followUpQuestions: ["What specific residential care experience do you have?", "How did you apply those lessons in previous roles?", "What challenges in RM leadership do you feel most prepared to handle?"],
+    mode: "fit_person",
+  },
+  {
+    id: "fp-b",
+    domain: "LeadershipManagement",
+    text: "How will you ensure that the home consistently complies with the Children's Homes (England) Regulations 2015, the Quality Standards, and the Care Standards Act 2000?",
+    hint: "Understanding of regulatory framework, knowledge of compliance mechanisms, evidence of governance structures.",
+    followUpQuestions: ["How do you stay current with regulatory changes?", "What systems will you use to monitor compliance?", "How would you address a compliance gap?"],
+    mode: "fit_person",
+  },
+  {
+    id: "fp-c",
+    domain: "ProtectionChildren",
+    text: "Can you explain how you would identify, assess, and manage risks to safeguard children, and take appropriate action to protect them?",
+    hint: "Clear risk assessment processes, safeguarding knowledge, understanding of escalation procedures and multi-agency working.",
+    followUpQuestions: ["What is your safeguarding knowledge based on?", "How would you assess risk in a specific scenario?", "Who would you escalate to and when?"],
+    mode: "fit_person",
+  },
+  {
+    id: "fp-d",
+    domain: "PositiveRelationships",
+    text: "How will you ensure that your staff understand attachment and trauma, and use positive, relationship-based approaches to behaviour support?",
+    hint: "Knowledge of trauma-informed care, staff training plans, supervision approach, understanding of therapeutic parenting.",
+    followUpQuestions: ["How will you train staff on attachment and trauma?", "What behaviour support approaches align with your understanding?", "How will you supervise these practices?"],
+    mode: "fit_person",
+  },
+  {
+    id: "fp-e",
+    domain: "LeadershipManagement",
+    text: "How will you implement and use quality assurance systems to evaluate the outcomes for children and drive continuous improvement in the home?",
+    hint: "Understanding of QA frameworks, data collection methods, how improvements are identified and actioned.",
+    followUpQuestions: ["What QA systems will you use?", "How will you measure outcomes for children?", "How do findings translate to improvements?"],
+    mode: "fit_person",
+  },
+  {
+    id: "fp-f",
+    domain: "LeadershipManagement",
+    text: "How will you supervise and manage staff performance to ensure they have the right skills and resilience to meet the complex needs of the children?",
+    hint: "Supervision approach, staff development planning, understanding of resilience and burnout, performance management processes.",
+    followUpQuestions: ["What is your supervision model?", "How do you develop staff skills?", "How do you support staff resilience?"],
+    mode: "fit_person",
+  },
+  {
+    id: "fp-g",
+    domain: "CarePlanning",
+    text: "Can you give an example of how you would engage, coordinate, and if necessary, challenge multi-agency partners to help children thrive?",
+    hint: "Understanding of integrated working, advocacy for children, examples of coordination or challenge, knowledge of key agencies.",
+    followUpQuestions: ["Tell me about a time you coordinated multi-agency work.", "How have you challenged partners?", "What agencies are key for your home's children?"],
+    mode: "fit_person",
+  },
+  {
+    id: "fp-h",
+    domain: "QualityPurpose",
+    text: "How will you ensure that the day-to-day care provided strictly reflects the ethos, objectives, and needs outlined in the home's Statement of Purpose?",
+    hint: "Understanding of Statement of Purpose, how daily practice aligns with stated ethos, examples of practice reflecting purpose.",
+    followUpQuestions: ["What will your home's Statement of Purpose include?", "How will staff know if they're living it?", "How will you monitor alignment?"],
+    mode: "fit_person",
+  },
+  {
+    id: "fp-i",
+    domain: "ChildrenViews",
+    text: "How do you plan to build strong relationships with children and ensure their views, wishes, and feelings actively shape decisions about their care?",
+    hint: "Child-centred approach, understanding of participation, mechanisms for gathering views, examples of views influencing decisions.",
+    followUpQuestions: ["How will you build relationships with children?", "What mechanisms will you use to gather their views?", "Can you give an example of a decision shaped by child input?"],
+    mode: "fit_person",
+  },
+  {
+    id: "fp-j",
+    domain: "CarePlanning",
+    text: "How will you ensure that the arrangements you make for the residential staff meet the specific needs of the children identified in their care plans?",
+    hint: "Understanding of care planning process, staffing model linked to children's needs, contingency planning for complex presentations.",
+    followUpQuestions: ["How will you assess staffing needs based on children's care plans?", "What if a child's needs change significantly?", "How will you maintain stability in staffing?"],
+    mode: "fit_person",
+  },
+
+  // ── NEW INSPECTION QUESTIONS (45 questions, 5 per quality standard) ─────────────
+  // Quality & Purpose (5 new)
+  {
+    id: "qp-f",
+    domain: "QualityPurpose",
+    text: "Describe evidence for how staff understand and apply the home's statement of purpose in their daily interactions with the children.",
+    hint: "Look for specific examples of how SOP guides daily decisions, staff induction materials, team meeting discussions, observable alignment between stated purpose and actual practice.",
+    followUpQuestions: ["Give a specific example from this week.", "How do new staff learn the purpose?", "How do you check staff understand it?"],
+    mode: "inspection",
+  },
+  {
+    id: "qp-g",
+    domain: "QualityPurpose",
+    text: "Describe evidence for how you ensure children are provided with the physical necessities and personal items they need to live comfortably and feel a sense of belonging.",
+    hint: "Evidence of personalised spaces, clothing and belongings management, comfort items, bedroom decoration, recognition of individual preferences.",
+    followUpQuestions: ["Show me evidence of how a child's space reflects their personality.", "How do you manage clothing and personal items?", "What happens for emergency admissions?"],
+    mode: "inspection",
+  },
+  {
+    id: "qp-h",
+    domain: "QualityPurpose",
+    text: "Describe evidence for how the home's daily routines offer continuity and security, helping to repair earlier damage to a child's self-esteem.",
+    hint: "Predictable routines, consistency in staffing, security-providing relationships, therapeutic language, recognition of trauma, visual schedules if needed.",
+    followUpQuestions: ["Describe your typical day routine.", "How do you maintain continuity with staff changes?", "How do routines specifically support children with trauma histories?"],
+    mode: "inspection",
+  },
+  {
+    id: "qp-i",
+    domain: "QualityPurpose",
+    text: "Describe evidence for how any specialist care or therapy provided within the home is approved, delivered by suitably qualified individuals, and kept under review by the placing authority.",
+    hint: "Records of therapy provision, qualifications of therapists, evidence of placement authority oversight, outcomes monitoring, integration with care plans.",
+    followUpQuestions: ["What specialist services are currently being provided?", "Who delivers them and what are their qualifications?", "How is impact on the child measured?"],
+    mode: "inspection",
+  },
+  {
+    id: "qp-j",
+    domain: "QualityPurpose",
+    text: "Describe evidence for how you ensure safety measures, such as alarms or locks, remain necessary and proportionate without creating an institutional feel in the home.",
+    hint: "Records of risk assessments driving security measures, regular reviews of restrictions, balance between security and homely feel, child and family input into proportionality.",
+    followUpQuestions: ["What safety measures are in place currently?", "When were they last reviewed?", "How do children and families view them?"],
+    mode: "inspection",
+  },
+
+  // Children's Views (5 new)
+  {
+    id: "cv-f",
+    domain: "ChildrenViews",
+    text: "Describe evidence for how staff help each child to understand how their privacy will be respected and the specific circumstances when it may have to be limited.",
+    hint: "Induction materials, discussion records, evidence in children's guides, understanding of confidentiality, examples of privacy-respecting practice, clear explanation of safeguarding limits.",
+    followUpQuestions: ["How do you explain privacy boundaries to children?", "Can you describe a time privacy had to be limited?", "How was the child prepared for that?"],
+    mode: "inspection",
+  },
+  {
+    id: "cv-g",
+    domain: "ChildrenViews",
+    text: "Describe evidence for how you ensure the children's guide is explained to each child in a format appropriate to their communication needs shortly after their arrival.",
+    hint: "Records of induction, adapted versions (visual, Braille, large print, easy read, translated), key staff involvement, child comprehension checks.",
+    followUpQuestions: ["How many children currently have adapted guides?", "Who ensures children understand the content?", "What feedback have children given on the guide?"],
+    mode: "inspection",
+  },
+  {
+    id: "cv-h",
+    domain: "ChildrenViews",
+    text: "Describe evidence for how the views of others with a significant relationship to the child, including family members, are regularly sought and taken into account in daily care.",
+    hint: "Records of contact with family/carers, evidence of their input into decisions, communication protocols, examples of family views influencing care, inclusion in meetings.",
+    followUpQuestions: ["Who are the key relationships for children in your care?", "How often do you seek their input?", "Can you describe how family input recently changed a care decision?"],
+    mode: "inspection",
+  },
+  {
+    id: "cv-i",
+    domain: "ChildrenViews",
+    text: "Describe evidence for how children's feedback and comments directly influenced the latest revisions of your children's guide or complaints procedure.",
+    hint: "Records of children's feedback, meeting minutes showing discussion of suggestions, documented changes made in response, evidence shared back with children.",
+    followUpQuestions: ["When was the guide last updated?", "What changes were based on child feedback?", "How did you communicate those changes back to children?"],
+    mode: "inspection",
+  },
+  {
+    id: "cv-j",
+    domain: "ChildrenViews",
+    text: "Describe evidence for how regular house meetings or daily consultations are actively used to shape the overall ethos and routine of the home.",
+    hint: "Records of meetings, agenda-setting including children's suggestions, visible impact on decisions, diverse child participation, follow-up on promised actions.",
+    followUpQuestions: ["How often do you hold house meetings?", "Who attends?", "Describe a recent decision made based on meeting feedback."],
+    mode: "inspection",
+  },
+
+  // Education (5 new)
+  {
+    id: "ed-f",
+    domain: "Education",
+    text: "Describe evidence for how staff actively support children to develop independent study skills and complete homework within the home's learning environment.",
+    hint: "Records of homework support, designated study space, staff knowledge of children's learning needs, evidence of skill-building not just task-completion, liaison with schools.",
+    followUpQuestions: ["How is homework supported in the home?", "What independent study skills are you teaching?", "How do you track progress in learning?"],
+    mode: "inspection",
+  },
+  {
+    id: "ed-g",
+    domain: "Education",
+    text: "Describe evidence for how the home promotes opportunities for children to learn informally outside of standard formal school hours.",
+    hint: "Records of enrichment activities, educational visits, project-based learning, staff interest in children's curiosities, integration of learning into daily life and routines.",
+    followUpQuestions: ["Can you describe an informal learning opportunity from this week?", "Who initiates these opportunities?", "How do you evaluate their impact?"],
+    mode: "inspection",
+  },
+  {
+    id: "ed-h",
+    domain: "Education",
+    text: "Describe evidence for how staff communicate the value of education, learning, and employment to children who may be currently disengaged from schooling.",
+    hint: "Examples of motivational conversations, links to career aspirations, celebration of learning achievements, mentoring relationships with staff who model lifelong learning.",
+    followUpQuestions: ["Which children are at risk of disengagement?", "How do you support them specifically?", "What careers or aspirations are you helping them explore?"],
+    mode: "inspection",
+  },
+  {
+    id: "ed-i",
+    domain: "Education",
+    text: "Describe evidence for how staff support a child who is excluded from school to access interim educational support and return to formal education as quickly as possible.",
+    hint: "Protocols for managing exclusions, liaison with local authority, alternative provision arrangements, evidence of return planning, advocacy for child to school.",
+    followUpQuestions: ["If exclusion were to occur, what would your process be?", "Who would oversee the interim education?", "How would you support reintegration?"],
+    mode: "inspection",
+  },
+  {
+    id: "ed-j",
+    domain: "Education",
+    text: "Describe evidence for how each child is provided with access to appropriate equipment, facilities, and safe internet resources to support their learning at home.",
+    hint: "Inventory of learning resources, age-appropriate technology, safe internet access controls, adaptations for different learning styles, regular updates to resources.",
+    followUpQuestions: ["What learning equipment is available?", "How do you ensure internet safety?", "How often do you update resources?"],
+    mode: "inspection",
+  },
+
+  // Enjoyment & Achievement (5 new)
+  {
+    id: "ea-f",
+    domain: "EnjoymentAchievement",
+    text: "Describe evidence for how you help children make a positive contribution to the home and the wider community, such as through volunteering or community projects.",
+    hint: "Records of community involvement, volunteering opportunities, children's roles in home maintenance/decision-making, social action projects, evidence of impact.",
+    followUpQuestions: ["What community activities are children involved in?", "How do children contribute to the home?", "What skills are they developing through contribution?"],
+    mode: "inspection",
+  },
+  {
+    id: "ea-g",
+    domain: "EnjoymentAchievement",
+    text: "Describe evidence for how staff actively support children to make and sustain healthy friendships with peers both inside and outside the home.",
+    hint: "Records of friendship support, supervised contact facilitation, social skills teaching, monitoring of relationships, intervention in conflicts, celebrating positive friendships.",
+    followUpQuestions: ["How do you support friendships between children?", "How do you enable friendships outside the home?", "How do you address unhealthy relationships?"],
+    mode: "inspection",
+  },
+  {
+    id: "ea-h",
+    domain: "EnjoymentAchievement",
+    text: "Describe evidence for how staff encourage children to try new activities that expand their current interests, preferences, and skills.",
+    hint: "Records of new activity trials, staff facilitating exploration, budget for varied activities, evidence of interest expansion, following child-led discovery.",
+    followUpQuestions: ["Describe a new activity a child tried recently.", "How do you decide what to try?", "What happened after the first attempt?"],
+    mode: "inspection",
+  },
+  {
+    id: "ea-i",
+    domain: "EnjoymentAchievement",
+    text: "Describe evidence for how you adapt recreational activities to ensure that children with specific physical, emotional, or communication needs can still participate safely.",
+    hint: "Individualised activity adaptations, accessibility modifications, risk assessments for each child, staff training in adaptations, including all children despite differences.",
+    followUpQuestions: ["Give examples of activity adaptations you've made.", "How do you assess what adaptations are needed?", "How do you involve children in planning adaptations?"],
+    mode: "inspection",
+  },
+  {
+    id: "ea-j",
+    domain: "EnjoymentAchievement",
+    text: "Describe evidence for how the home goes beyond the basic expectations of a child's relevant plans to provide enriching creative, intellectual, or physical opportunities.",
+    hint: "Evidence of above-and-beyond activities, investment in enrichment, examples of creative/intellectual/physical experiences, child and family feedback on enrichment.",
+    followUpQuestions: ["Describe an enriching activity beyond what was planned.", "Who initiated it?", "What impact did it have on the child?"],
+    mode: "inspection",
+  },
+
+  // Health & Wellbeing (5 new)
+  {
+    id: "hw-f",
+    domain: "HealthWellbeing",
+    text: "Describe evidence for how each child is promptly registered with a general medical practitioner and a registered dental practitioner upon admission.",
+    hint: "Registration records, timescales for registration post-admission, evidence of communication with practitioners, inclusion in induction process.",
+    followUpQuestions: ["How quickly are children registered after arrival?", "How do you manage emergency admissions?", "What is your protocol if a child has no permanent address?"],
+    mode: "inspection",
+  },
+  {
+    id: "hw-g",
+    domain: "HealthWellbeing",
+    text: "Describe evidence for how staff help children understand their own health needs so they can make informed, age-appropriate choices about their physical and mental well-being.",
+    hint: "Health education records, conversations about medication/conditions, involving children in health decision-making, age-appropriate health literacy, supporting self-care.",
+    followUpQuestions: ["How do you teach children about their health conditions?", "How do children participate in health decisions?", "What health literacy outcomes are you aiming for?"],
+    mode: "inspection",
+  },
+  {
+    id: "hw-h",
+    domain: "HealthWellbeing",
+    text: "Describe evidence for how staff develop a child's understanding of personal, sexual, and social relationships in a way that is appropriate to their age and development.",
+    hint: "RSE curriculum, planned conversations, staff training, age-appropriate resources, record of discussions, safeguarding of vulnerable learners, parent communication.",
+    followUpQuestions: ["What RSE approach do you use?", "How is it tailored to age and development?", "How do you address concerning behaviours or knowledge?"],
+    mode: "inspection",
+  },
+  {
+    id: "hw-i",
+    domain: "HealthWellbeing",
+    text: "Describe evidence for how the home's arrangements for managing and safely storing medication promote children's independence wherever possible.",
+    hint: "Medication protocols, evidence of gradual independence (self-administration for appropriate children), storage systems, staff knowledge, regular reviews of independence plans.",
+    followUpQuestions: ["Who currently self-administers medication?", "What training have they received?", "How do you assess readiness for self-administration?"],
+    mode: "inspection",
+  },
+  {
+    id: "hw-j",
+    domain: "HealthWellbeing",
+    text: "Describe evidence for how the home takes a whole-home approach to promoting healthy lifestyles, such as involving children in planning nutritious meals and taking regular exercise.",
+    hint: "Nutritional evidence (menu planning records, dietary assessment), exercise opportunities, children's involvement in food choices, modelling of healthy behaviours by staff.",
+    followUpQuestions: ["How are children involved in meal planning?", "What physical activities are available?", "How do you promote healthy choices?"],
+    mode: "inspection",
+  },
+
+  // Positive Relationships (5 new)
+  {
+    id: "pr-f",
+    domain: "PositiveRelationships",
+    text: "Describe evidence for how staff encourage children to take responsibility for their own behaviour in accordance with their age, abilities, and understanding.",
+    hint: "Records of responsibility-building, age-appropriate expectations, consequences linked to learning, recognition of effort, graduated responsibility opportunities.",
+    followUpQuestions: ["Give examples of age-appropriate responsibilities.", "How do you teach responsibility for behaviour?", "How do children respond to this approach?"],
+    mode: "inspection",
+  },
+  {
+    id: "pr-g",
+    domain: "PositiveRelationships",
+    text: "Describe evidence for how you help children develop and practice the skills needed to resolve conflicts positively without harm to themselves or others.",
+    hint: "Records of conflict resolution teaching, staff facilitation of peer conflict, emotional regulation support, restorative approaches, practice opportunities, measuring effectiveness.",
+    followUpQuestions: ["Describe a recent conflict resolution.", "How did children learn this skill?", "What restorative practices do you use?"],
+    mode: "inspection",
+  },
+  {
+    id: "pr-h",
+    domain: "PositiveRelationships",
+    text: "Describe evidence for how staff demonstrate they have the skills to recognise early indications of bullying and intervene effectively to protect children.",
+    hint: "Staff training records, bullying incident responses, evidence of early intervention, protective actions taken, support for victims, restorative work with perpetrators.",
+    followUpQuestions: ["How is bullying defined in your home?", "How do staff identify early signs?", "Describe your response to a recent bullying incident."],
+    mode: "inspection",
+  },
+  {
+    id: "pr-i",
+    domain: "PositiveRelationships",
+    text: "Describe evidence for how staff consistently use specific, planned de-escalation techniques to avoid confrontations and the use of physical restraint.",
+    hint: "De-escalation training records, low restraint use data, staff confidence in techniques, environmental adjustments, calm approaches, recognition of triggers.",
+    followUpQuestions: ["What de-escalation techniques do staff use?", "What training have they received?", "When was restraint last used and why?"],
+    mode: "inspection",
+  },
+  {
+    id: "pr-j",
+    domain: "PositiveRelationships",
+    text: "Describe evidence for how staff interpret children's previous experiences and trauma to understand the triggers behind their current emotions and behaviour.",
+    hint: "Trauma-informed understanding in behaviour records, staff knowledge of children's histories, identifying triggers, therapeutic responses, restorative not punitive approaches.",
+    followUpQuestions: ["Describe a child's trauma history.", "How does this inform your approach?", "What helps this child feel safe when triggered?"],
+    mode: "inspection",
+  },
+
+  // Protection of Children (5 new)
+  {
+    id: "pc-f",
+    domain: "ProtectionChildren",
+    text: "Describe evidence for how staff support each child to understand how they can manage their own safety and risks when spending time outside of the home.",
+    hint: "Safety conversations records, risk assessments for community access, graduated independence, teaching about stranger danger/exploitation risks, feedback from children.",
+    followUpQuestions: ["What safety skills are you teaching?", "How do children practice these?", "How do you judge readiness for independence?"],
+    mode: "inspection",
+  },
+  {
+    id: "pc-g",
+    domain: "ProtectionChildren",
+    text: "Describe evidence for how staff manage relationships between the children living in the home to effectively prevent them from harming or bullying each other.",
+    hint: "Risk assessments of child-to-child dynamics, supervision strategies, safeguarding measures, positive relationship building, training for staff, monitoring effectiveness.",
+    followUpQuestions: ["How do you assess risk between children?", "What supervision level is needed?", "Have there been concerning dynamics and how were they managed?"],
+    mode: "inspection",
+  },
+  {
+    id: "pc-h",
+    domain: "ProtectionChildren",
+    text: "Describe evidence for how staff demonstrate familiarity with the home's whistleblowing and child protection policies, particularly regarding actions to take if they suspect a colleague of abuse.",
+    hint: "Staff training records, policy accessibility, staff interviews confirm knowledge, procedures known for escalation, external support services identified, fearless speaking up culture.",
+    followUpQuestions: ["What would you do if you suspected a colleague?", "Who would you report to?", "What protections exist for whistleblowers?"],
+    mode: "inspection",
+  },
+  {
+    id: "pc-i",
+    domain: "ProtectionChildren",
+    text: "Describe evidence for how the premises are actively maintained and regularly reviewed to protect children from avoidable hazards to their health and safety.",
+    hint: "Maintenance logs, risk assessments of premises, remedial actions taken, equipment checks, safe spaces, accessible emergency exits, regular inspection records.",
+    followUpQuestions: ["When was the last full health and safety check?", "What hazards were identified?", "How were they addressed?"],
+    mode: "inspection",
+  },
+  {
+    id: "pc-j",
+    domain: "ProtectionChildren",
+    text: "Describe evidence for how the home's safeguarding arrangements protect children from the risks of sexual exploitation, radicalisation, and cyber-bullying while using the internet.",
+    hint: "Internet safety policies, parental controls, staff knowledge of online risks, teaching children about risks, monitoring of online activity, escalation procedures.",
+    followUpQuestions: ["What internet safety education is provided?", "How do you monitor online activity?", "Have you identified concerns and how were they handled?"],
+    mode: "inspection",
+  },
+
+  // Leadership & Management (5 new)
+  {
+    id: "lm-f",
+    domain: "LeadershipManagement",
+    text: "Describe evidence for how you ensure the home has a stable and sufficient workforce that provides continuity of care and avoids over-reliance on external agency staff.",
+    hint: "Staffing records, staff turnover data, recruitment and retention strategies, agency staff usage analysis, impact on children, staff feedback.",
+    followUpQuestions: ["What is your current staff turnover?", "How many agency staff do you use?", "What is your retention strategy?"],
+    mode: "inspection",
+  },
+  {
+    id: "lm-g",
+    domain: "LeadershipManagement",
+    text: "Describe evidence for how leaders understand the specific impact that the quality of care is having on the progress of children and use this knowledge to inform continuous improvement.",
+    hint: "Data collection on child outcomes, impact analysis, improvement planning linked to data, evidence of changes made, outcomes monitoring.",
+    followUpQuestions: ["How do you measure quality impact?", "What data are you tracking?", "Describe a recent improvement based on data."],
+    mode: "inspection",
+  },
+  {
+    id: "lm-h",
+    domain: "LeadershipManagement",
+    text: "Describe evidence for how practice in the home is continually informed and improved by taking into account current research and developments in residential childcare.",
+    hint: "Evidence of engagement with research, training on new approaches, implementation of evidence-based practices, networking with other homes, conference attendance.",
+    followUpQuestions: ["What research informs your practice?", "How do you stay current?", "Describe a practice change based on research."],
+    mode: "inspection",
+  },
+  {
+    id: "lm-i",
+    domain: "LeadershipManagement",
+    text: "Describe evidence for how the home's business continuity and workforce plans ensure children's needs continue to be safely met during unexpected staff absences or vacancies.",
+    hint: "Business continuity plan, succession planning, emergency staffing protocols, flexible workforce arrangements, training depth across staff, testing of plans.",
+    followUpQuestions: ["What happens if you're suddenly absent?", "How is the home covered?", "Have you tested these arrangements?"],
+    mode: "inspection",
+  },
+  {
+    id: "lm-j",
+    domain: "LeadershipManagement",
+    text: "Describe evidence for how the registered provider ensures the home is properly resourced and financially viable to deliver the outcomes set out in the statement of purpose.",
+    hint: "Budget evidence, resource allocation, financial monitoring, links between funding and outcomes, evidence of sustainable model, investment in improvement.",
+    followUpQuestions: ["How is the home financed?", "How do you allocate resources?", "What investments have been made to support outcomes?"],
+    mode: "inspection",
+  },
+
+  // Care Planning (5 new)
+  {
+    id: "cp-f",
+    domain: "CarePlanning",
+    text: "Describe evidence for how arrangements ensure the effective and sensitive induction of a child into the home, especially when arriving as an emergency placement.",
+    hint: "Induction protocol, individualised welcome, key worker relationships, settling-in support, family communication, records of child's experience, feedback.",
+    followUpQuestions: ["Walk me through your induction process.", "How do you adapt for emergency arrivals?", "How do you know a child is settled?"],
+    mode: "inspection",
+  },
+  {
+    id: "cp-g",
+    domain: "CarePlanning",
+    text: "Describe evidence for how staff proactively help each child to access, understand, and contribute to their own case records in an age-appropriate way.",
+    hint: "Access to records, summary versions, life story work, involvement in reviews, understanding of information, age-appropriate language, record of contributions.",
+    followUpQuestions: ["How do children access their records?", "How are records explained to them?", "How do children contribute to them?"],
+    mode: "inspection",
+  },
+  {
+    id: "cp-h",
+    domain: "CarePlanning",
+    text: "Describe evidence for how the home challenges the placing authority by requesting a formal review of a child's plan if the current care provided is inadequate to meet their needs.",
+    hint: "Records of challenge raised, rationale documented, formal review requests, advocacy for children, examples of successful challenge, communication with authorities.",
+    followUpQuestions: ["If a child's needs changed, how would you escalate?", "Can you describe a time you challenged a plan?", "What was the outcome?"],
+    mode: "inspection",
+  },
+  {
+    id: "cp-i",
+    domain: "CarePlanning",
+    text: "Describe evidence for how you ensure that every child admitted falls strictly within the range of needs the home is registered to accommodate, as outlined in the statement of purpose.",
+    hint: "Matching criteria, admissions policy, assessment against SOP, placement matching documentation, examples of declined placements, liaison with placing authorities.",
+    followUpQuestions: ["What range of needs does your registration cover?", "How do you assess whether a child fits?", "Have you declined a placement? Why?"],
+    mode: "inspection",
+  },
+  {
+    id: "cp-j",
+    domain: "CarePlanning",
+    text: "Describe evidence for how staff support a child when they are preparing to leave the home, ensuring the transition promotes a positive ending and helps build their life story.",
+    hint: "Transition planning, life story work, leaving care support, celebration of achievements, staying connected if possible, aftercare contact, preparing for next placement.",
+    followUpQuestions: ["How do you prepare children for leaving?", "What life story work is done?", "How do you maintain connection after leaving?"],
+    mode: "inspection",
   },
 ];
 

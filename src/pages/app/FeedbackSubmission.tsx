@@ -121,7 +121,7 @@ export default function FeedbackSubmission() {
                 What type of feedback?
               </label>
               <div className="grid grid-cols-3 gap-3">
-                {(["inspection", "interview", "practice"] as FeedbackType[]).map((type) => (
+                {(["inspection", "fit_person", "practice"] as FeedbackType[]).map((type) => (
                   <button
                     key={type}
                     type="button"
