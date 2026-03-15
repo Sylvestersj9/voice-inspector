@@ -503,12 +503,33 @@ export default function Index() {
 
   const pickReplacementQuestion = () => {
     if (!sessionId) return null;
+
+    // If focusing on a specific standard, only pick from that domain
+    if (focusStandard !== "all") {
+      const pool = questionBank.filter((q) => {
+        const questionMode = q.mode || "inspection";
+        return (
+          q.domain === focusStandard &&
+          questionMode === practiceMode &&
+          !questions.some((qs) => qs.question.id === q.id)
+        );
+      });
+      if (pool.length === 0) return null;
+      const rng = mulberry32(`${sessionId}-skip`);
+      const idx = Math.floor(rng() * pool.length);
+      return pool[idx];
+    }
+
+    // For "all" mode, pick from unused domains as before
     const usedDomains = new Set(questions.map((q) => q.question.domain));
     const availableDomains = DOMAIN_ORDER.filter((d) => !usedDomains.has(d));
     if (availableDomains.length === 0) return null;
     const rng = mulberry32(`${sessionId}-skip`);
     const domain = availableDomains[Math.floor(rng() * availableDomains.length)];
-    const pool = questionBank.filter((q) => q.domain === domain);
+    const pool = questionBank.filter((q) => {
+      const questionMode = q.mode || "inspection";
+      return q.domain === domain && questionMode === practiceMode;
+    });
     if (pool.length === 0) return null;
     const idx = Math.floor(rng() * pool.length);
     return pool[idx];
