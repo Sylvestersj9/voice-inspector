@@ -235,11 +235,14 @@ Implementation: `supabase/functions/_shared/rate-limiter.ts` — extracts IP (Cl
   - SA_Protection (safeguarding, risk assessment)
   - SA_Accommodation (suitable, safe physical environment)
   - SA_Support (independent living skills, transition planning)
-- ✅ **12 SA Questions** (3 per standard, mode: inspection):
-  - sa-lm-a/b/c (Leadership & Management)
-  - sa-pc-a/b/c (Protection)
-  - sa-ac-a/b/c (Accommodation)
-  - sa-sp-a/b/c (Support)
+- ✅ **25 SA Questions** (5 per standard, mode: inspection):
+  - sa-lm-a/b/c/d/e (Leadership & Management): risk profile, workforce planning, stability, business continuity, financial viability
+  - sa-pc-a/b/c/d/e (Protection): safeguarding loop, location risk, vetting, community safety, online exploitation
+  - sa-ac-a/b/c/d/e (Accommodation): homely environment, basic necessities, proportionate safety, maintenance, induction
+  - sa-sp-a/b/c/d/e (Support): transition planning, education/training/employment, advocacy, wellbeing tracking, autonomy
+  - **Statutory compliance**: All questions use "support/young people/setting" language per England Regulations 2023
+  - **Mapped from CH bank**: Each question carefully adapted from existing Children's Homes questions for consistency
+  - **Golden thread focus**: Questions structured to reward specific concern→action→outcome evidence, not policy recitation
 - ✅ **Frontend Logic**:
   - Index.tsx: Load facility_type from profile, pass to pickSessionQuestions
   - pickSessionQuestions: Filter questions by facility_type (SA questions only for SA facilities)
@@ -269,7 +272,7 @@ Implementation: `supabase/functions/_shared/rate-limiter.ts` — extracts IP (Cl
 ### 📋 Files Changed
 | File | Change |
 |------|--------|
-| `src/lib/questions.ts` | +SA domains, +SA_DOMAIN_ORDER, +FacilityType, +12 SA questions, fix legacy mode (5 questions) |
+| `src/lib/questions.ts` | +SA domains, +SA_DOMAIN_ORDER, +FacilityType, **+25 SA questions** (5 per standard), fix legacy mode (5 questions) |
 | `src/pages/Index.tsx` | +facilityType state, load from profile, pass to pickSessionQuestions, update idle UI |
 | `src/pages/app/Profile.tsx` | +facility_type field in profile form, save to database |
 | `supabase/functions/evaluate/index.ts` | Enhanced SYSTEM_PROMPT with golden thread + placement stability rules |
