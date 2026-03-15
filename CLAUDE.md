@@ -1248,6 +1248,56 @@ VITE_GEMINI_KEY="[your-gemini-api-key]"
 - Previous issue where cancelled subscriptions showed upgrade button is resolved
 - Team pricing now reflects £89/month with updated savings calculation
 
+## Latest Updates (v1.11.1 — March 15, 2026)
+
+### 🎯 RI Oversight Mode — 10 New Regulation 44 Questions
+
+**Comprehensive Regulation 44 Governance Questions Added:**
+- ✅ **Total RI questions: 15** (5 existing protection-focused + 10 new governance-focused)
+- ✅ **Question coverage across 6 domains:**
+  - LeadershipManagement: ri-a, ri-c, ri-f, ri-j (4 questions on oversight, accountability, submission, documentation)
+  - ProtectionChildren: ri-b, ri-e, ri-h (3 questions on safeguarding triangulation, high-risk records, escalation)
+  - ChildrenViews: ri-d (1 question on child consultation)
+  - QualityPurpose: ri-g (1 question on Reg 44/45 alignment)
+  - HealthWellbeing: ri-i (1 question on environmental safety)
+
+**New RI Question IDs (ri-a through ri-j):**
+1. **ri-a** — Managing Conflict of Interest and Impartiality (LeadershipManagement)
+2. **ri-b** — Triangulating Safeguarding Opinions (ProtectionChildren)
+3. **ri-c** — Actioning Recommendations and Driving Improvement (LeadershipManagement)
+4. **ri-d** — Ensuring Meaningful Consultation with Children (ChildrenViews)
+5. **ri-e** — Monitoring High-Risk Records (ProtectionChildren)
+6. **ri-f** — Statutory Submission Timelines (LeadershipManagement)
+7. **ri-g** — Triangulating Regulation 44 with Regulation 45 (QualityPurpose)
+8. **ri-h** — Escalation of Serious Concerns (ProtectionChildren)
+9. **ri-i** — Oversight of the Physical Environment (HealthWellbeing)
+10. **ri-j** — Handling Disagreements with the Independent Person (LeadershipManagement)
+
+**Question Picker Logic Fixed:**
+- ✅ Updated `pickSessionQuestions()` to handle RI mode same as Fit Person mode
+- ✅ Returns all 15 RI questions (not domain-based picking which was returning only 2)
+- ✅ RI Oversight practice type now shows comprehensive governance-focused interview questions
+- ✅ All questions filtered properly by mode (only appear in RI Oversight mode)
+
+**Key Features:**
+- Evidence-based on Regulation 44 requirements (Children's Homes Regulations)
+- Focused on Responsible Individual oversight and governance
+- Include detailed follow-up questions for deeper exploration
+- Cover critical compliance areas (impartiality, accountability, safeguarding verification, statutory deadlines)
+- Realistic scenarios matching actual inspection practice
+
+**Build & Deployment:**
+- ✅ TypeScript compilation: PASSING ✓
+- ✅ All 115+ questions across 3 modes without conflicts
+- ✅ Changes committed: Commit `a4a401b`
+- ✅ Pushed to main: `git push origin main` ✓
+
+**Impact:**
+- Users preparing for RI roles now have dedicated governance practice questions
+- RI Oversight practice mode now fully functional with appropriate question scope
+- Comprehensive coverage of Regulation 44 oversight across all key areas
+- Realistic interview scenarios for aspiring Responsible Individuals
+
 ## Latest Updates (v1.11.0 — March 15, 2026)
 
 ### 📚 Enhanced Question Bank — 5 Research Questions per Quality Standard
